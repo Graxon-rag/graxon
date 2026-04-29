@@ -1,0 +1,30 @@
+name: Lint Code Base
+
+on:
+    push:
+        branches-ignore: [ main ]
+    pull_request:
+        branches: [ main ]
+
+jobs:
+    build:
+        name: Lint Code Base
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout Code
+              uses: actions/checkout@v3
+              with:
+                  fetch-depth: 0
+
+            - name: Lint Code Base
+              uses: github/super-linter@v5
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  VALIDATE_ALL_CODEBASE: false
+                  VALIDATE_PYTHON_FLAKE8: true
+                  VALIDATE_DOCKERFILE_HADOLINT: true
+                  VALIDATE_BASH: true
+                  VALIDATE_MARKDOWN: true
+                  DEFAULT_BRANCH: main
+                  FLAKE8_ARGS: "--max-line-length=200 --ignore=E501,E121,E999,E111,E113,F401"
