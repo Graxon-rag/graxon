@@ -1,0 +1,23 @@
+__pycache__
+
+venv
+.venv
+
+# Logs
+logs
+**.log
+
+# SSH
+.ssh
+
+# Env
+.env
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
