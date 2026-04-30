@@ -9,6 +9,12 @@ from contextlib import asynccontextmanager
 from dotenv import load_dotenv
 from .load_imp_env import load_imp_env
 from fastapi.openapi.docs import get_swagger_ui_html
+from .databases.minio.client import GMinioClient
+from .databases.postgresql.client import GPostgresqlClient
+from .databases.redis.client import GRedisClient
+from .databases.neo4j.client import GNeo4jClient
+from .databases.qdrant.client import GQdrantClient
+from .rabbitmq.client import GRabbitMQClient
 import asyncio
 
 
@@ -18,7 +24,24 @@ import asyncio
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     # --- Startup ---
+    
+    await asyncio.gather(
+        GMinioClient.init(),
+        GPostgresqlClient.init(),
+        GRedisClient.init(),
+        GNeo4jClient.init(),
+        GQdrantClient.init(),
+        GRabbitMQClient.init()
+    )
+    
     yield
+    
+    await asyncio.gather(
+        GRedisClient.close(),
+        GNeo4jClient.close(),
+        GQdrantClient.close(),
+        GRabbitMQClient.close()
+    )
 
 
 app = FastAPI(title="Graxon API", version="1.0", lifespan=lifespan, docs_url=None, redoc_url=None)
