@@ -1,0 +1,131 @@
+name: graxon
+services:
+  # Neo4j
+  neo4j:
+    image: neo4j:5.24-community
+    container_name: graxon_neo4j
+    ports:
+      - "7474:7474" # Browser UI
+      - "7687:7687" # Bolt
+    environment:
+      NEO4J_AUTH: neo4j/password
+      NEO4J_PLUGINS: "[\"apoc\"]"
+      NEO4J_dbms_memory_heap_initial__size: 512m
+      NEO4J_dbms_memory_heap_max__size: 2g
+      NEO4J_dbms_memory_pagecache_size: 1g
+      NEO4J_dbms_connector_bolt_thread__pool__max__size: 400
+    volumes:
+      - neo4j_data:/data
+      - neo4j_logs:/logs
+    healthcheck:
+      test: [ "CMD", "cypher-shell", "-u", "neo4j", "-p", "password", "RETURN 1" ]
+      interval: 20s
+      timeout: 10s
+      retries: 5
+    restart: unless-stopped
+
+  # Qdrant
+  qdrant:
+    image: qdrant/qdrant:v1.17.0
+    container_name: graxon_qdrant
+    ports:
+      - "6333:6333" # REST
+      - "6334:6334" # gRPC
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - ./qdrant_config.yaml:/qdrant/config/production.yaml
+    healthcheck:
+      disable: true
+    restart: unless-stopped
+
+  # Redis 
+  redis:
+    image: redis:7.4-alpine
+    container_name: graxon_redis
+    ports:
+      - "6379:6379"
+    command: >
+      redis-server --requirepass password --maxmemory 512mb --maxmemory-policy
+      allkeys-lru --save 60 1000 --appendonly yes
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [ "CMD", "redis-cli", "-a", "password", "ping" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Minio
+  minio:
+    image: quay.io/minio/minio
+    container_name: graxon_minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      - MINIO_ROOT_USER=graxon_admin
+      - MINIO_ROOT_PASSWORD=password
+    volumes:
+      - minio_data:/data
+
+    command: server /data --console-address ":9001"
+    restart: unless-stopped
+
+  # Postgresql
+  postgres:
+    image: postgres:15-alpine
+    container_name: graxon_postgres
+    restart: always
+    environment:
+      POSTGRES_USER: graxon_admin
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: graxon
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  pgbouncer:
+    image: edoburu/pgbouncer:latest
+    restart: unless-stopped
+    environment:
+      DB_USER: graxon_admin
+      DB_PASSWORD: password
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: graxon
+      POOL_MODE: transaction # Best for high-concurrency APIs
+      MAX_CLIENT_CONN: 1000 # Max connections from your app
+      DEFAULT_POOL_SIZE: 20 # Actual connections to Postgres
+      MIN_POOL_SIZE: 5
+      RESERVE_POOL_SIZE: 5
+      RESERVE_POOL_TIMEOUT: 3
+      SERVER_RESET_QUERY: DISCARD ALL
+      AUTH_TYPE: scram-sha-256
+    ports:
+      - "5433:5432" # host:5433 → container:5432 (avoid conflict with pgbouncer) because port 5432 is used by postgres
+    depends_on:
+      - postgres
+
+  # Rabbitmq
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: graxon_rabbitmq
+    ports:
+      - "5672:5672" # RabbitMQ port
+      - "15672:15672" # Management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: graxon_admin
+      RABBITMQ_DEFAULT_PASS: password
+
+    restart: unless-stopped
+
+volumes:
+  neo4j_data:
+  neo4j_logs:
+  qdrant_data:
+  redis_data:
+  minio_data:
+  postgres_data:
+
