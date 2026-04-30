@@ -19,6 +19,7 @@ import asyncio
 
 
 # Routes
+from .routes.reranker_route import router as reranker_router
 
 
 @asynccontextmanager
@@ -87,7 +88,7 @@ async def custom_swagger_ui_html(credentials: HTTPBasicCredentials = Depends(aut
 
 
 # Routes
-
+app.include_router(reranker_router, prefix="/api/rerankers")
 
 @app.get("/")
 def index():

@@ -9,7 +9,6 @@ venv/
 .env.local
 
 
-data/*
 !data/.gitkeep
 chroma*/
 **/__pycache__/
@@ -30,7 +29,7 @@ qdrant_storage/
 new_version.sh
 .envrc
 logs/
-data/
+
 
 # --- Standard Python ignores ---
 *.py[cod]

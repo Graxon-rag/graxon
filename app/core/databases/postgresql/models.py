@@ -45,6 +45,7 @@ class LLMModel(Base):
     __tablename__ = "llm_models"
     
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -64,6 +65,7 @@ class LLMModel(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
             "model": self.model,
@@ -76,6 +78,7 @@ class EmbeddingModel(Base):
     __tablename__ = "embedding_models"
     
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -97,6 +100,7 @@ class EmbeddingModel(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
             "model": self.model,
@@ -111,6 +115,7 @@ class SparseTextModel(Base):
     __tablename__ = "sparse_text_models"
     
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -132,6 +137,7 @@ class SparseTextModel(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
             "model": self.model,
@@ -145,6 +151,7 @@ class ReRankerModel(Base):
     __tablename__ = "reranker_models"
     
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -165,6 +172,7 @@ class ReRankerModel(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
             "model": self.model,

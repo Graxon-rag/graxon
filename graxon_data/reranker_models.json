@@ -1,0 +1,50 @@
+[
+  {
+    "org_id": "dev",
+    "name": "MiniLM L6 v2",
+    "provider": "Xenova",
+    "model": "Xenova/ms-marco-MiniLM-L-6-v2",
+    "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks",
+    "size_in_gb": 0.08
+  },
+  {
+    "org_id": "dev",
+    "name": "MiniLM L12 v2",
+    "provider": "Xenova",
+    "model": "Xenova/ms-marco-MiniLM-L-12-v2",
+    "description": "MiniLM-L-12-v2 model optimized for re-ranking tasks",
+    "size_in_gb": 0.12
+  },
+  {
+    "org_id": "dev",
+    "name": "Jina Reranker Tiny EN",
+    "provider": "jinaai",
+    "model": "jinaai/jina-reranker-v1-tiny-en",
+    "description": "Blazing-fast English reranker with ~8K context support",
+    "size_in_gb": 0.13
+  },
+  {
+    "org_id": "dev",
+    "name": "Jina Reranker Turbo EN",
+    "provider": "jinaai",
+    "model": "jinaai/jina-reranker-v1-turbo-en",
+    "description": "High-performance English reranker with ~8K context support",
+    "size_in_gb": 0.15
+  },
+  {
+    "org_id": "dev",
+    "name": "BGE Reranker Base",
+    "provider": "BAAI",
+    "model": "BAAI/bge-reranker-base",
+    "description": "BGE base cross-encoder model for high-quality re-ranking",
+    "size_in_gb": 1.04
+  },
+  {
+    "org_id": "dev",
+    "name": "Jina Reranker v2 Multilingual",
+    "provider": "jinaai",
+    "model": "jinaai/jina-reranker-v2-base-multilingual",
+    "description": "Multilingual cross-encoder reranker supporting multiple languages",
+    "size_in_gb": 1.11
+  }
+]
