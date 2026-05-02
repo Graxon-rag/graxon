@@ -10,7 +10,10 @@ def load_imp_env():
         "LOG_LEVEL",
         "DOCS_USERNAME",
         "DOCS_PASSWORD",
-        "GRAXON_PUBLIC_URL"
+        "GRAXON_PUBLIC_URL",
+
+        # Frontend
+        "CLIENTS"
     ]
 
     missing_vars = []

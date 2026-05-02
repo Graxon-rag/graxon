@@ -62,18 +62,18 @@ load_dotenv()
 load_imp_env()
 
 # CORS middleware
-# CLIENTS = os.getenv("CLIENTS", "").split(",")
-# CLIENTS = [url.strip() for url in CLIENTS if url.strip()]
+CLIENTS = os.getenv("CLIENTS", "").split(",")
+CLIENTS = [url.strip() for url in CLIENTS if url.strip()]
 
-# print("CLIENTS: ", CLIENTS)
+print("CLIENTS: ", CLIENTS)
 
-# app.add_middleware(
-#     CORSMiddleware,
-#     allow_origins=CLIENTS,
-#     allow_credentials=True,
-#     allow_methods=["*"],
-#     allow_headers=["*"],
-# )
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=CLIENTS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 security = HTTPBasic()
