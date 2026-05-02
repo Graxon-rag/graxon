@@ -42,6 +42,28 @@ class Project(Base):
         }
 
 
+class ModelCredential(Base):
+    __tablename__ = PGTables.MODEL_CREDENTIAL_TABLE
+    
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    api_key: Mapped[str] = mapped_column(String(255), nullable=False)
+    
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+
 class LLMModel(Base):
     __tablename__ = "llm_models"
     

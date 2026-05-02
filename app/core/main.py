@@ -21,6 +21,7 @@ import asyncio
 # Routes
 from .routes.reranker_route import router as reranker_router
 from .routes.sparse_text_model_route import router as sparse_text_model_router
+from .routes.model_provider_route import router as model_provider_router
 
 
 @asynccontextmanager
@@ -91,6 +92,8 @@ async def custom_swagger_ui_html(credentials: HTTPBasicCredentials = Depends(aut
 # Routes
 app.include_router(reranker_router, prefix="/api/rerankers")
 app.include_router(sparse_text_model_router, prefix="/api/sparse-text-models")
+app.include_router(model_provider_router, prefix="/api/model-providers")
+
 
 @app.get("/")
 def index():

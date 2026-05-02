@@ -31,7 +31,7 @@ target_metadata = Base.metadata
 
 # Define the tables this graxon service is responsible for
 # ** Please do not add the tables which are not owned by this graxon service **
-GRAXON_OWNED_TABLES = [PGTables.RERANKER_MODEL_TABLE, PGTables.SPARSE_TEXT_MODEL_TABLE]
+GRAXON_OWNED_TABLES = [PGTables.RERANKER_MODEL_TABLE, PGTables.SPARSE_TEXT_MODEL_TABLE, PGTables.MODEL_CREDENTIAL_TABLE]
 
 
 def include_object(obj, name, type_, reflected, compare_to):
