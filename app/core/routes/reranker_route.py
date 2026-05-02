@@ -44,21 +44,6 @@ async def create_multiple_rerankers(org_id: str, rerankers: list[ReRankerCreateS
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/{org_id}/get/{reranker_id}")
-async def get_reranker(org_id: str, reranker_id: uuid.UUID):
-    try:
-        handler = ReRankerHandler(org_id=org_id)
-        result = await handler.get_reranker(reranker_id)
-        if not result:
-            logger.error({"message": "Failed to get reranker", "result": result})
-            return error_response("Failed to get reranker", HTTP_404_NOT_FOUND)
-        return success_response(data=result.model_dump(mode="json"))
-
-    except Exception as e:
-        logger.error({"message": "Failed to get reranker", "error": str(e)})
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
 @router.get("/{org_id}/get/all")
 async def get_all_rerankers(org_id: str):
     try:
@@ -72,6 +57,21 @@ async def get_all_rerankers(org_id: str):
 
     except Exception as e:
         logger.error({"message": "Failed to get rerankers", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/{org_id}/get/{reranker_id}")
+async def get_reranker(org_id: str, reranker_id: uuid.UUID):
+    try:
+        handler = ReRankerHandler(org_id=org_id)
+        result = await handler.get_reranker(reranker_id)
+        if not result:
+            logger.error({"message": "Failed to get reranker", "result": result})
+            return error_response("Failed to get reranker", HTTP_404_NOT_FOUND)
+        return success_response(data=result.model_dump(mode="json"))
+
+    except Exception as e:
+        logger.error({"message": "Failed to get reranker", "error": str(e)})
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 

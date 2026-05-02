@@ -8,7 +8,7 @@ import uuid
 
 
 router = APIRouter(
-    tags=["SparseTextModel"],
+    tags=["Sparse Text Model"],
     # dependencies=[Depends(verify_token)],
     responses={404: {"description": "Not found"}},
 )
@@ -44,21 +44,6 @@ async def create_multiple_sparse_text_models(org_id: str, sparse_text_models: li
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/{org_id}/get/{sparse_text_model_id}")
-async def get_sparse_text_model(org_id: str, sparse_text_model_id: uuid.UUID):
-    try:
-        handler = SparseTextModelHandler(org_id=org_id)
-        result = await handler.get_sparse_text_model(sparse_text_model_id)
-        if not result:
-            logger.error({"message": "Failed to get sparse text model", "result": result})
-            return error_response("Failed to get sparse text model", HTTP_404_NOT_FOUND)
-        return success_response(data=result.model_dump(mode="json"))
-
-    except Exception as e:
-        logger.error({"message": "Failed to get sparse text model", "error": str(e)})
-        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
-
-
 @router.get("/{org_id}/get/all")
 async def get_all_sparse_text_models(org_id: str):
     try:
@@ -72,6 +57,21 @@ async def get_all_sparse_text_models(org_id: str):
 
     except Exception as e:
         logger.error({"message": "Failed to get sparse text models", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/{org_id}/get/{sparse_text_model_id}")
+async def get_sparse_text_model(org_id: str, sparse_text_model_id: uuid.UUID):
+    try:
+        handler = SparseTextModelHandler(org_id=org_id)
+        result = await handler.get_sparse_text_model(sparse_text_model_id)
+        if not result:
+            logger.error({"message": "Failed to get sparse text model", "result": result})
+            return error_response("Failed to get sparse text model", HTTP_404_NOT_FOUND)
+        return success_response(data=result.model_dump(mode="json"))
+
+    except Exception as e:
+        logger.error({"message": "Failed to get sparse text model", "error": str(e)})
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
