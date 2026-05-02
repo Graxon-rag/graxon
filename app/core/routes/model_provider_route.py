@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider
+from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider, ModelProvider
 
 router = APIRouter(
     tags=["Model Provider"],
@@ -16,3 +16,8 @@ async def get_llm_model_provider():
 @router.get("/embedding_model")
 async def get_embedding_model_provider():
     return [e.value for e in EmbeddingModelProvider]
+
+
+@router.get("/all")
+async def get_all():
+    return [e.value for e in ModelProvider]

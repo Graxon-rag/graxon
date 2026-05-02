@@ -19,3 +19,4 @@ class ModelProvider(str, Enum):
     GEMINI = "gemini"
     DEEPSEEK = "deepseek"
     CLAUDE = "claude"
+    VOYAGE = "voyage"
