@@ -1,0 +1,161 @@
+{
+  "openai": [
+    {
+      "org_id": "dev",
+      "name": "Text Embedding 3 Small",
+      "provider": "openai",
+      "model_name": "text-embedding-3-small",
+      "model_id": "text-embedding-3-small",
+      "dimension": 1536,
+      "description": "Fast and cost-efficient embedding model suitable for semantic search, clustering, and lightweight RAG."
+    },
+    {
+      "org_id": "dev",
+      "name": "Text Embedding 3 Large",
+      "provider": "openai",
+      "model_name": "text-embedding-3-large",
+      "model_id": "text-embedding-3-large",
+      "dimension": 3072,
+      "description": "Most capable embedding model with higher accuracy for semantic search, retrieval, and complex RAG pipelines."
+    },
+    {
+      "org_id": "dev",
+      "name": "Text Embedding Ada 002",
+      "provider": "openai",
+      "model_name": "text-embedding-ada-002",
+      "model_id": "text-embedding-ada-002",
+      "dimension": 1536,
+      "description": "Legacy embedding model for semantic similarity and search; maintained for backward compatibility."
+    }
+  ],
+  "claude": [
+    {
+      "org_id": "dev",
+      "name": "Voyage 4 Large",
+      "provider": "voyage",
+      "model_name": "voyage-4-large",
+      "model_id": "voyage-4-large",
+      "dimension": 2048,
+      "description": "Best general-purpose and multilingual embedding model with top retrieval quality."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage 4",
+      "provider": "voyage",
+      "model_name": "voyage-4",
+      "model_id": "voyage-4",
+      "dimension": 2048,
+      "description": "Balanced model for general-purpose and multilingual retrieval with strong performance and efficiency."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage 4 Lite",
+      "provider": "voyage",
+      "model_name": "voyage-4-lite",
+      "model_id": "voyage-4-lite",
+      "dimension": 2048,
+      "description": "Optimized for low latency and cost-efficient embedding generation."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage 4 Nano",
+      "provider": "voyage",
+      "model_name": "voyage-4-nano",
+      "model_id": "voyage-4-nano",
+      "dimension": 2048,
+      "description": "Open-weight embedding model optimized for efficiency and flexible deployment."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage 3 Large",
+      "provider": "voyage",
+      "model_name": "voyage-3-large",
+      "model_id": "voyage-3-large",
+      "dimension": 2048,
+      "description": "Previous generation high-quality multilingual embedding model."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage 3.5",
+      "provider": "voyage",
+      "model_name": "voyage-3.5",
+      "model_id": "voyage-3.5",
+      "dimension": 2048,
+      "description": "Optimized embedding model for general-purpose multilingual retrieval."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage 3.5 Lite",
+      "provider": "voyage",
+      "model_name": "voyage-3.5-lite",
+      "model_id": "voyage-3.5-lite",
+      "dimension": 1024,
+      "description": "Cost-efficient and low-latency embedding model from the 3.5 series."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage Code 3",
+      "provider": "voyage",
+      "model_name": "voyage-code-3",
+      "model_id": "voyage-code-3",
+      "dimension": 1024,
+      "description": "Embedding model optimized specifically for code retrieval tasks."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage Finance 2",
+      "provider": "voyage",
+      "model_name": "voyage-finance-2",
+      "model_id": "voyage-finance-2",
+      "dimension": 1024,
+      "description": "Specialized embedding model for finance-related retrieval and RAG use cases."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage Law 2",
+      "provider": "voyage",
+      "model_name": "voyage-law-2",
+      "model_id": "voyage-law-2",
+      "dimension": 1024,
+      "description": "Embedding model optimized for legal and long-context retrieval tasks."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage Multimodal 3.5",
+      "provider": "voyage",
+      "model_name": "voyage-multimodal-3.5",
+      "model_id": "voyage-multimodal-3.5",
+      "dimension": 1024,
+      "description": "Multimodal embedding model supporting text, images, and video content."
+    },
+    {
+      "org_id": "dev",
+      "name": "Voyage Multimodal 3",
+      "provider": "voyage",
+      "model_name": "voyage-multimodal-3",
+      "model_id": "voyage-multimodal-3",
+      "dimension": 1024,
+      "description": "Multimodal embedding model for text and rich image content."
+    }
+  ],
+  "gemini": [
+    {
+      "org_id": "dev",
+      "name": "Gemini Embedding 001",
+      "provider": "gemini",
+      "model_name": "gemini-embedding-001",
+      "model_id": "gemini-embedding-001",
+      "dimension": 1536,
+      "description": "Text embedding model optimized for semantic search, document retrieval, and recommendation systems with flexible dimensional output."
+    },
+    {
+      "org_id": "dev",
+      "name": "Gemini Embedding 2",
+      "provider": "gemini",
+      "model_name": "gemini-embedding-2",
+      "model_id": "gemini-embedding-2",
+      "dimension": 3072,
+      "description": "Multimodal embedding model supporting text, images, video, audio, and PDFs for cross-modal search and retrieval tasks."
+    }
+  ]
+}

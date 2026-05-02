@@ -115,13 +115,14 @@ class LLMModel(Base):
 
 
 class EmbeddingModel(Base):
-    __tablename__ = "embedding_models"
+    __tablename__ = PGTables.EMBEDDING_MODEL_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     org_id: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
-    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
     dimension: Mapped[int] = mapped_column(Integer, nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
 
@@ -143,7 +144,8 @@ class EmbeddingModel(Base):
             "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
-            "model": self.model,
+            "model_name": self.model_name,
+            "model_id": self.model_id,
             "dimension": self.dimension,
             "description": self.description,
             "created_at": self.created_at,

@@ -11,7 +11,7 @@ class LLMModelProvider(str, Enum):
 class EmbeddingModelProvider(str, Enum):
     OPENAI = "openai"
     GEMINI = "gemini"
-    CLAUDE = "claude"
+    VOYAGE = "voyage"
 
 
 class ModelProvider(str, Enum):

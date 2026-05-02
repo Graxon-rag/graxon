@@ -26,7 +26,7 @@ async def create_llm_model(org_id: str, data: LLMModelCreateSchema):
         return success_response(data=result.model_dump(mode="json"))
     except Exception as e:
         logger.error({"message": "Failed to create LLM model", "error": str(e)})
-        raise e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.post("/{org_id}/create-multiple")
@@ -40,7 +40,7 @@ async def create_multiple_llm_models(org_id: str, data: list[LLMModelCreateSchem
         return success_response(data={"success": True})
     except Exception as e:
         logger.error({"message": "Failed to create LLM model", "error": str(e)})
-        raise e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get("/{org_id}/get/all/provider/{provider}")
@@ -55,7 +55,7 @@ async def get_all_llm_models(org_id: str, provider: LLMModelProvider):
         return success_response(data={"data": result_array})
     except Exception as e:
         logger.error({"message": "Failed to get LLM models", "error": str(e)})
-        raise e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.get("/{org_id}/get/{llm_model_id}")
@@ -69,7 +69,7 @@ async def get_llm_model(org_id: str, llm_model_id: uuid.UUID):
         return success_response(data=result.model_dump(mode="json"))
     except Exception as e:
         logger.error({"message": "Failed to get LLM model", "error": str(e)})
-        raise e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
 @router.delete("/{org_id}/delete/{llm_model_id}")
@@ -83,4 +83,4 @@ async def delete_llm_model(org_id: str, llm_model_id: uuid.UUID):
         return success_response(data={"success": True})
     except Exception as e:
         logger.error({"message": "Failed to delete LLM model", "error": str(e)})
-        raise e
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
