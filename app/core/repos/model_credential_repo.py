@@ -1,6 +1,7 @@
 from ..schemas.model_credential_schema import ModelCredentialGetSchema, ModelCredentialCreateSchema
 from ..databases.postgresql.models import ModelCredential
 from ..databases.postgresql.client import GPostgresqlClient
+from ..libs.model_credential_lib import ModelCredentialLibs
 from app.utils.logger import logger
 from sqlalchemy import select
 import uuid
@@ -23,6 +24,7 @@ class ModelCredentialRepo:
                 )
                 session.add(model_credential)
                 await session.commit()
+                model_credential.api_key = ModelCredentialLibs.get_hash_api_key(model_credential_input.api_key)
                 return ModelCredentialGetSchema(**model_credential.to_dict())
         except Exception as e:
             logger.error({"message": "Failed to create model credential", "error": str(e)})
@@ -38,6 +40,7 @@ class ModelCredentialRepo:
                 model_credential_model = pg_result.scalars().first()
                 if model_credential_model is None:
                     raise Exception(f"Model credential with id {model_credential_id} not found")
+                model_credential_model.api_key = ModelCredentialLibs.get_hash_api_key(model_credential_model.api_key)
                 return ModelCredentialGetSchema(**model_credential_model.to_dict())
         except Exception as e:
             logger.error({"message": "Failed to get model credential", "error": str(e)})
@@ -70,7 +73,15 @@ class ModelCredentialRepo:
                 stmt = stmt.where(ModelCredential.org_id == self.org_id)
                 pg_result = await session.execute(stmt)
                 result = pg_result.scalars().all()
-                return [ModelCredentialGetSchema(**model_credential.to_dict()) for model_credential in result]
+
+                output: list[ModelCredentialGetSchema] = []
+
+                for model_credential in result:
+                    model_credential.api_key = ModelCredentialLibs.get_hash_api_key(model_credential.api_key)
+                    data = model_credential.to_dict()
+                    output.append(ModelCredentialGetSchema(**data))
+
+                return output
         except Exception as e:
             logger.error({"message": "Failed to get all model credentials", "error": str(e)})
             raise e
