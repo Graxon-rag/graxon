@@ -59,7 +59,7 @@ async def get_reranker(org_id: str, reranker_id: uuid.UUID):
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/{org_id}/get")
+@router.get("/{org_id}/get/all")
 async def get_all_rerankers(org_id: str):
     try:
         handler = ReRankerHandler(org_id=org_id)

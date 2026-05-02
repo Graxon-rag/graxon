@@ -13,6 +13,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+
 @router.post("/{org_id}/create")
 async def create_sparse_text_model(org_id: str, sparse_text_model: SparseTextModelCreateSchema = Body(...)):
     try:
@@ -58,7 +59,7 @@ async def get_sparse_text_model(org_id: str, sparse_text_model_id: uuid.UUID):
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
-@router.get("/{org_id}/get")
+@router.get("/{org_id}/get/all")
 async def get_all_sparse_text_models(org_id: str):
     try:
         handler = SparseTextModelHandler(org_id=org_id)

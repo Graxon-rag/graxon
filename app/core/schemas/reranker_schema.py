@@ -2,6 +2,7 @@ from pydantic import BaseModel, Field
 import uuid
 import datetime
 
+
 class ReRankerCreateSchema(BaseModel):
     org_id: str = Field(
         description="The organization id of the reranker model",

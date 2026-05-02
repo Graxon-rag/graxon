@@ -2,7 +2,7 @@ from ..schemas.reranker_schema import ReRankerCreateSchema, ReRankerGetSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import ReRankerModel
 from app.utils.logger import logger
-from sqlalchemy import select, func
+from sqlalchemy import select
 import uuid
 
 
@@ -10,7 +10,6 @@ class ReRankerRepo:
     def __init__(self, org_id: str):
         self.db = GPostgresqlClient()
         self.org_id = org_id
-
 
     async def create_reranker(self, reranker: ReRankerCreateSchema) -> ReRankerGetSchema:
         try:
@@ -41,7 +40,6 @@ class ReRankerRepo:
             logger.error({"message": "Failed to create reranker", "error": str(e)})
             raise e
 
-
     async def get_reranker(self, reranker_id: uuid.UUID) -> ReRankerGetSchema:
         try:
             async with self.db.get_session() as session:
@@ -52,7 +50,6 @@ class ReRankerRepo:
         except Exception as e:
             logger.error({"message": "Failed to get reranker", "error": str(e)})
             raise e
-
 
     async def get_all_rerankers(self) -> list[ReRankerGetSchema]:
         try:
