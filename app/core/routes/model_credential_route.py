@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 
-@router.post("{org_id}/create")
+@router.post("/{org_id}/create")
 async def create_model_credential(org_id: str, model_credential: ModelCredentialCreateSchema = Body(...)):
     try:
         handler = ModelCredentialHandler(org_id=org_id)
