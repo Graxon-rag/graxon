@@ -1,6 +1,7 @@
 import uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, Uuid, JSON, Float, TIMESTAMP, Integer
+from app.constants.postgresql import PGTables
 import datetime
 
 
@@ -112,7 +113,7 @@ class EmbeddingModel(Base):
 
 
 class SparseTextModel(Base):
-    __tablename__ = "sparse_text_models"
+    __tablename__ = PGTables.SPARSE_TEXT_MODEL_TABLE
     
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     org_id: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -148,7 +149,7 @@ class SparseTextModel(Base):
         }
 
 class ReRankerModel(Base):
-    __tablename__ = "reranker_models"
+    __tablename__ = PGTables.RERANKER_MODEL_TABLE
     
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     org_id: Mapped[str] = mapped_column(String(255), nullable=False)
