@@ -25,6 +25,7 @@ from .routes.model_provider_route import router as model_provider_router
 from .routes.model_credential_route import router as model_credential_router
 from .routes.llm_model_route import router as llm_model_router
 from .routes.embedding_model_route import router as embedding_model_router
+from .routes.org_route import router as org_router
 
 
 @asynccontextmanager
@@ -99,6 +100,7 @@ app.include_router(model_provider_router, prefix="/api/model-providers")
 app.include_router(model_credential_router, prefix="/api/model-credentials")
 app.include_router(llm_model_router, prefix="/api/llm-models")
 app.include_router(embedding_model_router, prefix="/api/embedding-models")
+app.include_router(org_router, prefix="/api/orgs")
 
 
 @app.get("/")

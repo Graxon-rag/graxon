@@ -15,7 +15,7 @@ class GPostgresqlClient:
     async def init(cls) -> AsyncEngine | None:
         if cls._engine is not None:
             return cls._engine
-        
+
         max_retries = 3
         retry_interval = 5  # seconds
 
@@ -42,7 +42,7 @@ class GPostgresqlClient:
                     )
                     async with cls._engine.connect() as conn:
                         await conn.execute(text("SELECT 1"))
-                    
+
                     logger.info("Connected to Postgresql.")
                     return cls._engine
 
@@ -59,7 +59,6 @@ class GPostgresqlClient:
         if cls._engine is None:
             raise RuntimeError("PostgresqlClient not initialized.")
         return cls._engine
-
 
     @classmethod
     @asynccontextmanager
