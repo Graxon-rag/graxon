@@ -57,7 +57,7 @@ class OrgRepo:
             logger.error({"message": "Failed to get organizations", "error": str(e)})
             raise e
 
-    async def delete(self, org_id: str) -> None:
+    async def delete(self, org_id: str) -> bool:
         try:
             async with self.db.get_session() as session:
                 org = await session.scalar(select(Organization).where(Organization.id == org_id))
@@ -65,6 +65,7 @@ class OrgRepo:
                     raise Exception(f"Organization with id {org_id} not found")
                 await session.delete(org)
                 await session.commit()
+                return True
         except Exception as e:
             logger.error({"message": "Failed to delete organization", "error": str(e)})
             raise e

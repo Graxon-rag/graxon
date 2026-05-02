@@ -28,7 +28,7 @@ class OrgService:
             logger.error({"message": "Failed to get organizations", "error": str(e)})
             raise e
 
-    async def delete(self, org_id: str) -> None:
+    async def delete(self, org_id: str) -> bool:
         try:
             return await self.repo.delete(org_id)
         except Exception as e:
