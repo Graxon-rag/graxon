@@ -1,0 +1,170 @@
+{
+  "openai": [
+    {
+      "org_id": "dev",
+      "name": "GPT-5.5",
+      "provider": "openai",
+      "model_name": "GPT-5.5",
+      "model_id": "gpt-5.5",
+      "description": "A new class of intelligence for coding and professional work."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5.5 Pro",
+      "provider": "openai",
+      "model_name": "GPT-5.5 Pro",
+      "model_id": "gpt-5.5-pro",
+      "description": "More precise and advanced version of GPT-5.5."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5.4",
+      "provider": "openai",
+      "model_name": "GPT-5.4",
+      "model_id": "gpt-5.4",
+      "description": "Affordable model for coding and professional tasks."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5.4 Pro",
+      "provider": "openai",
+      "model_name": "GPT-5.4 Pro",
+      "model_id": "gpt-5.4-pro",
+      "description": "Higher precision version of GPT-5.4."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5.4 Mini",
+      "provider": "openai",
+      "model_name": "GPT-5.4 Mini",
+      "model_id": "gpt-5.4-mini",
+      "description": "Strong mini model for coding and subagents."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5.4 Nano",
+      "provider": "openai",
+      "model_name": "GPT-5.4 Nano",
+      "model_id": "gpt-5.4-nano",
+      "description": "Low-cost model for high-volume simple tasks."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5 Mini",
+      "provider": "openai",
+      "model_name": "GPT-5 Mini",
+      "model_id": "gpt-5-mini",
+      "description": "Balanced model for low latency and cost-sensitive workloads."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5 Nano",
+      "provider": "openai",
+      "model_name": "GPT-5 Nano",
+      "model_id": "gpt-5-nano",
+      "description": "Fastest and most cost-efficient GPT-5 variant."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-5",
+      "provider": "openai",
+      "model_name": "GPT-5",
+      "model_id": "gpt-5",
+      "description": "Previous generation reasoning model for coding and agent tasks."
+    },
+    {
+      "org_id": "dev",
+      "name": "GPT-4.1",
+      "provider": "openai",
+      "model_name": "GPT-4.1",
+      "model_id": "gpt-4.1",
+      "description": "High-performance non-reasoning model."
+    }
+  ],
+  "claude": [
+    {
+      "org_id": "dev",
+      "name": "Claude Opus 4.7",
+      "provider": "claude",
+      "model_name": "Claude Opus 4.7",
+      "model_id": "claude-opus-4-7",
+      "description": "Most capable model for complex reasoning and agentic coding."
+    },
+    {
+      "org_id": "dev",
+      "name": "Claude Sonnet 4.6",
+      "provider": "claude",
+      "model_name": "Claude Sonnet 4.6",
+      "model_id": "claude-sonnet-4-6",
+      "description": "Best balance of speed and intelligence."
+    },
+    {
+      "org_id": "dev",
+      "name": "Claude Haiku 4.5",
+      "provider": "claude",
+      "model_name": "Claude Haiku 4.5",
+      "model_id": "claude-haiku-4-5",
+      "description": "Fastest Claude model with near-frontier intelligence."
+    }
+  ],
+  "gemini": [
+    {
+      "org_id": "dev",
+      "name": "Gemini 3.1 Pro",
+      "provider": "gemini",
+      "model_name": "Gemini 3.1 Pro",
+      "model_id": "gemini-3.1-pro-preview",
+      "description": "Advanced intelligence model with strong reasoning, problem-solving, and agentic coding capabilities."
+    },
+    {
+      "org_id": "dev",
+      "name": "Gemini 3 Flash",
+      "provider": "gemini",
+      "model_name": "Gemini 3 Flash",
+      "model_id": "gemini-3-flash-preview",
+      "description": "Frontier-class performance with lower cost and high efficiency."
+    },
+    {
+      "org_id": "dev",
+      "name": "Gemini 3.1 Flash Lite",
+      "provider": "gemini",
+      "model_name": "Gemini 3.1 Flash Lite",
+      "model_id": "gemini-3.1-flash-lite-preview",
+      "description": "Lightweight version of Flash with strong performance and cost efficiency."
+    },
+    {
+      "org_id": "dev",
+      "name": "Gemini 2.5 Pro",
+      "provider": "gemini",
+      "model_name": "Gemini 2.5 Pro",
+      "model_id": "gemini-2.5-pro",
+      "description": "Advanced model for complex reasoning, coding, and deep problem-solving tasks."
+    },
+    {
+      "org_id": "dev",
+      "name": "Gemini 2.5 Flash",
+      "provider": "gemini",
+      "model_name": "Gemini 2.5 Flash",
+      "model_id": "gemini-2.5-flash",
+      "description": "Best price-performance model for low-latency, high-volume workloads."
+    },
+    {
+      "org_id": "dev",
+      "name": "Gemini 2.5 Flash Lite",
+      "provider": "gemini",
+      "model_name": "Gemini 2.5 Flash Lite",
+      "model_id": "gemini-2.5-flash-lite",
+      "description": "Fastest and most cost-efficient model in the Gemini 2.5 family."
+    }
+  ],
+  "deepseek": [
+    {
+      "org_id": "dev",
+      "name": "DeepSeek Chat",
+      "provider": "deepseek",
+      "model_name": "DeepSeek Chat",
+      "model_id": "deepseek-chat",
+      "description": "General-purpose conversational model optimized for chat, reasoning, and coding tasks."
+    }
+  ]
+}
