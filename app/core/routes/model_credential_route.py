@@ -2,6 +2,7 @@ from fastapi import HTTPException, APIRouter, Query, Body
 from app.utils.logger import logger
 from ..handlers.model_credential_handler import ModelCredentialHandler
 from ..schemas.model_credential_schema import ModelCredentialCreateSchema
+from app.constants.model_provider import ModelProvider
 from app.utils.response_util import success_response, error_response
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 import uuid
@@ -30,7 +31,7 @@ async def create_model_credential(org_id: str, model_credential: ModelCredential
 
 
 @router.get("/{org_id}/get/all/provider/{provider}")
-async def get_all_model_credentials(org_id: str, provider: str):
+async def get_all_model_credentials(org_id: str, provider: ModelProvider):
     try:
         handler = ModelCredentialHandler(org_id=org_id)
         result = await handler.get_all_model_credentials(provider=provider)
