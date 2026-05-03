@@ -27,6 +27,7 @@ from .routes.llm_model_route import router as llm_model_router
 from .routes.embedding_model_route import router as embedding_model_router
 from .routes.org_route import router as org_router
 from .routes.project_route import router as project_router
+from .routes.document_route import router as document_router
 
 
 @asynccontextmanager
@@ -103,6 +104,7 @@ app.include_router(llm_model_router, prefix="/api/llm-models")
 app.include_router(embedding_model_router, prefix="/api/embedding-models")
 app.include_router(org_router, prefix="/api/orgs")
 app.include_router(project_router, prefix="/api/projects")
+app.include_router(document_router, prefix="/api/documents")
 
 
 @app.get("/")

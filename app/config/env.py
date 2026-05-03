@@ -30,9 +30,9 @@ class Env:
 
     # qDrant
     QDRANT_HOST: str | None = os.getenv("QDRANT_HOST", None)
-    QDRANT_PORT: int | None = int(os.getenv("QDRANT_PORT",6333))
+    QDRANT_PORT: int | None = int(os.getenv("QDRANT_PORT", 6333))
     QDRANT_GRPC_PORT: int | None = int(os.getenv("QDRANT_GRPC_PORT", 6334))
-    
+
     # Neo4j
     NEO4J_HOST: str | None = os.getenv("NEO4J_HOST", None)
     NEO4J_PORT: int | None = int(os.getenv("NEO4J_PORT", 7687))
@@ -44,6 +44,7 @@ class Env:
     MINIO_PORT: int | None = int(os.getenv("MINIO_PORT", 9000))
     MINIO_ROOT_USER: str | None = os.getenv("MINIO_ROOT_USER", None)
     MINIO_ROOT_PASSWORD: str | None = os.getenv("MINIO_ROOT_PASSWORD", None)
+    MINIO_REGION: str | None = os.getenv("MINIO_REGION", "ap-south-1")
 
     # Rabbitmq
     RABBITMQ_HOST: str | None = os.getenv("RABBITMQ_HOST", None)

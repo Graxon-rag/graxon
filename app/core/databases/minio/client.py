@@ -20,7 +20,7 @@ class GMinioClient:
             raise RuntimeError("MINIO_HOST or MINIO_PORT is not set in environment variables")
         access_key = Env.MINIO_ROOT_USER
         secret_key = Env.MINIO_ROOT_PASSWORD
-        
+
         if access_key is None or secret_key is None:
             raise RuntimeError("MINIO_ROOT_USER or MINIO_ROOT_PASSWORD is not set in environment variables")
 
@@ -69,12 +69,12 @@ class GMinioClient:
             return False
         try:
             endpoint = f"http://{Env.MINIO_HOST}:{Env.MINIO_PORT}"
-            async with cls._session.client( # type: ignore[attr-defined]
+            async with cls._session.client(  # type: ignore[attr-defined]
                 's3',
                 endpoint_url=endpoint,
                 aws_access_key_id=Env.MINIO_ROOT_USER,
                 aws_secret_access_key=Env.MINIO_ROOT_PASSWORD,
-                region_name="us-east-1"
+                region_name=Env.MINIO_REGION
             ) as _s3:
                 s3 = cast(S3Client, _s3)
                 await s3.list_buckets()
