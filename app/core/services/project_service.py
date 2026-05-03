@@ -1,4 +1,4 @@
-from ..schemas.project_schema import ProjectCreateSchema, ProjectGetSchema
+from ..schemas.project_schema import ProjectCreateSchema, ProjectGetSchema, ProjectDetailSchema
 from ..repos.project_repo import ProjectRepo
 from app.utils.logger import logger
 import uuid
@@ -28,6 +28,13 @@ class ProjectService:
             return await self._repo.get(project_id)
         except Exception as e:
             logger.error({"message": "Failed to get project", "error": str(e)})
+            raise e
+
+    async def get_project_details(self, project_id: uuid.UUID) -> ProjectDetailSchema | None:
+        try:
+            return await self._repo.get_project_details(project_id)
+        except Exception as e:
+            logger.error({"message": "Failed to get project details", "error": str(e)})
             raise e
 
     async def delete(self, project_id: uuid.UUID) -> bool:

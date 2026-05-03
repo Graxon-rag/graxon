@@ -44,6 +44,20 @@ async def get_all_projects(org_id: str):
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 
+@router.get("/{org_id}/get/{project_id}/details")
+async def get_project_details(org_id: str, project_id: uuid.UUID):
+    try:
+        handler = ProjectHandler(org_id=org_id)
+        result = await handler.get_project_details(project_id)
+        if not result:
+            logger.error({"message": "Failed to get project details", "result": result})
+            return error_response("Failed to get project details", HTTP_404_NOT_FOUND)
+        return success_response(data=result.model_dump(mode="json"))
+    except Exception as e:
+        logger.error({"message": "Failed to get project", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
 @router.get("/{org_id}/get/{project_id}")
 async def get_project(org_id: str, project_id: uuid.UUID):
     try:

@@ -1,6 +1,7 @@
-from ..schemas.project_schema import ProjectCreateSchema, ProjectGetSchema
+from ..schemas.project_schema import ProjectCreateSchema, ProjectGetSchema, ProjectDetailSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Project
+from ..helpers.project_helper import ProjectHelper
 from ..libs.id import IDLibs
 from app.utils.logger import logger
 from sqlalchemy import select
@@ -58,6 +59,17 @@ class ProjectRepo:
                 return ProjectGetSchema(**project.to_dict())
         except Exception as e:
             logger.error({"message": "Failed to get project", "error": str(e)})
+            raise e
+
+    async def get_project_details(self, project_id: uuid.UUID) -> ProjectDetailSchema | None:
+        try:
+            project = await self.get(project_id)
+            if project is None:
+                raise Exception(f"Project with id {project_id} not found")
+            project_details = await ProjectHelper(self.org_id).get_project_details(project)
+            return project_details
+        except Exception as e:
+            logger.error({"message": "Failed to get project details", "error": str(e)})
             raise e
 
     async def get_all(self) -> list[ProjectGetSchema]:
