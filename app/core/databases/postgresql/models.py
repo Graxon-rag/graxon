@@ -1,8 +1,12 @@
 import uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer
+from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint
+from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
 import datetime
+
+
+status_constraint_string = f"status in ('{DocumentStatus.PENDING}', '{DocumentStatus.PROCESSING}', '{DocumentStatus.PROCESSED}', '{DocumentStatus.FAILED}')"
 
 
 class Base(DeclarativeBase):
@@ -77,6 +81,47 @@ class Project(Base):
             "llm_model_credential_id": self.llm_model_credential_id,
             "embedding_model_credential_id": self.embedding_model_credential_id,
             "description": self.description,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class Document(Base):
+    __tablename__ = PGTables.DOCUMENT_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    readable_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    type: Mapped[str] = mapped_column(String(255), nullable=False)
+    bucket: Mapped[str] = mapped_column(String(255), nullable=False)
+    key: Mapped[str] = mapped_column(String(255), nullable=False)
+    status: Mapped[str] = mapped_column(String(255), CheckConstraint(status_constraint_string), nullable=False)
+
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "org_id": self.org_id,
+            "project_id": self.project_id,
+            "name": self.name,
+            "readable_id": self.readable_id,
+            "type": self.type,
+            "bucket": self.bucket,
+            "key": self.key,
+            "status": self.status,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }

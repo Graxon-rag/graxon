@@ -6,6 +6,7 @@ class PGTables:
     MODEL_CREDENTIAL_TABLE: str = "model_credentials"
     LLM_MODEL_TABLE: str = "llm_models"
     EMBEDDING_MODEL_TABLE: str = "embedding_models"
+    DOCUMENT_TABLE: str = "documents"
 
 
 class PGDatabase:

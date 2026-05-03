@@ -1,13 +1,11 @@
 from app.utils.logger import logger
 from fastapi import UploadFile
-from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema
+from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema
 from ..services.project_service import ProjectService
-from ..databases.minio.client import GMinioClient
-from app.config.env import Env
+from ..repos.document_repo import DocumentRepo
+from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
-from types_aiobotocore_s3 import S3Client
 from ..libs.id import IDLibs
-from typing import cast
 import uuid
 
 
@@ -16,12 +14,35 @@ class DocumentService:
         self.org_id = org_id
         self._project_service = ProjectService(org_id=self.org_id)
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=project_id)
+        self._repo = DocumentRepo(org_id=self.org_id, project_id=project_id)
 
     async def handle_document_upload(self, data: DocumentUploadSchema, file: UploadFile) -> DocumentUploadResponseSchema:
         try:
-            return await self._handle_document_upload(data, file)
+            result = await self._handle_document_upload(data, file)
+            return result
         except Exception as e:
             logger.error({"message": "Failed to upload document", "error": str(e)})
+            raise e
+
+    async def get_all(self) -> list[DocumentGetSchema]:
+        try:
+            return await self._repo.get_all()
+        except Exception as e:
+            logger.error({"message": "Failed to get documents", "error": str(e)})
+            raise e
+
+    async def get(self, document_id: uuid.UUID) -> DocumentGetSchema | None:
+        try:
+            return await self._repo.get(document_id)
+        except Exception as e:
+            logger.error({"message": "Failed to get document", "error": str(e)})
+            raise e
+
+    async def delete(self, document_id: uuid.UUID) -> bool:
+        try:
+            return await self._repo.delete(document_id)
+        except Exception as e:
+            logger.error({"message": "Failed to delete document", "error": str(e)})
             raise e
 
     async def get_document_signed_url(self, document: DocumentGetSignedUrlSchema):
@@ -45,13 +66,28 @@ class DocumentService:
 
             (key, signed_url) = await self.minio_helper.upload_file(file, document.type, document.name, document_name_id)
 
-            return DocumentUploadResponseSchema(
+            doc_create_schema = DocumentCreateSchema(
+                org_id=self.org_id,
+                project_id=project_id,
+                readable_id=document_name_id,
+                name=document.name,
+                type=document.type,
+                bucket=self.org_id,
+                key=key,
+                status=DocumentStatus.PENDING
+            )
+
+            await self._repo.create(doc_create_schema)
+
+            result = DocumentUploadResponseSchema(
                 org_id=self.org_id,
                 project_id=project_id,
                 bucket=self.org_id,
                 key=key,
                 signed_url=signed_url
             )
+
+            return result
 
         except Exception as e:
             logger.error({"message": "Failed to upload document", "error": str(e)})

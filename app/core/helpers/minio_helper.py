@@ -90,3 +90,33 @@ class MinioHelper:
         except Exception as e:
             logger.error({"message": "Failed to get signed url", "error": str(e)})
             raise e
+
+    async def delete_file(self, bucket: str, key: str) -> bool:
+        try:
+            async with self.minio_session.client(  # type: ignore[attr-defined]
+                "s3",
+                endpoint_url=self.minio_endpoint,
+                aws_access_key_id=Env.MINIO_ROOT_USER,
+                aws_secret_access_key=Env.MINIO_ROOT_PASSWORD,
+                region_name=Env.MINIO_REGION,
+            ) as _s3_client:
+
+                s3_client = cast(S3Client, _s3_client)
+
+                # Check bucket exists
+                try:
+                    await s3_client.head_bucket(Bucket=self.bucket)
+                except Exception:
+                    raise Exception(f"Bucket {self.bucket} does not exist")
+
+                # Delete object
+                await s3_client.delete_object(
+                    Bucket=self.bucket,
+                    Key=key
+                )
+
+                return True
+
+        except Exception as e:
+            logger.error({"message": "Failed to delete file", "error": str(e)})
+            raise e

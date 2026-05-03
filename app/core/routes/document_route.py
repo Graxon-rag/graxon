@@ -1,6 +1,6 @@
 from fastapi import HTTPException, APIRouter, File, UploadFile, Query
 from ..handlers.document_handler import DocumentHandler
-from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST)
+from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
 from app.utils.logger import logger
 from app.utils.response_util import success_response, error_response
 from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema
@@ -49,6 +49,58 @@ async def upload_document(org_id: str, project_id: uuid.UUID, file: UploadFile =
             "message": "Failed to upload document",
             "error": str(e)
         })
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{org_id}/projects/{project_id}/get/all")
+async def get_all_documents(org_id: str, project_id: uuid.UUID):
+    try:
+        handler = DocumentHandler(org_id=org_id, project_id=project_id)
+        result = await handler.get_all()
+        if not result:
+            logger.error({"message": "Failed to get all documents", "result": result})
+            return error_response("Failed to get all documents", HTTP_404_NOT_FOUND)
+        result_list = [r.model_dump(mode="json") for r in result]
+        return success_response(data={"data": result_list})
+    except Exception as e:
+        logger.error({"message": "Failed to get all documents", "error": str(e)})
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.get("/{org_id}/projects/{project_id}/get/{document_id}")
+async def get_document(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    try:
+        handler = DocumentHandler(org_id=org_id, project_id=project_id)
+        result = await handler.get(document_id)
+        if not result:
+            logger.error({"message": "Failed to get document", "result": result})
+            return error_response("Failed to get document", HTTP_404_NOT_FOUND)
+        return success_response(data=result.model_dump(mode="json"))
+    except Exception as e:
+        logger.error({"message": "Failed to get document", "error": str(e)})
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.delete("/{org_id}/projects/{project_id}/delete/{document_id}")
+async def delete_document(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    try:
+        handler = DocumentHandler(org_id=org_id, project_id=project_id)
+        result = await handler.delete(document_id)
+        if not result:
+            logger.error({"message": "Failed to delete document", "result": result})
+            return error_response("Failed to delete document", HTTP_404_NOT_FOUND)
+        return success_response(data={"success": True})
+    except Exception as e:
+        logger.error({"message": "Failed to delete document", "error": str(e)})
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)

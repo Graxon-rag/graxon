@@ -1,6 +1,6 @@
 from app.utils.logger import logger
 from ..services.document_service import DocumentService
-from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema
+from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema
 from fastapi import UploadFile
 import uuid
 
@@ -15,6 +15,27 @@ class DocumentHandler:
             return await self.service.handle_document_upload(data, file)
         except Exception as e:
             logger.error({"message": "Failed to upload document", "error": str(e)})
+            raise e
+
+    async def get_all(self) -> list[DocumentGetSchema]:
+        try:
+            return await self.service.get_all()
+        except Exception as e:
+            logger.error({"message": "Failed to get documents", "error": str(e)})
+            raise e
+
+    async def get(self, document_id: uuid.UUID) -> DocumentGetSchema | None:
+        try:
+            return await self.service.get(document_id)
+        except Exception as e:
+            logger.error({"message": "Failed to get document", "error": str(e)})
+            raise e
+
+    async def delete(self, document_id: uuid.UUID) -> bool:
+        try:
+            return await self.service.delete(document_id)
+        except Exception as e:
+            logger.error({"message": "Failed to delete document", "error": str(e)})
             raise e
 
     async def get_document_signed_url(self, document: DocumentGetSignedUrlSchema):
