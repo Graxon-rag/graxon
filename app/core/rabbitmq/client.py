@@ -87,15 +87,13 @@ class GRabbitMQClient:
             logger.info("Setting up RabbitMQ policies...")
             ch = cls._channel
 
-            await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, aio_pika.ExchangeType.FANOUT, durable=True)
-            await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, aio_pika.ExchangeType.FANOUT, durable=True)
+            await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+            await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
 
             doc_queue_a = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_A, durable=True)
-            doc_queue_b = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_B, durable=True)
             dlx_queue = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_DLX, durable=True)
 
             await doc_queue_a.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
-            await doc_queue_b.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
             await dlx_queue.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
 
             pattern = "^" + GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY + "$"
@@ -104,8 +102,6 @@ class GRabbitMQClient:
             }
 
             await GRabbitMQPolicy.upsert(GQueues.DOCUMENT_PROCESSING_QUEUE_A, pattern, doc_q_definition)
-
-            await GRabbitMQPolicy.upsert(GQueues.DOCUMENT_PROCESSING_QUEUE_B, pattern, doc_q_definition)
 
             pattern = "^" + GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY + "$"
             dlx_q_definition: Dict[str, Any] = {
