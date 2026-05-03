@@ -86,7 +86,7 @@ class ModelCredential(Base):
     __tablename__ = PGTables.MODEL_CREDENTIAL_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -121,7 +121,7 @@ class LLMModel(Base):
     __tablename__ = PGTables.LLM_MODEL_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -158,7 +158,7 @@ class EmbeddingModel(Base):
     __tablename__ = PGTables.EMBEDDING_MODEL_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -197,7 +197,7 @@ class SparseTextModel(Base):
     __tablename__ = PGTables.SPARSE_TEXT_MODEL_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
@@ -234,7 +234,7 @@ class ReRankerModel(Base):
     __tablename__ = PGTables.RERANKER_MODEL_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
-    org_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model: Mapped[str] = mapped_column(String(255), nullable=False)
