@@ -90,24 +90,24 @@ class GRabbitMQClient:
             await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
             await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
 
-            doc_queue_a = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_A, durable=True)
+            doc_queue_a = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE, durable=True)
             dlx_queue = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_DLX, durable=True)
 
             await doc_queue_a.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
             await dlx_queue.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
 
-            pattern = "^" + GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY + "$"
+            pattern = "^" + GQueues.DOCUMENT_PROCESSING_QUEUE + "$"
             doc_q_definition: Dict[str, Any] = {
                 "dead-letter-exchange": GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX,
             }
 
-            await GRabbitMQPolicy.upsert(GQueues.DOCUMENT_PROCESSING_QUEUE_A, pattern, doc_q_definition)
+            await GRabbitMQPolicy.upsert(GQueues.DOCUMENT_PROCESSING_QUEUE, pattern, doc_q_definition)
 
-            pattern = "^" + GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY + "$"
+            pattern = "^" + GQueues.DOCUMENT_PROCESSING_QUEUE_DLX + "$"
             dlx_q_definition: Dict[str, Any] = {
                 "dead-letter-exchange": GExchanges.DOCUMENT_PROCESSING_EXCHANGE,
                 "dead-letter-routing-key": GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY,
-                "message-ttl": 5000,  # 5 seconds
+                "message-ttl": 1000 * 60,  # 1 minute
             }
 
             await GRabbitMQPolicy.upsert(GQueues.DOCUMENT_PROCESSING_QUEUE_DLX, pattern, dlx_q_definition)
@@ -116,3 +116,10 @@ class GRabbitMQClient:
         except Exception as e:
             logger.error(f"Failed to upsert policies: {e}")
             raise e
+
+    @classmethod
+    async def create_channel(cls) -> AbstractRobustChannel:
+        if cls._connection is None or cls._connection.is_closed:
+            raise RuntimeError("RabbitMQClient not initialized.")
+        channel = await cls._connection.channel()
+        return cast(AbstractRobustChannel, channel)

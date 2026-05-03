@@ -96,7 +96,7 @@ class DocumentRepo:
             logger.error({"message": "Failed to delete document", "error": str(e)})
             raise e
 
-    async def change_document_status(self, document_id: uuid.UUID, status: DocumentStatus):
+    async def change_document_status(self, document_id: uuid.UUID, status: DocumentStatus) -> DocumentGetSchema:
         try:
             async with self.db.get_session() as session:
                 document = await session.scalar(select(Document).where(Document.id == document_id))
@@ -107,7 +107,7 @@ class DocumentRepo:
 
                 document.status = status
                 await session.commit()
-                return True
+                return DocumentGetSchema(**document.to_dict())
         except Exception as e:
             logger.error({"message": "Failed to change document status", "error": str(e)})
             raise e

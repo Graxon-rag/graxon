@@ -3,6 +3,7 @@ from fastapi import UploadFile
 from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema
 from ..services.project_service import ProjectService
 from ..repos.document_repo import DocumentRepo
+from ..rabbitmq.producer import GMQDocumentProducer
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
 from ..libs.id import IDLibs
@@ -52,9 +53,15 @@ class DocumentService:
             logger.error({"message": "Failed to get document signed url", "error": str(e)})
             raise e
 
-    async def submit_process_document(self, document_id: uuid.UUID):
+    async def submit_process_document(self, document_id: uuid.UUID) -> bool:
         try:
-            await self._repo.change_document_status(document_id, DocumentStatus.PROCESSING)
+            document = await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
+            try:
+                await GMQDocumentProducer.publish(document)
+            except Exception as e:
+                await self._repo.change_document_status(document_id, DocumentStatus.PENDING)
+                raise e
+            return True
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
             raise e

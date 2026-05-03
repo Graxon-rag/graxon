@@ -6,7 +6,7 @@ from app.constants.postgresql import PGTables
 import datetime
 
 
-status_constraint_string = f"status in ('{DocumentStatus.PENDING}', '{DocumentStatus.PROCESSING}', '{DocumentStatus.PROCESSED}', '{DocumentStatus.FAILED}')"
+status_constraint_string = f"status in ('{DocumentStatus.PENDING}', '{DocumentStatus.PROCESSING}', '{DocumentStatus.PROCESSED}', '{DocumentStatus.FAILED}', '{DocumentStatus.QUEUED}')"
 
 
 class Base(DeclarativeBase):

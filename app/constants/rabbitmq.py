@@ -4,7 +4,7 @@ class GExchanges:
 
 
 class GQueues:
-    DOCUMENT_PROCESSING_QUEUE_A = "document_processing_queue_a"
+    DOCUMENT_PROCESSING_QUEUE = "document_processing_queue"
     DOCUMENT_PROCESSING_QUEUE_DLX = "document_processing_queue_dlx"
 
 

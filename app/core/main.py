@@ -15,6 +15,7 @@ from .databases.redis.client import GRedisClient
 from .databases.neo4j.client import GNeo4jClient
 from .databases.qdrant.client import GQdrantClient
 from .rabbitmq.client import GRabbitMQClient
+from .rabbitmq.consumer import GMQDocumentConsumer
 import asyncio
 
 
@@ -29,6 +30,12 @@ from .routes.org_route import router as org_router
 from .routes.project_route import router as project_router
 from .routes.document_route import router as document_router
 
+load_dotenv()
+load_imp_env()
+
+DOCUMENT_CONSUMER_COUNT = int(os.getenv("DOCUMENT_CONSUMER_COUNT", 5))
+print("DOCUMENT_CONSUMER_COUNT: ", DOCUMENT_CONSUMER_COUNT)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -42,8 +49,14 @@ async def lifespan(app: FastAPI):
         GQdrantClient.init(),
         GRabbitMQClient.init()
     )
+    doc_consumers = [GMQDocumentConsumer() for _ in range(DOCUMENT_CONSUMER_COUNT)]
+    tasks = [asyncio.create_task(c.consume()) for c in doc_consumers]
 
     yield
+
+    for task in tasks:
+        task.cancel()
+    await asyncio.gather(*tasks, return_exceptions=True)
 
     await asyncio.gather(
         GRedisClient.close(),
@@ -60,8 +73,6 @@ limiter = Limiter(key_func=get_remote_address)
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore
 
-load_dotenv()
-load_imp_env()
 
 # CORS middleware
 CLIENTS = os.getenv("CLIENTS", "").split(",")

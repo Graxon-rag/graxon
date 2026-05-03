@@ -127,10 +127,14 @@ async def get_document_signed_url(org_id: str, project_id: uuid.UUID, bucket: st
 
 
 @router.post("/{org_id}/projects/{project_id}/process/{document_id}")
-async def submit_process_document(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, background_tasks: BackgroundTasks,):
+async def submit_process_document(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
     try:
         handler = DocumentHandler(org_id=org_id, project_id=project_id)
-        background_tasks.add_task(handler.submit_process_document, document_id)
+        result = await handler.submit_process_document(document_id)
+
+        if not result:
+            logger.error({"message": "Failed to process document", "result": result})
+            return error_response("Failed to process document", HTTP_404_NOT_FOUND)
 
         return success_response(data={"Accepted": True}, message="Accepted", status_code=202)
     except Exception as e:
