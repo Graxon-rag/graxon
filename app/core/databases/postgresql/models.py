@@ -1,6 +1,6 @@
 import uuid
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from sqlalchemy import String, Uuid, JSON, Float, TIMESTAMP, Integer
+from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer
 from app.constants.postgresql import PGTables
 import datetime
 
@@ -41,12 +41,16 @@ class Project(Base):
     __tablename__ = PGTables.PROJECT_TABLE
 
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    readable_id: Mapped[str] = mapped_column(String(100), nullable=False, index=True)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
-    llm_model_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    embedding_model_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    sparse_text_model_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
-    reranker_model_id: Mapped[uuid.UUID] = mapped_column(Uuid, nullable=False)
+    llm_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("llm_models.id", ondelete="RESTRICT"), nullable=False)
+    embedding_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("embedding_models.id", ondelete="RESTRICT"), nullable=False)
+    sparse_text_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sparse_text_models.id", ondelete="RESTRICT"), nullable=False)
+    reranker_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reranker_models.id", ondelete="RESTRICT"), nullable=False)
+    llm_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=False)
+    embedding_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=False)
 
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -63,7 +67,15 @@ class Project(Base):
     def to_dict(self):
         return {
             "id": self.id,
+            "org_id": self.org_id,
+            "readable_id": self.readable_id,
             "name": self.name,
+            "llm_model_id": self.llm_model_id,
+            "embedding_model_id": self.embedding_model_id,
+            "sparse_text_model_id": self.sparse_text_model_id,
+            "reranker_model_id": self.reranker_model_id,
+            "llm_model_credential_id": self.llm_model_credential_id,
+            "embedding_model_credential_id": self.embedding_model_credential_id,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
