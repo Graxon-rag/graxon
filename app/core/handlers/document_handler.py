@@ -44,3 +44,10 @@ class DocumentHandler:
         except Exception as e:
             logger.error({"message": "Failed to get document signed url", "error": str(e)})
             raise e
+
+    async def submit_process_document(self, document_id: uuid.UUID):
+        try:
+            return await self.service.submit_process_document(document_id)
+        except Exception as e:
+            logger.error({"message": "Failed to process document", "error": str(e)})
+            raise e

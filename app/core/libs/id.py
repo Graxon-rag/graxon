@@ -52,7 +52,7 @@ class IDLibs:
     def generate_chunk_id(document_id: str) -> str:
         """
         Format: <document_id>_chunk_<4-char-random>
-        Example: ecommercep_x4k2_doc_m9p3_chk_r7w1
+        Example: ecommercep_x4k2_doc_m9p3_chunk_r7w1
         """
         return f"{document_id}_chunk_{IDLibs.short_id(4)}"
 

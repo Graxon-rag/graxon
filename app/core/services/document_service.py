@@ -52,6 +52,13 @@ class DocumentService:
             logger.error({"message": "Failed to get document signed url", "error": str(e)})
             raise e
 
+    async def submit_process_document(self, document_id: uuid.UUID):
+        try:
+            await self._repo.change_document_status(document_id, DocumentStatus.PROCESSING)
+        except Exception as e:
+            logger.error({"message": "Failed to process document", "error": str(e)})
+            raise e
+
     async def _handle_document_upload(self, document: DocumentUploadSchema, file: UploadFile) -> DocumentUploadResponseSchema:
         try:
             project_id = document.project_id

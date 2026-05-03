@@ -2,6 +2,7 @@ from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
 from ..helpers.minio_helper import MinioHelper
+from app.constants.document import DocumentStatus
 from app.utils.logger import logger
 from sqlalchemy import select
 import uuid
@@ -93,4 +94,20 @@ class DocumentRepo:
                 return True
         except Exception as e:
             logger.error({"message": "Failed to delete document", "error": str(e)})
+            raise e
+
+    async def change_document_status(self, document_id: uuid.UUID, status: DocumentStatus):
+        try:
+            async with self.db.get_session() as session:
+                document = await session.scalar(select(Document).where(Document.id == document_id))
+                if document is None:
+                    raise Exception(f"Document with id {document_id} not found")
+
+                logger.info({"message": "Changing document status", "document_id": document_id, "status": status})
+
+                document.status = status
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error({"message": "Failed to change document status", "error": str(e)})
             raise e

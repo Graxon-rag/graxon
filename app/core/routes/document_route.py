@@ -1,4 +1,4 @@
-from fastapi import HTTPException, APIRouter, File, UploadFile, Query
+from fastapi import HTTPException, APIRouter, File, UploadFile, Query, BackgroundTasks
 from ..handlers.document_handler import DocumentHandler
 from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
 from app.utils.logger import logger
@@ -120,6 +120,21 @@ async def get_document_signed_url(org_id: str, project_id: uuid.UUID, bucket: st
         return await handler.get_document_signed_url(document)
     except Exception as e:
         logger.error({"message": "Failed to get document signed url", "error": str(e)})
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.post("/{org_id}/projects/{project_id}/process/{document_id}")
+async def submit_process_document(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, background_tasks: BackgroundTasks,):
+    try:
+        handler = DocumentHandler(org_id=org_id, project_id=project_id)
+        background_tasks.add_task(handler.submit_process_document, document_id)
+
+        return success_response(data={"Accepted": True}, message="Accepted", status_code=202)
+    except Exception as e:
+        logger.error({"message": "Failed to process document", "error": str(e)})
         raise HTTPException(
             status_code=HTTP_500_INTERNAL_SERVER_ERROR,
             detail=str(e)
