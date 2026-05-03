@@ -57,13 +57,20 @@ class DocumentService:
         try:
             document = await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
             try:
-                await GMQDocumentProducer.publish(document)
+                await GMQDocumentProducer.publish_to_processing_exchange(document)
             except Exception as e:
                 await self._repo.change_document_status(document_id, DocumentStatus.PENDING)
                 raise e
             return True
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
+            raise e
+
+    async def change_document_status(self, document_id: uuid.UUID, status: DocumentStatus):
+        try:
+            return await self._repo.change_document_status(document_id, status)
+        except Exception as e:
+            logger.error({"message": "Failed to change document status", "error": str(e)})
             raise e
 
     async def _handle_document_upload(self, document: DocumentUploadSchema, file: UploadFile) -> DocumentUploadResponseSchema:

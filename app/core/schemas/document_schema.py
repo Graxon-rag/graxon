@@ -117,3 +117,18 @@ class DocumentGetSchema(BaseModel):
     updated_at: datetime.datetime = Field(
         description="The updated at of the document",
     )
+
+
+class DocumentStatusMQSchema(BaseModel):
+    org_id: str = Field(
+        description="The organization id of the document",
+    )
+    project_id: uuid.UUID = Field(
+        description="The project id of the document",
+    )
+    id: uuid.UUID = Field(
+        description="The id of the document",
+    )
+    status: DocumentStatus = Field(
+        description="The status of the document",
+    )

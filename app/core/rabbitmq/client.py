@@ -87,15 +87,22 @@ class GRabbitMQClient:
             logger.info("Setting up RabbitMQ policies...")
             ch = cls._channel
 
+            # Declare exchanges
             await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
             await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
+            await ch.declare_exchange(GExchanges.DOCUMENT_STATUS_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
 
+            # Declare queues
             doc_queue_a = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE, durable=True)
             dlx_queue = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_DLX, durable=True)
+            doc_status_queue = await ch.declare_queue(GQueues.DOCUMENT_STATUS_QUEUE, durable=True)
 
+            # Bind queues
             await doc_queue_a.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
             await dlx_queue.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
+            await doc_status_queue.bind(GExchanges.DOCUMENT_STATUS_EXCHANGE, GRoutingKeys.DOCUMENT_STATUS_ROUTING_KEY)
 
+            # Set policies
             pattern = "^" + GQueues.DOCUMENT_PROCESSING_QUEUE + "$"
             doc_q_definition: Dict[str, Any] = {
                 "dead-letter-exchange": GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX,

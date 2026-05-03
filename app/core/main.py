@@ -50,7 +50,10 @@ async def lifespan(app: FastAPI):
         GRabbitMQClient.init()
     )
     doc_consumers = [GMQDocumentConsumer() for _ in range(DOCUMENT_CONSUMER_COUNT)]
-    tasks = [asyncio.create_task(c.consume()) for c in doc_consumers]
+    tasks = [asyncio.create_task(c.consume_document_processing_queue()) for c in doc_consumers]
+
+    # Start One Consumer for Document Status
+    tasks.append(asyncio.create_task(GMQDocumentConsumer().consume_document_status_queue()))
 
     yield
 
