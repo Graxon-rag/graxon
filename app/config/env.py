@@ -51,3 +51,4 @@ class Env:
     RABBITMQ_PORT: int | None = int(os.getenv("RABBITMQ_PORT", 5672))
     RABBITMQ_USER: str | None = os.getenv("RABBITMQ_USER", None)
     RABBITMQ_PASSWORD: str | None = os.getenv("RABBITMQ_PASSWORD", None)
+    RABBITMQ_MANAGEMENT_PORT: int | None = int(os.getenv("RABBITMQ_MANAGEMENT_PORT", 15672))
