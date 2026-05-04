@@ -1,0 +1,12 @@
+from abc import ABC, abstractmethod
+from langchain_core.documents import Document
+
+
+class BaseReranker(ABC):
+
+    @abstractmethod
+    async def rerank(self, query: str, docs: list[Document], top_k: int = 10, **kwargs) -> list[Document]:
+        """
+        Rerank documents
+        """
+        raise NotImplementedError
