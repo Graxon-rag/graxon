@@ -1,4 +1,3 @@
-from fastembed import TextEmbedding
 from fastembed.rerank.cross_encoder import TextCrossEncoder
 from langchain_core.documents import Document
 from app.utils.logger import logger
@@ -13,7 +12,7 @@ class FastEmbedReranker(BaseReranker):
 
         print("FastEmbed models loaded")
 
-    async def rerank(self, query: str, docs: list[Document], top_k: int = 10, **kwargs) -> list[Document]:
+    def rerank(self, query: str, docs: list[Document], top_k: int = 10, **kwargs) -> list[Document]:
         try:
             if not docs:
                 return []
