@@ -4,8 +4,10 @@ from app.constants.rabbitmq import GQueues
 from ..services.document_service import DocumentService
 from ..schemas.document_schema import DocumentGetSchema, DocumentStatusMQSchema
 from app.constants.document import DocumentStatus
-from .producer import GMQDocumentProducer
 from aio_pika.abc import AbstractIncomingMessage
+from .producer import GMQDocumentProducer
+from ..workflow.document_workflow import DocumentWorkflow
+import uuid
 
 
 class GMQDocumentConsumer:
@@ -60,7 +62,7 @@ class GMQDocumentConsumer:
                     await message.ack()  # ack to drop it permanently, not reject/nack
                     return
 
-                await self._process(document)
+                await self._process_document(document)
 
                 await message.ack()  # We are done with the message
             except Exception as e:
@@ -95,5 +97,8 @@ class GMQDocumentConsumer:
         except Exception:
             return 0
 
-    async def _process(self, document: DocumentGetSchema):
-        raise NotImplementedError
+    async def _process_document(self, document: DocumentGetSchema):
+        org_id: str = document.org_id
+        project_id: uuid.UUID = document.project_id
+        document_id: uuid.UUID = document.id
+        await DocumentWorkflow(org_id=org_id, project_id=project_id, document_id=document_id).process(document)
