@@ -9,6 +9,7 @@ from .helpers.service_helper import (
     ModelCredentialServiceHelper,
 )
 from .helpers.model_provider_helper import ModelProviderHelper
+from .lgraph.graph import Graph
 
 from app.utils.logger import logger
 import uuid
@@ -22,8 +23,8 @@ class DocumentWorkflow:
 
     async def process(self, document: DocumentGetSchema):
         try:
-            pass
-            # providers = await self._get_providers()
+            providers = await self._get_providers()
+            return await Graph(org_id=self.org_id, project_id=self.project_id).ingest_document(document, providers)
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
             raise e
@@ -77,20 +78,20 @@ class DocumentWorkflow:
                 llm=LLMProviderSchema(
                     provider=llm_model_provider,
                     api_key=llm_model_credential.api_key,
-                    model=llm_model.model_name,
+                    model=llm_model.model_id,
                 ),
                 embedding=EmbeddingProviderSchema(
                     provider=embedding_model_provider,
                     api_key=embedding_model_credential.api_key,
-                    model=embedding_model.model_name,
+                    model=embedding_model.model_id,
                 ),
                 sparse_model=SparseModelProviderSchema(
                     provider=sparse_text_model.provider,
-                    model=sparse_text_model.name,
+                    model=sparse_text_model.model,
                 ),
                 reranker=RerankerProviderSchema(
                     provider=reranker.provider,
-                    model=reranker.name,
+                    model=reranker.model,
                 ),
             )
         except Exception as e:

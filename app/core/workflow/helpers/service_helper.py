@@ -97,7 +97,8 @@ class ModelCredentialServiceHelper:
 
     async def get_model_credential(self, model_credential_id: uuid.UUID) -> ModelCredentialGetSchema:
         try:
-            model_credential = await self._service.get_model_credential(model_credential_id)
+            # is_external_call=False because we don't want to hash the api key
+            model_credential = await self._service.get_model_credential(model_credential_id, is_external_call=False)
             if not model_credential:
                 raise Exception(f"Model credential with id {model_credential_id} not found")
             return model_credential

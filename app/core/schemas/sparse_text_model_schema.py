@@ -4,7 +4,7 @@ import datetime
 
 
 class SparseTextModelCreateSchema(BaseModel):
-    
+
     org_id: str = Field(
         description="The organization id of the sparse text model",
     )
@@ -26,7 +26,7 @@ class SparseTextModelCreateSchema(BaseModel):
 
 
 class SparseTextModelGetSchema(BaseModel):
-    
+
     id: uuid.UUID = Field(
         description="The id of the sparse text model",
     )
