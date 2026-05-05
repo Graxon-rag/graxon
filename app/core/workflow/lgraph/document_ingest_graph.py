@@ -1,9 +1,11 @@
 from langgraph.graph import StateGraph, START, END
 from typing import TypedDict
 from app.core.schemas.document_schema import DocumentGetSchema
+from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
 from app.utils.logger import logger
 import uuid
+import os
 
 
 SUPERVISOR_AGENT = "supervisor_agent"
@@ -20,6 +22,8 @@ class DIGState(TypedDict):
     request_id: str
     document: DocumentGetSchema
     providers: ProviderSchema
+
+    temp_path: str | None
 
 
 class DocumentIngestGraph:
@@ -65,7 +69,24 @@ class DocumentIngestGraph:
             pass
 
     async def _supervisor_agent(self, state: DIGState):
-        pass
+        try:
+            document = state["document"]
+            bucket = document.bucket
+            key = document.key
+            download_path = self._get_temp_path()
+
+            # Update state so we can delete the temp folder
+            state["temp_path"] = download_path
+
+            logger.info({"message": "Downloading document", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "path": download_path})
+
+            await MinioHelper(self.org_id, self.project_id).download_file(bucket=bucket, key=key, download_path=download_path, file_name=document.name)
+
+            logger.info({"message": "Document downloaded successfully", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "path": download_path})
+
+        except Exception as e:
+            logger.error({"message": "Failed to run supervisor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+            pass
 
     async def _llm_agent(self, state: DIGState):
         pass
@@ -78,3 +99,14 @@ class DocumentIngestGraph:
 
     async def _database_agent(self, state: DIGState):
         pass
+
+    def _get_temp_path(self) -> str:
+        base_tmp_path = "/tmp/graxon"
+
+        # Create unique folder using UUID
+        run_id = str(uuid.uuid4())
+        run_path = os.path.join(base_tmp_path, run_id)
+
+        # Ensure directory exists
+        os.makedirs(run_path, exist_ok=True)
+        return run_path
