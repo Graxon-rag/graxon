@@ -130,9 +130,8 @@ class MinioHelper:
                 aws_access_key_id=Env.MINIO_ROOT_USER,
                 aws_secret_access_key=Env.MINIO_ROOT_PASSWORD,
                 region_name=Env.MINIO_REGION,
-            ) as _s3_client:
-
-                s3_client = cast(S3Client, _s3_client)
+            ) as s3_client:
+                s3_client = cast(S3Client, s3_client)
 
                 # Ensure bucket exists
                 try:
@@ -140,32 +139,27 @@ class MinioHelper:
                 except Exception:
                     raise Exception(f"Bucket {bucket} does not exist")
 
-                # File path
+                # Resolve file path
                 file_name = file_name or os.path.basename(key)
                 full_path = os.path.join(download_path, file_name)
-
-                # Ensure directory exists
                 os.makedirs(download_path, exist_ok=True)
 
                 # Get object
-                response = await s3_client.get_object(
-                    Bucket=bucket,
-                    Key=key,
-                )
+                response = await s3_client.get_object(Bucket=bucket, Key=key)
 
-                async with response["Body"] as stream:
+                # Try iter_chunks first, fallback to full read
+                try:
                     with open(full_path, "wb") as f:
-                        while True:
-                            chunk = await stream.read()  # full internal buffer
-                            if not chunk:
-                                break
-
-                            # split manually to avoid large writes
-                            for i in range(0, len(chunk), 1024 * 1024):
-                                f.write(chunk[i:i + 1024 * 1024])
+                        async for chunk in response["Body"].iter_chunks(1024 * 1024):
+                            f.write(chunk)
+                except AttributeError:
+                    # iter_chunks not available — read full body
+                    body = await response["Body"].read()
+                    with open(full_path, "wb") as f:
+                        f.write(body)
 
                 return full_path
 
         except Exception as e:
             logger.error({"message": "Failed to download file", "error": str(e)})
-            raise e
+        raise

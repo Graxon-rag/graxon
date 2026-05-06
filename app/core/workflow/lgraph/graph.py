@@ -30,8 +30,11 @@ class Graph:
             if workflow is None:
                 raise Exception("Workflow is None")
 
+            temp_path = None
+
             try:
                 result = await workflow.ainvoke(initial_state)
+                temp_path = result.get("temp_path")
                 return result
             except Exception as e:
                 logger.error({"message": "Failed to ingest document", "error": str(e)})
@@ -39,8 +42,9 @@ class Graph:
             finally:
                 # Delete temp folder
                 import shutil
-                if path := initial_state.get("temp_path"):
-                    shutil.rmtree(path, ignore_errors=True)
+                if temp_path:
+                    shutil.rmtree(temp_path, ignore_errors=True)
+                    logger.info({"message": "Deleted temp folder", "path": temp_path})
 
         except Exception as e:
             logger.error({"message": "Failed to ingest document", "error": str(e)})
