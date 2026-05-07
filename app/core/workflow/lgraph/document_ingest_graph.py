@@ -6,6 +6,7 @@ from ..schemas.provider_schema import ProviderSchema
 from .processor.processor_factory import ProcessorFactory
 from ..schemas.chunk_schema import Chunk
 from app.utils.logger import logger
+from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from typing import Dict, List, Optional
 from langchain_core.documents import Document
 import uuid
@@ -156,7 +157,22 @@ class DocumentIngestGraph:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 raise
 
-            print("Chunks: ", len(chunks))
+            providers = state["providers"]
+            llm_provider = providers.llm.provider
+            api_key = providers.llm.api_key
+            model = providers.llm.model
+
+            kwargs = {}
+            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model, kwargs=kwargs)
+
+            for chunk in chunks:
+                try:
+
+                    logger.info({"message": "LLM chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                    pass
+                except Exception as e:
+                    logger.error({"message": "Failed to run LLM agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+
         except Exception as e:
             logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
@@ -167,7 +183,22 @@ class DocumentIngestGraph:
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 raise
-            print("Chunks: ", len(chunks))
+
+            providers = state["providers"]
+            embedder_provider = providers.embedding.provider
+            api_key = providers.embedding.api_key
+            model = providers.embedding.model
+
+            kwargs = {}
+            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, kwargs=kwargs)
+            for chunk in chunks:
+                try:
+                    # em_vector: list[float] = await embedder.aembed(chunk.text)
+                    logger.info({"message": "Embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                    pass
+                except Exception as e:
+                    logger.error({"message": "Failed to run embedding agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+                    pass
         except Exception as e:
             logger.error({"message": "Failed to run embedding agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
@@ -178,7 +209,20 @@ class DocumentIngestGraph:
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 raise
-            print("Chunks: ", len(chunks))
+            providers = state["providers"]
+            sparse_provider = providers.sparse_model.provider
+            sparse_model = providers.sparse_model.model
+
+            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
+            for chunk in chunks:
+                try:
+                    # em_vector: list[float] = await embedder.aembed(chunk.text)
+                    logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                    pass
+                except Exception as e:
+                    logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+                    pass
+
         except Exception as e:
             logger.error({"message": "Failed to run sparse agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
