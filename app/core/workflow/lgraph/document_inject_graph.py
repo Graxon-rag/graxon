@@ -39,7 +39,7 @@ class DIGState(TypedDict):
     chunks: Optional[List[Chunk] | None]
 
 
-class DocumentIngestGraph:
+class DocumentInjectGraph:
     def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
@@ -216,7 +216,7 @@ class DocumentIngestGraph:
             sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
             for chunk in chunks:
                 try:
-                    # em_vector: list[float] = await embedder.aembed(chunk.text)
+                    # em_vector = sparse_embedder.embed(chunk.text)
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                     pass
                 except Exception as e:

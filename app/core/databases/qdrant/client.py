@@ -2,7 +2,10 @@ import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
 from app.config.env import Env
+from app.constants.qdrant import QDrant
+from qdrant_client import models
 from app.utils.logger import logger
+
 
 class GQdrantClient:
     _instance: AsyncQdrantClient | None = None
@@ -15,7 +18,7 @@ class GQdrantClient:
 
         host = Env.QDRANT_HOST
         port = Env.QDRANT_PORT
-        grpc_port = Env.QDRANT_GRPC_PORT or 6334 # gRPC is faster for high-volume ops
+        grpc_port = Env.QDRANT_GRPC_PORT or 6334  # gRPC is faster for high-volume ops
 
         max_retries = 3
         retry_interval = 5
@@ -29,7 +32,7 @@ class GQdrantClient:
                     host=host,
                     port=port,
                     grpc_port=grpc_port,
-                    prefer_grpc=True, # Set to True for better performance
+                    prefer_grpc=True,  # Set to True for better performance
                     timeout=10
                 )
 
@@ -51,6 +54,18 @@ class GQdrantClient:
                     raise e
 
     @classmethod
+    async def create_collection(cls):
+        if cls._instance is None:
+            raise RuntimeError("GQdrantClient not initialized. Call init() first.")
+        client = cls._instance
+        await client.create_collection(
+            collection_name=QDrant.GRAXON_COLLECTION,
+            sparse_vectors_config={
+                "sparse": models.SparseVectorParams(),
+            }
+        )
+
+    @classmethod
     def get_client(cls) -> AsyncQdrantClient:
         """Returns the initialized Qdrant instance."""
         if cls._instance is None:
@@ -64,7 +79,7 @@ class GQdrantClient:
             return False
         try:
             # Qdrant's internal health check
-            result =  await cls._instance.get_collections()
+            result = await cls._instance.get_collections()
             if result:
                 return True
             return False

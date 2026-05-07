@@ -24,7 +24,7 @@ class DocumentWorkflow:
     async def process(self, document: DocumentGetSchema):
         try:
             providers = await self._get_providers()
-            return await Graph(org_id=self.org_id, project_id=self.project_id).ingest_document(document, providers)
+            return await Graph(org_id=self.org_id, project_id=self.project_id).inject_document(document, providers)
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
             raise e
