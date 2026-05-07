@@ -2,6 +2,7 @@ from .document_ingest_graph import DocumentIngestGraph, DIGState
 from app.utils.logger import logger
 from app.core.schemas.document_schema import DocumentGetSchema
 from ..schemas.provider_schema import ProviderSchema
+from app.config.env import Env
 import uuid
 
 
@@ -25,7 +26,11 @@ class Graph:
                 "document_id": document.id,
                 "document": document,
                 "providers": providers,
-                "temp_path": None
+                "temp_path": None,
+                "file_path": None,
+                "chunk_size": Env.CHUNK_SIZE,
+                "chunk_overlap": Env.CHUNK_OVERLAP,
+                "chunks": None,
             }
             if workflow is None:
                 raise Exception("Workflow is None")

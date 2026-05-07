@@ -55,5 +55,5 @@ class Env:
     DOCUMENT_CONSUMER_COUNT: int = int(os.getenv("DOCUMENT_CONSUMER_COUNT", 5))
 
     # Chunks
-    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1000))
+    CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1500))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 200))
