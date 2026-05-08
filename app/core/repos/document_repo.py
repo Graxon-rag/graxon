@@ -2,6 +2,7 @@ from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
 from ..helpers.minio_helper import MinioHelper
+from app.constants.minio import MinioConstant
 from app.constants.document import DocumentStatus
 from app.utils.logger import logger
 from sqlalchemy import select
@@ -91,6 +92,14 @@ class DocumentRepo:
 
                 await session.delete(document)
                 await session.commit()
+
+                try:
+                    lexical_engine_output_file = MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE
+                    key = f"{self.project_id}/{document.readable_id}/{lexical_engine_output_file}.json"
+                    await self.minio_helper.delete_file(bucket=bucket, key=key)
+                except Exception as e:
+                    logger.warning({"message": "Failed to delete lexical engine output file", "error": str(e)})
+
                 return True
         except Exception as e:
             logger.error({"message": "Failed to delete document", "error": str(e)})
