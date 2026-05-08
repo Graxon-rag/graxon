@@ -67,7 +67,7 @@ class DocumentQueryGraph():
             # Fan-out: trigger both in parallel after query expansion
             graph.add_conditional_edges(
                 QUERY_EXPANSION_AGENT,
-                self._fan_out_embeddings,   # <-- router function
+                self._fan_out_embeddings,
                 [EMBEDDING_AGENT, SPARSE_EMBEDDING_AGENT]
             )
 
@@ -91,8 +91,11 @@ class DocumentQueryGraph():
             raise e
 
     # -- Router: fans out to BOTH nodes simultaneously --
-    def _fan_out_embeddings(self, state: DQGState) -> list[str]:
-        return [EMBEDDING_AGENT, SPARSE_EMBEDDING_AGENT]
+    def _fan_out_embeddings(self, state: DQGState) -> list[Send]:
+        return [
+            Send(EMBEDDING_AGENT, state),
+            Send(SPARSE_EMBEDDING_AGENT, state),
+        ]
 
     async def _supervisor(self, state: DQGState):
         try:

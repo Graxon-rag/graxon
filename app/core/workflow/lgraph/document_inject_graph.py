@@ -90,7 +90,11 @@ class DocumentInjectGraph:
             graph.add_edge(LLM_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(EMBEDDING_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(SPARSE_AGENT, CHUNK_PROCESSOR_AGENT)
-            graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)            
+            graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)
+
+            graph.add_edge(CHUNK_PROCESSOR_AGENT, DATABASE_AGENT)
+
+            graph.add_edge(DATABASE_AGENT, END)
 
             workflow = graph.compile()
             mermaid = workflow.get_graph().draw_mermaid()
