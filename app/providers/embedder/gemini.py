@@ -2,18 +2,39 @@ from langchain_google_genai.embeddings import GoogleGenerativeAIEmbeddings
 from app.utils.logger import logger
 from pydantic import SecretStr
 from .base import BaseEmbedder
+import asyncio
 
 
 class GeminiEmbedder(BaseEmbedder):
-    def __init__(self, api_key: str, model: str = "gemini-embedding-001", **kwargs):
+    def __init__(self, api_key: str, model: str = "gemini-embedding-001", dimension: int = 1536, **kwargs):
         if not api_key:
             raise ValueError("Gemini API key is required")
 
         self._embedder = GoogleGenerativeAIEmbeddings(api_key=SecretStr(api_key), model=model, **kwargs)
+        self._dimension = dimension
 
     async def aembed(self, text: str, **kwargs) -> list[float]:
-        try:
-            return await self._embedder.aembed_query(text, **kwargs)
-        except Exception as e:
-            logger.error({"message": "Failed to embed text via Gemini", "error": str(e)})
-            raise e
+        retry_count = 0
+        max_retries = 3
+        base_delay = 1  # Starting delay in seconds
+
+        while retry_count < max_retries:
+            try:
+                return await self._embedder.aembed_query(text, output_dimensionality=self._dimension, **kwargs)
+
+            except Exception as e:
+                retry_count += 1
+                logger.warning({
+                    "message": f"Embedding attempt {retry_count} failed",
+                    "error": str(e),
+                    "text_snippet": text[:50]
+                })
+
+                if retry_count >= max_retries:
+                    logger.error({"message": "Max retries reached. Failed to embed text via Gemini.", "error": str(e)})
+                    raise e
+
+                # Exponential backoff: 1s, 2s, 4s...
+                await asyncio.sleep(base_delay * (2 ** (retry_count - 1)))
+
+        return []
