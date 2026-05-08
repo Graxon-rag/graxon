@@ -4,6 +4,7 @@ from ..databases.postgresql.models import Document
 from ..helpers.minio_helper import MinioHelper
 from app.constants.minio import MinioConstant
 from app.constants.document import DocumentStatus
+from ..qdrant.delete import QDrantCleaner
 from app.utils.logger import logger
 from sqlalchemy import select
 import uuid
@@ -15,6 +16,7 @@ class DocumentRepo:
         self.org_id = org_id
         self.project_id = project_id
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=self.project_id)
+        self.qdrant_cleaner = QDrantCleaner(org_id=self.org_id, project_id=self.project_id)
 
     async def create(self, doc: DocumentCreateSchema) -> DocumentGetSchema:
         try:

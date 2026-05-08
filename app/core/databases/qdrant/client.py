@@ -2,8 +2,9 @@ import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
 from app.config.env import Env
-from app.constants.qdrant import QDrantCollection, QDrantGeminiConfig, QDrantOpenAIConfig, QDrantVoyageConfig
+from app.constants.qdrant import QDrantCollection, QDrantGeminiConfig, QDrantOpenAIConfig, QDrantVoyageConfig, QDrant_MODEL_MAP
 from qdrant_client import models
+from typing import Tuple
 from app.utils.logger import logger
 
 
@@ -131,3 +132,14 @@ class GQdrantClient:
             await cls._instance.close()
             cls._instance = None
             logger.info("Qdrant client connection closed.")
+
+    @classmethod
+    def _get_collection_vector_name(cls, model_key: str) -> Tuple[str, str]:
+        try:
+            result = QDrant_MODEL_MAP.get(model_key)
+            if not result:
+                raise Exception("Invalid model key, model key should be provider_dimension like gemini_1536")
+            return result
+        except Exception as e:
+            logger.error({"message": "Failed to get collection vector name", "error": str(e)})
+            raise e

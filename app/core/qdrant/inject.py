@@ -22,7 +22,7 @@ class QdrantInjector:
             sparse_map = {e.chunk_id: e.embedding for e in chunk_sparse_embeddings}
             chunk_map = {c.chunk_id: c for c in chunks}
 
-            coll, dense_vector_name = self._get_collection_vector_name(model_key)
+            coll, dense_vector_name = GQdrantClient._get_collection_vector_name(model_key)
             client = GQdrantClient.get_client()
 
             points: list[PointStruct] = []
@@ -80,14 +80,4 @@ class QdrantInjector:
 
         except Exception as e:
             logger.error({"message": "Failed to inject data into Qdrant", "error": str(e)})
-            raise 
-
-    def _get_collection_vector_name(self, model_key: str) -> Tuple[str, str]:
-        try:
-            result = QDrant_MODEL_MAP.get(model_key)
-            if not result:
-                raise Exception("Invalid model key, model key should be provider_dimension like gemini_1536")
-            return result
-        except Exception as e:
-            logger.error({"message": "Failed to get collection vector name", "error": str(e)})
-            raise e
+            raise
