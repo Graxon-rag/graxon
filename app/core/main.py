@@ -16,6 +16,7 @@ from .databases.neo4j.client import GNeo4jClient
 from .databases.qdrant.client import GQdrantClient
 from .rabbitmq.client import GRabbitMQClient
 from .rabbitmq.consumer import GMQDocumentConsumer
+from .seed import SeedDefaultData
 import asyncio
 
 
@@ -55,6 +56,8 @@ async def lifespan(app: FastAPI):
 
     # Start One Consumer for Document Status
     tasks.append(asyncio.create_task(GMQDocumentConsumer().consume_document_status_queue()))
+
+    await SeedDefaultData().seed()
 
     yield
 

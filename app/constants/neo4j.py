@@ -5,3 +5,15 @@ class GNeo4jEdges:
     SHARES_KEYWORD = "SHARES_KEYWORD"
     SHARES_PHRASE = "SHARES_PHRASE"
     SHARES_ACRONYM = "SHARES_ACRONYM"
+
+
+class GN4jNodes:
+    CHUNK = "CHUNK"
+    ORGANIZATION = "ORGANIZATION"
+    PROJECT = "PROJECT"
+
+
+class GN4jNodesIds:
+    CHUNK_ID = "id"
+    ORGANIZATION_ID = "id"
+    PROJECT_ID = "id"

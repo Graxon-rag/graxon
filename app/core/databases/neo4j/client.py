@@ -1,7 +1,10 @@
-import asyncio
+from app.constants.neo4j import GN4jNodes, GN4jNodesIds
 from neo4j import AsyncGraphDatabase, AsyncDriver
-from app.config.env import Env
 from app.utils.logger import logger
+from .helper import Neo4jHelper
+from app.config.env import Env
+import asyncio
+
 
 class GNeo4jClient:
     _instance: AsyncDriver | None = None
@@ -15,7 +18,7 @@ class GNeo4jClient:
         uri = f"bolt://{Env.NEO4J_HOST}:{Env.NEO4J_PORT}" 
         user = Env.NEO4J_USERNAME
         password = Env.NEO4J_PASSWORD
-        
+
         if user is None or password is None:
             raise RuntimeError("NEO4J_USERNAME or NEO4J_PASSWORD is not set in environment variables")
 
@@ -28,12 +31,14 @@ class GNeo4jClient:
 
                 # Initialize the Async Driver
                 driver = AsyncGraphDatabase.driver(uri, auth=(user, password))
-                
+
                 # Verify connectivity (Liveness check)
                 await driver.verify_connectivity()
 
                 cls._instance = driver
-                logger.info(f"Connected to Neo4j successfully.")
+                logger.info("Connected to Neo4j successfully.")
+
+                await cls._create_or_initialize_constraints()
                 return cls._instance
 
             except Exception as e:
@@ -71,3 +76,32 @@ class GNeo4jClient:
             await cls._instance.close()
             cls._instance = None
             logger.info("Neo4j driver closed.")
+
+    @classmethod
+    async def _create_or_initialize_constraints(cls):
+        try:
+            chunk_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.CHUNK, GN4jNodesIds.CHUNK_ID, "id")
+            await cls.run_graph_query(chunk_con_str)
+
+            org_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.ORGANIZATION, GN4jNodesIds.ORGANIZATION_ID, "id")
+            await cls.run_graph_query(org_con_str)
+
+            project_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.PROJECT, GN4jNodesIds.PROJECT_ID, "id")
+            await cls.run_graph_query(project_con_str)
+
+            logger.info("Constraints created or initialized successfully.")
+
+        except Exception as e:
+            logger.error(f"Failed to create or initialize constraints: {e}")
+            raise e
+
+    @classmethod
+    def run_graph_query(cls, query):
+        try:
+            if cls._instance is None:
+                raise RuntimeError("GNeo4jClient not initialized. Call init() first.")
+            graph = cls._instance
+            return graph.execute_query(query)
+        except Exception as e:
+            logger.error(f"Failed to run graph query : {query}, error : {e}")
+            raise e

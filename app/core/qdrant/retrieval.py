@@ -22,6 +22,11 @@ class QDrantRetrieval:
     ):
         try:
             coll, dense_vector_name = GQdrantClient._get_collection_vector_name(model_key)
+
+            logger.info({"message": "Retrieving from collection", "collection": coll, "top_k": top_k, "dense_vector_name": dense_vector_name})
+            print("query_sparse_embedding", query_sparse_embedding)
+            print("query_dense_embedding", len(query_dense_embedding))
+
             client = GQdrantClient.get_client()
 
             must_conditions: List[Condition] = [
