@@ -14,6 +14,7 @@ class EmbeddingProviderSchema(BaseModel):
     provider: EmbeddingModelProvider
     api_key: str
     model: str
+    dimension: int
 
 
 class SparseModelProviderSchema(BaseModel):

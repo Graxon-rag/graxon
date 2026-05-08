@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any, Optional, Literal
 from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider
 from app.providers.llm.base import BaseLLM
 from app.providers.llm.openai import OpenaiLLM
@@ -38,13 +38,15 @@ class WorkflowLLM:
 class WorkflowEmbedder:
 
     @staticmethod
-    def embedder(provider: EmbeddingModelProvider, api_key: str, model: str, **kwargs) -> BaseEmbedder:
+    def embedder(provider: EmbeddingModelProvider, api_key: str, model: str, dimension: int, **kwargs) -> BaseEmbedder:
         if provider == EmbeddingModelProvider.OPENAI:
-            return OpenaiEmbedder(api_key=api_key, model=model, **kwargs)
+            return OpenaiEmbedder(api_key=api_key, model=model, dimension=dimension, **kwargs)
         elif provider == EmbeddingModelProvider.GEMINI:
-            return GeminiEmbedder(api_key=api_key, model=model, **kwargs)
+            return GeminiEmbedder(api_key=api_key, model=model, dimension=dimension, **kwargs)
         elif provider == EmbeddingModelProvider.VOYAGE:
-            return VoyageEmbedder(api_key=api_key, model=model, **kwargs)
+            if dimension not in (1024, 2048):
+                raise ValueError("Invalid Voyage dimension only supports 1024 and 2048")
+            return VoyageEmbedder(api_key=api_key, model=model, dimension=dimension, **kwargs)
         else:
             raise ValueError(f"Unknown Embedding provider: {provider}")
 

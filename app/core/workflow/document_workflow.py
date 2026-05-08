@@ -84,6 +84,7 @@ class DocumentWorkflow:
                     provider=embedding_model_provider,
                     api_key=embedding_model_credential.api_key,
                     model=embedding_model.model_id,
+                    dimension=embedding_model.dimension,
                 ),
                 sparse_model=SparseModelProviderSchema(
                     provider=sparse_text_model.provider,

@@ -188,9 +188,10 @@ class DocumentInjectGraph:
             embedder_provider = providers.embedding.provider
             api_key = providers.embedding.api_key
             model = providers.embedding.model
+            dimension = providers.embedding.dimension
 
             kwargs = {}
-            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, kwargs=kwargs)
+            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension, kwargs=kwargs)
             for chunk in chunks:
                 try:
                     # em_vector: list[float] = await embedder.aembed(chunk.text)

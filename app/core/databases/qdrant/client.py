@@ -2,7 +2,7 @@ import asyncio
 from qdrant_client import AsyncQdrantClient
 from qdrant_client.http.exceptions import UnexpectedResponse
 from app.config.env import Env
-from app.constants.qdrant import QDrant
+from app.constants.qdrant import QDrantCollection, QDrantGeminiConfig, QDrantOpenAIConfig, QDrantVoyageConfig
 from qdrant_client import models
 from app.utils.logger import logger
 
@@ -42,6 +42,10 @@ class GQdrantClient:
 
                 cls._instance = client
                 logger.info("Connected to Qdrant successfully.")
+
+                # Create collections
+                await cls.create_collection()
+
                 return cls._instance
 
             except Exception as e:
@@ -58,12 +62,46 @@ class GQdrantClient:
         if cls._instance is None:
             raise RuntimeError("GQdrantClient not initialized. Call init() first.")
         client = cls._instance
-        await client.create_collection(
-            collection_name=QDrant.GRAXON_COLLECTION,
-            sparse_vectors_config={
-                "sparse": models.SparseVectorParams(),
-            }
-        )
+
+        collections = {
+            QDrantCollection.GRAXON_GEMINI: {
+                "vectors": {
+                    QDrantGeminiConfig.gemini_1536: models.VectorParams(size=QDrantGeminiConfig.dimension_1536, distance=models.Distance.COSINE),
+                    QDrantGeminiConfig.gemini_3072: models.VectorParams(size=QDrantGeminiConfig.dimension_3072, distance=models.Distance.COSINE),
+                }
+            },
+            QDrantCollection.GRAXON_OPENAI: {
+                "vectors": {
+                    QDrantOpenAIConfig.openai_1536: models.VectorParams(size=QDrantOpenAIConfig.dimension_1536, distance=models.Distance.COSINE),
+                    QDrantOpenAIConfig.openai_3072: models.VectorParams(size=QDrantOpenAIConfig.dimension_3072, distance=models.Distance.COSINE),
+                }
+            },
+            QDrantCollection.GRAXON_VOYAGE: {
+                "vectors": {
+                    QDrantVoyageConfig.voyage_1024: models.VectorParams(size=QDrantVoyageConfig.dimension_1024, distance=models.Distance.COSINE),
+                    QDrantVoyageConfig.voyage_2048: models.VectorParams(size=QDrantVoyageConfig.dimension_2048, distance=models.Distance.COSINE),
+                }
+            },
+        }
+
+        existing = await client.get_collections()
+        existing_names = {c.name for c in existing.collections}
+
+        for collection_name, config in collections.items():
+            if collection_name in existing_names:
+                logger.info(f"Collection '{collection_name}' already exists, skipping.")
+                continue
+
+            await client.create_collection(
+                collection_name=collection_name,
+                vectors_config=config["vectors"],
+                sparse_vectors_config={
+                    "sparse": models.SparseVectorParams(),
+                },
+            )
+            logger.info(f"Collection '{collection_name}' created.")
+
+        logger.info("All collections ready.")
 
     @classmethod
     def get_client(cls) -> AsyncQdrantClient:
