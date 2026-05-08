@@ -31,6 +31,8 @@ class Graph:
                 "chunk_size": Env.CHUNK_SIZE,
                 "chunk_overlap": Env.CHUNK_OVERLAP,
                 "chunks": None,
+                "chunks_embeddings": None,
+                "chunks_sparse_embeddings": None
             }
             if workflow is None:
                 raise Exception("Workflow is None")

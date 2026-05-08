@@ -4,13 +4,17 @@ from app.core.schemas.document_schema import DocumentGetSchema
 from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
 from .processor.processor_factory import ProcessorFactory
-from ..schemas.chunk_schema import Chunk
+from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding
 from app.core.lexical_engine.index import LexicalEngine, LEChunk
+from app.constants.minio import MinioConstant
 from app.core.libs.id import IDLibs
 from app.utils.logger import logger
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
+from fastembed.sparse.sparse_embedding_base import SparseEmbedding
+from app.core.qdrant.inject import QdrantInjector
 from typing import Dict, List, Optional
 from langchain_core.documents import Document
+import asyncio
 import uuid
 import os
 
@@ -40,6 +44,8 @@ class DIGState(TypedDict):
     chunk_overlap: int
 
     chunks: Optional[List[Chunk] | None]
+    chunks_embeddings: Optional[List[ChunkEmbedding] | None]
+    chunks_sparse_embeddings: Optional[List[ChunkSparseEmbedding] | None]
 
 
 class DocumentInjectGraph:
@@ -48,6 +54,7 @@ class DocumentInjectGraph:
         self.project_id = project_id
         self.document_id = document_id
         self.document_readable_id = document_readable_id
+        self.injector = QdrantInjector(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -100,17 +107,13 @@ class DocumentInjectGraph:
             key = document.key
             download_path = self._get_temp_path()
 
-            # Update state so we can delete the temp folder
-            state["temp_path"] = download_path
-
             logger.info({"message": "Downloading document", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "path": download_path})
 
             file_path = await MinioHelper(self.org_id, self.project_id).download_file(bucket=bucket, key=key, download_path=download_path, file_name=document.name)
 
             logger.info({"message": "Document downloaded successfully", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "path": download_path})
 
-            state["file_path"] = file_path
-            return state
+            return {"file_path": file_path, "temp_path": download_path}
 
         except Exception as e:
             logger.error({"message": "Failed to run supervisor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -146,13 +149,11 @@ class DocumentInjectGraph:
                     text=text,
                     title=chunk.metadata.get("title"),
                     source=chunk.metadata.get("source"),
-                    page_number=chunk.metadata.get("'page'"),
+                    page_number=chunk.metadata.get("page"),
                 )
                 chunks.append(c)
 
-            state["chunks"] = chunks
-
-            return state
+            return {"chunks": chunks}
 
         except Exception as e:
             logger.error({"message": "Failed to run chunks parser agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -198,14 +199,18 @@ class DocumentInjectGraph:
             dimension = providers.embedding.dimension
 
             embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
+
+            chs_embeddings: List[ChunkEmbedding] = []
             for chunk in chunks:
                 try:
-                    # em_vector: list[float] = await embedder.aembed(chunk.text)
                     logger.info({"message": "Embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    pass
+                    em_vector: list[float] = await embedder.aembed(chunk.text)
+                    chs_embeddings.append(ChunkEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run embedding agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-                    pass
+
+            return {"chunks_embeddings": chs_embeddings}
+
         except Exception as e:
             logger.error({"message": "Failed to run embedding agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
@@ -221,15 +226,16 @@ class DocumentInjectGraph:
             sparse_model = providers.sparse_model.model
 
             sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
+            chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
             for chunk in chunks:
                 try:
-                    # em_vector = sparse_embedder.embed(chunk.text)
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    pass
+                    em_vector: SparseEmbedding = sparse_embedder.embed(chunk.text)
+                    chs_sparse_embeddings.append(ChunkSparseEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-                    pass
 
+            return {"chunks_sparse_embeddings": chs_sparse_embeddings}
         except Exception as e:
             logger.error({"message": "Failed to run sparse agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
@@ -247,15 +253,39 @@ class DocumentInjectGraph:
                 le_chunks.append(LEChunk(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, text=chunk.text))
 
             result = lexical_engine.run_lexical_engine(le_chunks)
-            await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name="lexical_engine", json_data=result.model_dump(), document_name_id=self.document_readable_id)
+            await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
 
         except Exception as e:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
-    async def _database_agent(self, state: DIGState):
-        pass
-
     async def _chunks_processor_agent(self, state: DIGState):
+        try:
+            chunks = state["chunks"]
+            if chunks is None:
+                logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                raise
+            chunks_embeddings = state["chunks_embeddings"]
+            chunks_sparse_embeddings = state["chunks_sparse_embeddings"]
+
+            if chunks_embeddings is None:
+                logger.error({"message": "Chunks embeddings is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                raise
+            if chunks_sparse_embeddings is None:
+                logger.error({"message": "Chunks sparse embeddings is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                raise
+
+            providers = state["providers"]
+            embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
+            dimension = providers.embedding.dimension
+            model_key = self._get_model_key(embedder_provider, dimension)
+
+            await self.injector.inject(model_key=model_key, document_id=self.document_id, chunks=chunks, chunk_embeddings=chunks_embeddings, chunk_sparse_embeddings=chunks_sparse_embeddings)
+
+        except Exception as e:
+            logger.error({"message": "Failed to run chunks processor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+            raise e
+
+    async def _database_agent(self, state: DIGState):
         pass
 
     def _get_temp_path(self) -> str:
@@ -268,3 +298,6 @@ class DocumentInjectGraph:
         # Ensure directory exists
         os.makedirs(run_path, exist_ok=True)
         return run_path
+
+    def _get_model_key(self, provider: str, dimension: int) -> str:
+        return f"{provider}_{dimension}"
