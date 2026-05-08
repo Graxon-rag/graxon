@@ -5,6 +5,7 @@ from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
 from .processor.processor_factory import ProcessorFactory
 from ..schemas.chunk_schema import Chunk
+from app.core.lexical_engine.index import LexicalEngine, LEChunk
 from app.core.libs.id import IDLibs
 from app.utils.logger import logger
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
@@ -19,6 +20,7 @@ CHUNKS_PARSER_AGENT = "CHUNKS_PARSER_AGENT"
 LLM_AGENT = "llm_agent"
 EMBEDDING_AGENT = "embedding_agent"
 SPARSE_AGENT = "sparse_agent"
+LEXICAL_ENGINE_AGENT = "lexical_engine_agent"
 CHUNK_PROCESSOR_AGENT = "chunk_processor_agent"
 DATABASE_AGENT = "database_agent"
 
@@ -57,6 +59,7 @@ class DocumentInjectGraph:
             graph.add_node(LLM_AGENT, self._llm_agent)
             graph.add_node(EMBEDDING_AGENT, self._embedding_agent)
             graph.add_node(SPARSE_AGENT, self._sparse_agent)
+            graph.add_node(LEXICAL_ENGINE_AGENT, self._lexical_engine_agent)
             graph.add_node(CHUNK_PROCESSOR_AGENT, self._chunks_processor_agent)
             graph.add_node(DATABASE_AGENT, self._database_agent)
 
@@ -68,10 +71,12 @@ class DocumentInjectGraph:
             graph.add_edge(CHUNKS_PARSER_AGENT, LLM_AGENT)
             graph.add_edge(CHUNKS_PARSER_AGENT, EMBEDDING_AGENT)
             graph.add_edge(CHUNKS_PARSER_AGENT, SPARSE_AGENT)
+            graph.add_edge(CHUNKS_PARSER_AGENT, LEXICAL_ENGINE_AGENT)
 
             graph.add_edge(LLM_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(EMBEDDING_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(SPARSE_AGENT, CHUNK_PROCESSOR_AGENT)
+            graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)
 
             graph.add_edge(CHUNK_PROCESSOR_AGENT, DATABASE_AGENT)
 
@@ -136,7 +141,7 @@ class DocumentInjectGraph:
                 if text == "":
                     continue
                 c = Chunk(
-                    chunk_id=IDLibs.generate_chunk_id(document_id=self.document_readable_id),
+                    chunk_id=IDLibs.generate_chunk_id(document_id=self.document_readable_id, chunk_number=idx),
                     chunk_number=idx,
                     text=text,
                     title=chunk.metadata.get("title"),
@@ -165,8 +170,7 @@ class DocumentInjectGraph:
             api_key = providers.llm.api_key
             model = providers.llm.model
 
-            kwargs = {}
-            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model, kwargs=kwargs)
+            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
 
             for chunk in chunks:
                 try:
@@ -193,8 +197,7 @@ class DocumentInjectGraph:
             model = providers.embedding.model
             dimension = providers.embedding.dimension
 
-            kwargs = {}
-            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension, kwargs=kwargs)
+            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
             for chunk in chunks:
                 try:
                     # em_vector: list[float] = await embedder.aembed(chunk.text)
@@ -230,6 +233,24 @@ class DocumentInjectGraph:
         except Exception as e:
             logger.error({"message": "Failed to run sparse agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
+
+    async def _lexical_engine_agent(self, state: DIGState):
+        try:
+            chunks = state["chunks"]
+            if chunks is None:
+                logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                raise
+            lexical_engine = LexicalEngine()
+
+            le_chunks: List[LEChunk] = []
+            for chunk in chunks:
+                le_chunks.append(LEChunk(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, text=chunk.text))
+
+            result = lexical_engine.run_lexical_engine(le_chunks)
+            print(result.model_dump_json())
+
+        except Exception as e:
+            logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
     async def _database_agent(self, state: DIGState):
         pass
