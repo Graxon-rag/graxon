@@ -2,10 +2,10 @@ from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
 from ..schemas.provider_schema import QueryProviderSchema
 from app.core.qdrant.retrieval import QDrantRetrieval
 from langgraph.graph import StateGraph, START, END
-from fastembed import SparseEmbedding
 from typing import TypedDict, Annotated
-from langgraph.types import Send
+from fastembed import SparseEmbedding
 from app.utils.logger import logger
+from langgraph.types import Send
 import operator
 import uuid
 

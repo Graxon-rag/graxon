@@ -3,8 +3,8 @@ from .document_inject_graph import DocumentInjectGraph, DIGState
 from app.core.schemas.document_schema import DocumentGetSchema
 from .document_query_graph import DocumentQueryGraph, DQGState
 from app.utils.logger import logger
-from typing import Optional
 from app.config.env import Env
+from typing import Optional
 import uuid
 
 

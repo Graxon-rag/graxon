@@ -1,7 +1,7 @@
 from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding
+from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
-from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from app.core.schemas.document_schema import DocumentGetSchema
 from .processor.processor_factory import ProcessorFactory
 from app.core.helpers.minio_helper import MinioHelper
@@ -30,7 +30,7 @@ EMBEDDING_AGENT = "embedding_agent"
 SPARSE_AGENT = "sparse_agent"
 LEXICAL_ENGINE_AGENT = "lexical_engine_agent"
 CHUNK_PROCESSOR_AGENT = "chunk_processor_agent"
-GRAPH_DATABASE_AGENT = "GRAPH_database_agent"
+GRAPH_DATABASE_AGENT = "graph_database_agent"
 
 
 class DIGState(TypedDict):
