@@ -1,7 +1,7 @@
 from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
-from app.core.lexical_engine.index import LexicalEngine, LEChunk
+from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from app.core.schemas.document_schema import DocumentGetSchema
 from .processor.processor_factory import ProcessorFactory
 from app.core.helpers.minio_helper import MinioHelper
@@ -48,6 +48,7 @@ class DIGState(TypedDict):
     chunk_overlap: int
 
     chunks: Optional[List[Chunk] | None]
+    lexical_engine_data: Optional[LexicalResult | None]
     chunks_embeddings: Annotated[List[ChunkEmbedding], operator.add]
     chunks_sparse_embeddings: Annotated[List[ChunkSparseEmbedding], operator.add]
 
@@ -284,8 +285,11 @@ class DocumentInjectGraph:
                 le_chunks.append(LEChunk(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, text=chunk.text))
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(None, lexical_engine.run_lexical_engine, le_chunks)
+
             await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
 
+            lexical_engine_data = result
+            return {"lexical_engine_data": lexical_engine_data}
         except Exception as e:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
@@ -326,6 +330,11 @@ class DocumentInjectGraph:
             logger.info({"message": "Creating graph database", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
 
             await self.n4j_chunk_db.create_multiple(self.document_id, self.document_readable_id, chunks)
+
+            lexical_engine_data = state["lexical_engine_data"]
+            if lexical_engine_data is not None:
+                logger.info({"message": "Creating graph database edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                await self.n4j_chunk_db.create_edges_by_lexical_engine_data(self.document_id, self.document_readable_id, lexical_engine_data)
 
         except Exception as e:
             logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})

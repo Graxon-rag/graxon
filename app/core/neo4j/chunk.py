@@ -1,9 +1,11 @@
+from .interfaces.chunk_interface import N4jChunkInterface
 from app.constants.neo4j import GN4jNodes, GNeo4jEdges
 from ..databases.neo4j.client import GNeo4jClient
-from .interfaces.chunk_interface import N4jChunkInterface
+from ..lexical_engine.index import LexicalResult
 from ..schemas.chunk_schema import Chunk
 from typing import cast, LiteralString
 from app.utils.logger import logger
+from itertools import groupby
 import uuid
 
 
@@ -56,4 +58,41 @@ class N4jChunk:
 
         except Exception as e:
             logger.error({"message": "Failed to create chunks", "error": str(e)})
+            raise e
+
+    async def create_edges_by_lexical_engine_data(self, document_id: uuid.UUID, document_readable_id: str, lexical_data: LexicalResult):
+        try:
+
+            # Group edges by edge_type
+            sorted_edges = sorted(lexical_data.edges, key=lambda e: e.edge_type)
+            grouped = groupby(sorted_edges, key=lambda e: e.edge_type)
+
+            total_merged = 0
+
+            for edge_type, edge_group in grouped:
+                edge_list = [
+                    {"source": e.source, "target": e.target, "label": e.label, "weight": e.weight}
+                    for e in edge_group
+                ]
+                if edge_type not in [GNeo4jEdges.SHARES_ENTITY, GNeo4jEdges.SHARES_CONCEPT, GNeo4jEdges.SHARES_KEYWORD, GNeo4jEdges.SHARES_PHRASE, GNeo4jEdges.SHARES_ACRONYM]:
+                    continue
+
+                query = cast(LiteralString, f"""
+                    UNWIND $edges AS edge
+                    MATCH (src:{GN4jNodes.CHUNK} {{id: edge.source}})
+                    MATCH (tgt:{GN4jNodes.CHUNK} {{id: edge.target}})
+                    MERGE (src)-[:{edge_type} {{label: edge.label, weight: edge.weight}}]->(tgt)
+                    RETURN count(*) AS merged_count
+                """)
+
+                result, _, _ = await self.graph.execute_query(query, {"edges": edge_list})
+                count = result[0]["merged_count"]
+                total_merged += count
+                logger.info(f"Merged {count} [{edge_type}] edges for document {document_readable_id}.")
+
+            logger.info(f"Total edges merged: {total_merged} for document {document_readable_id}.")
+            return total_merged
+
+        except Exception as e:
+            logger.error({"message": "Failed to create edges", "error": str(e)})
             raise e

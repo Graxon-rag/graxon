@@ -33,6 +33,7 @@ class Graph:
                 "chunk_size": Env.CHUNK_SIZE,
                 "chunk_overlap": Env.CHUNK_OVERLAP,
                 "chunks": None,
+                "lexical_engine_data": None,
                 "chunks_embeddings": [],
                 "chunks_sparse_embeddings": []
             }
