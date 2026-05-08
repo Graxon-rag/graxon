@@ -13,6 +13,7 @@ from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 from app.core.qdrant.inject import QdrantInjector
 from typing import Dict, List, Optional
+import traceback
 from langchain_core.documents import Document
 import asyncio
 import uuid
@@ -55,6 +56,7 @@ class DocumentInjectGraph:
         self.document_id = document_id
         self.document_readable_id = document_readable_id
         self.injector = QdrantInjector(org_id=org_id, project_id=project_id)
+        self.minio_helper = MinioHelper(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -182,8 +184,8 @@ class DocumentInjectGraph:
                     logger.error({"message": "Failed to run LLM agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
         except Exception as e:
-            logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-            pass
+            logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
+            raise e
 
     async def _embedding_agent(self, state: DIGState):
         try:
@@ -209,11 +211,16 @@ class DocumentInjectGraph:
                 except Exception as e:
                     logger.error({"message": "Failed to run embedding agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
+            # save embeddings
+            data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_embeddings]}
+            minio_file_name = MinioConstant.EMBEDDING_OUTPUT_FILE
+            await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+
             return {"chunks_embeddings": chs_embeddings}
 
         except Exception as e:
-            logger.error({"message": "Failed to run embedding agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-            pass
+            logger.error({"message": "Failed to run embedding agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
+            raise e
 
     async def _sparse_agent(self, state: DIGState):
         try:
@@ -235,17 +242,23 @@ class DocumentInjectGraph:
                 except Exception as e:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
+            # Upload sparse embeddings
+            data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_sparse_embeddings]}
+            minio_file_name = MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE
+
+            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+
             return {"chunks_sparse_embeddings": chs_sparse_embeddings}
         except Exception as e:
-            logger.error({"message": "Failed to run sparse agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-            pass
+            logger.error({"message": "Failed to run sparse agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
+            raise e
 
     async def _lexical_engine_agent(self, state: DIGState):
         try:
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                raise
+                raise ValueError("Chunks embeddings is None")
             lexical_engine = LexicalEngine()
 
             le_chunks: List[LEChunk] = []
@@ -257,22 +270,23 @@ class DocumentInjectGraph:
 
         except Exception as e:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+            raise e
 
     async def _chunks_processor_agent(self, state: DIGState):
         try:
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                raise
+                raise ValueError("Chunks embeddings is None")
             chunks_embeddings = state["chunks_embeddings"]
             chunks_sparse_embeddings = state["chunks_sparse_embeddings"]
 
             if chunks_embeddings is None:
                 logger.error({"message": "Chunks embeddings is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                raise
+                raise ValueError("Chunks sparse embeddings is None")
             if chunks_sparse_embeddings is None:
                 logger.error({"message": "Chunks sparse embeddings is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                raise
+                raise ValueError("Chunks sparse embeddings is None")
 
             providers = state["providers"]
             embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum

@@ -97,10 +97,15 @@ class DocumentRepo:
 
                 try:
                     lexical_engine_output_file = MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE
-                    key = f"{self.project_id}/{document.readable_id}/{lexical_engine_output_file}.json"
-                    await self.minio_helper.delete_file(bucket=bucket, key=key)
+                    leo_key = f"{self.project_id}/{document.readable_id}/{lexical_engine_output_file}.json"
+                    seo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE}.json"
+                    eo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.EMBEDDING_OUTPUT_FILE}.json"
+                    await self.minio_helper.delete_file(bucket=bucket, key=seo_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=eo_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=leo_key)
+
                 except Exception as e:
-                    logger.warning({"message": "Failed to delete lexical engine output file", "error": str(e)})
+                    logger.warning({"message": "Failed to delete lexical engine output, sparse embedding output or embedding output file", "error": str(e)})
 
                 return True
         except Exception as e:

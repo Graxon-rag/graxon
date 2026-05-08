@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, model_serializer
 from typing import Optional
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 
@@ -24,3 +24,14 @@ class ChunkSparseEmbedding(BaseModel):
     chunk_id: str
     chunk_number: int
     embedding: SparseEmbedding
+
+    @model_serializer
+    def serialize(self) -> dict:
+        return {
+            "chunk_id": self.chunk_id,
+            "chunk_number": self.chunk_number,
+            "embedding": {
+                "indices": self.embedding.indices.tolist(),
+                "values": self.embedding.values.tolist(),
+            }
+        }
