@@ -245,10 +245,11 @@ class DocumentInjectGraph:
 
             sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
             chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
+            loop = asyncio.get_running_loop()
             for chunk in chunks:
                 try:
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    em_vector: SparseEmbedding = sparse_embedder.embed(chunk.text)
+                    em_vector = await loop.run_in_executor(None, sparse_embedder.embed, chunk.text)
                     chs_sparse_embeddings.append(ChunkSparseEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -275,8 +276,8 @@ class DocumentInjectGraph:
             le_chunks: List[LEChunk] = []
             for chunk in chunks:
                 le_chunks.append(LEChunk(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, text=chunk.text))
-
-            result = lexical_engine.run_lexical_engine(le_chunks)
+            loop = asyncio.get_running_loop()
+            result = await loop.run_in_executor(None, lexical_engine.run_lexical_engine, le_chunks)
             await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
 
         except Exception as e:
