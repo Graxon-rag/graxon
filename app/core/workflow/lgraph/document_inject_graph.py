@@ -247,7 +247,7 @@ class DocumentInjectGraph:
                 le_chunks.append(LEChunk(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, text=chunk.text))
 
             result = lexical_engine.run_lexical_engine(le_chunks)
-            print(result.model_dump_json())
+            await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name="lexical_engine", json_data=result.model_dump(), document_name_id=self.document_readable_id)
 
         except Exception as e:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})

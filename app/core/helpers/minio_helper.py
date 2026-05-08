@@ -4,7 +4,9 @@ from types_aiobotocore_s3 import S3Client
 from fastapi import UploadFile
 from ..schemas.document_schema import DocumentGetSignedUrlSchema
 from app.utils.logger import logger
-from typing import cast, Tuple, Optional
+from typing import cast, Tuple, Optional, Any
+from io import BytesIO
+import json
 import uuid
 import os
 
@@ -163,3 +165,67 @@ class MinioHelper:
         except Exception as e:
             logger.error({"message": "Failed to download file", "error": str(e)})
         raise
+
+    async def upload_json(self, json_file_name: str, json_data: dict[str, Any], document_name_id: str,) -> Tuple[str, str]:
+        try:
+            # Create object key
+            document_key = (
+                f"{self.project_id}/{document_name_id}/{json_file_name}.json"
+            )
+
+            # Convert JSON → bytes
+            json_bytes = json.dumps(
+                json_data,
+                ensure_ascii=False,
+                indent=2
+            ).encode("utf-8")
+
+            json_stream = BytesIO(json_bytes)
+
+            async with self.minio_session.client(  # type: ignore[attr-defined]
+                "s3",
+                endpoint_url=self.minio_endpoint,
+                aws_access_key_id=Env.MINIO_ROOT_USER,
+                aws_secret_access_key=Env.MINIO_ROOT_PASSWORD,
+                region_name=Env.MINIO_REGION,
+            ) as _s3_client:
+
+                s3_client = cast(S3Client, _s3_client)
+
+                # Ensure bucket exists
+                try:
+                    await s3_client.head_bucket(Bucket=self.bucket)
+                except Exception:
+                    await s3_client.create_bucket(Bucket=self.bucket)
+
+                # Upload JSON
+                await s3_client.put_object(
+                    Bucket=self.bucket,
+                    Key=document_key,
+                    Body=json_stream,
+                    ContentType="application/json",
+                    Metadata={
+                        "org_id": self.org_id,
+                        "project_id": str(self.project_id),
+                        "file_type": "json",
+                    },
+                )
+
+                signed_url = await self.get_signed_url(
+                    DocumentGetSignedUrlSchema(
+                        org_id=self.org_id,
+                        project_id=self.project_id,
+                        bucket=self.bucket,
+                        key=document_key,
+                    ),
+                    900,
+                )
+
+                return (document_key, signed_url)
+
+        except Exception as e:
+            logger.error({
+                "message": "Failed to upload JSON file",
+                "error": str(e)
+            })
+            raise e
