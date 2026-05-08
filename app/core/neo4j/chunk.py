@@ -19,8 +19,8 @@ class N4jChunk:
             chunk_data = [chunk.model_dump() for chunk in chunks]
 
             query = cast(LiteralString, f"""
-                MATCH (og:{GN4jNodes.ORGANIZATION} {{id: $org_id}})-[:{GNeo4jEdges.HAS_PROJECT}]->(pr:{GN4jNodes.PROJECT} {{id: $project_id}})
-
+                MATCH (og:{GN4jNodes.ORGANIZATION} {{id: $org_id}})-[:{GNeo4jEdges.HAS_PROJECT}]->(pr:{GN4jNodes.PROJECT} {{id: $project_id}})-[:{GNeo4jEdges.HAS_DOCUMENT}]->(dc:{GN4jNodes.DOCUMENT} {{id: $document_id}})
+                WITH dc
                 UNWIND $chunks_list AS chunk_item
 
                 MERGE (ch:{GN4jNodes.CHUNK} {{id: chunk_item.chunk_id}})
@@ -35,7 +35,7 @@ class N4jChunk:
                     ch.{N4jChunkInterface.source} = chunk_item.source,
                     ch.{N4jChunkInterface.chunk_number} = chunk_item.chunk_number
 
-                MERGE (pr)-[:{GNeo4jEdges.HAS_CHUNK}]->(ch)
+                MERGE (dc)-[:{GNeo4jEdges.HAS_CHUNK}]->(ch)
                 RETURN count(ch) as created_count
             """)
 

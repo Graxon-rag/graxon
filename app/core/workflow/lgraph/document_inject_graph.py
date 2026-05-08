@@ -1,21 +1,22 @@
-from langgraph.graph import StateGraph, START, END
-from typing import TypedDict
-from app.core.schemas.document_schema import DocumentGetSchema
-from app.core.helpers.minio_helper import MinioHelper
-from ..schemas.provider_schema import ProviderSchema
-from .processor.processor_factory import ProcessorFactory
 from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding
-from app.core.lexical_engine.index import LexicalEngine, LEChunk
-from app.constants.minio import MinioConstant
-from app.core.libs.id import IDLibs
-from app.utils.logger import logger
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
-from app.core.qdrant.inject import QdrantInjector
+from app.core.lexical_engine.index import LexicalEngine, LEChunk
+from app.core.schemas.document_schema import DocumentGetSchema
+from .processor.processor_factory import ProcessorFactory
+from app.core.helpers.minio_helper import MinioHelper
+from ..schemas.provider_schema import ProviderSchema
+from langgraph.graph import StateGraph, START, END
 from typing import Dict, List, Optional, Annotated
-from langgraph.types import Send
-import traceback
+from app.core.qdrant.inject import QdrantInjector
+from app.constants.minio import MinioConstant
 from langchain_core.documents import Document
+from app.core.neo4j.chunk import N4jChunk
+from app.core.libs.id import IDLibs
+from app.utils.logger import logger
+from langgraph.types import Send
+from typing import TypedDict
+import traceback
 import operator
 import asyncio
 import uuid
@@ -29,7 +30,7 @@ EMBEDDING_AGENT = "embedding_agent"
 SPARSE_AGENT = "sparse_agent"
 LEXICAL_ENGINE_AGENT = "lexical_engine_agent"
 CHUNK_PROCESSOR_AGENT = "chunk_processor_agent"
-DATABASE_AGENT = "database_agent"
+GRAPH_DATABASE_AGENT = "GRAPH_database_agent"
 
 
 class DIGState(TypedDict):
@@ -59,6 +60,7 @@ class DocumentInjectGraph:
         self.document_readable_id = document_readable_id
         self.injector = QdrantInjector(org_id=org_id, project_id=project_id)
         self.minio_helper = MinioHelper(org_id=org_id, project_id=project_id)
+        self.n4j_chunk_db = N4jChunk(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -72,7 +74,7 @@ class DocumentInjectGraph:
             graph.add_node(SPARSE_AGENT, self._sparse_agent)
             graph.add_node(LEXICAL_ENGINE_AGENT, self._lexical_engine_agent)
             graph.add_node(CHUNK_PROCESSOR_AGENT, self._chunks_processor_agent)
-            graph.add_node(DATABASE_AGENT, self._database_agent)
+            graph.add_node(GRAPH_DATABASE_AGENT, self._graph_database_agent)
 
             # Edges
 
@@ -92,9 +94,9 @@ class DocumentInjectGraph:
             graph.add_edge(SPARSE_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)
 
-            graph.add_edge(CHUNK_PROCESSOR_AGENT, DATABASE_AGENT)
+            graph.add_edge(CHUNK_PROCESSOR_AGENT, GRAPH_DATABASE_AGENT)
 
-            graph.add_edge(DATABASE_AGENT, END)
+            graph.add_edge(GRAPH_DATABASE_AGENT, END)
 
             workflow = graph.compile()
             mermaid = workflow.get_graph().draw_mermaid()
@@ -253,7 +255,7 @@ class DocumentInjectGraph:
             for chunk in chunks:
                 try:
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    em_vector = await loop.run_in_executor(None, sparse_embedder.embed, chunk.text)
+                    em_vector: SparseEmbedding = await loop.run_in_executor(None, sparse_embedder.embed, chunk.text)
                     chs_sparse_embeddings.append(ChunkSparseEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -315,8 +317,19 @@ class DocumentInjectGraph:
             logger.error({"message": "Failed to run chunks processor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
 
-    async def _database_agent(self, state: DIGState):
-        pass
+    async def _graph_database_agent(self, state: DIGState):
+        try:
+            chunks = state["chunks"]
+            if chunks is None:
+                logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Chunks embeddings is None")
+            logger.info({"message": "Creating graph database", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+
+            await self.n4j_chunk_db.create_multiple(self.document_id, self.document_readable_id, chunks)
+
+        except Exception as e:
+            logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+            raise e
 
     def _get_temp_path(self) -> str:
         base_tmp_path = "/tmp/graxon"
