@@ -7,6 +7,7 @@ from .helpers.service_helper import (
     RerankerServiceHelper,
     ProjectServiceHelper,
     ModelCredentialServiceHelper,
+    DocumentServiceHelper
 )
 from .helpers.model_provider_helper import ModelProviderHelper
 from .lgraph.graph import Graph
@@ -23,13 +24,13 @@ class DocumentWorkflow:
 
     async def process(self, document: DocumentGetSchema):
         try:
-            providers = await self._get_providers()
+            providers = await self._get_providers(document.readable_id)
             return await Graph(org_id=self.org_id, project_id=self.project_id).inject_document(document, providers)
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
             raise e
 
-    async def _get_providers(self) -> ProviderSchema:
+    async def _get_providers(self, document_readable_id: str) -> ProviderSchema:
         try:
             project = await ProjectServiceHelper(self.org_id, self.project_id, self.document_id).get_project()
             if project is None:
@@ -75,6 +76,7 @@ class DocumentWorkflow:
                 org_id=self.org_id,
                 project_id=self.project_id,
                 document_id=self.document_id,
+                document_readable_id=document_readable_id,
                 llm=LLMProviderSchema(
                     provider=llm_model_provider,
                     api_key=llm_model_credential.api_key,

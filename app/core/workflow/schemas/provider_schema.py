@@ -31,6 +31,7 @@ class ProviderSchema(BaseModel):
     org_id: str
     project_id: uuid.UUID
     document_id: uuid.UUID
+    document_readable_id: str
     llm: LLMProviderSchema
     embedding: EmbeddingProviderSchema
     sparse_model: SparseModelProviderSchema

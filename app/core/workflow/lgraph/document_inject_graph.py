@@ -5,6 +5,7 @@ from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
 from .processor.processor_factory import ProcessorFactory
 from ..schemas.chunk_schema import Chunk
+from app.core.libs.id import IDLibs
 from app.utils.logger import logger
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from typing import Dict, List, Optional
@@ -40,10 +41,11 @@ class DIGState(TypedDict):
 
 
 class DocumentInjectGraph:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, document_readable_id: str):
         self.org_id = org_id
         self.project_id = project_id
         self.document_id = document_id
+        self.document_readable_id = document_readable_id
 
     def build_graph(self):
         try:
@@ -134,6 +136,7 @@ class DocumentInjectGraph:
                 if text == "":
                     continue
                 c = Chunk(
+                    chunk_id=IDLibs.generate_chunk_id(document_id=self.document_readable_id),
                     chunk_number=idx,
                     text=text,
                     title=chunk.metadata.get("title"),

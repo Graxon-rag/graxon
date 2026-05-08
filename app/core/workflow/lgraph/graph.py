@@ -17,7 +17,7 @@ class Graph:
             print("Providers:", providers.model_dump(mode="json"))
 
             request_id = str(uuid.uuid4())
-            graph = DocumentInjectGraph(org_id=self.org_id, project_id=self.project_id, document_id=document.id)
+            graph = DocumentInjectGraph(org_id=self.org_id, project_id=self.project_id, document_id=document.id, document_readable_id=document.readable_id)
             workflow = graph.build_graph()
             initial_state: DIGState = {
                 "request_id": request_id,

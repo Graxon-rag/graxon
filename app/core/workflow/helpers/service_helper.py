@@ -4,8 +4,10 @@ from ...services.reranker_service import ReRankerService
 from ...services.embedding_model_service import EmbeddingModelService
 from ...services.sparse_text_model_service import SparseTextModelService
 from ...services.llm_model_service import LLMModelService
+from ...services.document_service import DocumentService
 
 from ...schemas.project_schema import ProjectGetSchema
+from ...schemas.document_schema import DocumentGetSchema
 from ...schemas.model_credential_schema import ModelCredentialGetSchema
 from ...schemas.reranker_schema import ReRankerGetSchema
 from ...schemas.embedding_model_schema import EmbeddingModelGetSchema
@@ -14,6 +16,24 @@ from ...schemas.llm_model_schema import LLMModelGetSchema
 
 from app.utils.logger import logger
 import uuid
+
+
+class DocumentServiceHelper:
+    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+        self.org_id = org_id
+        self.project_id = project_id
+        self.document_id = document_id
+        self._service = DocumentService(org_id=self.org_id, project_id=self.project_id)
+
+    async def get_document(self) -> DocumentGetSchema:
+        try:
+            document = await self._service.get(self.document_id)
+            if not document:
+                raise Exception(f"Document with id {self.document_id} not found")
+            return document
+        except Exception as e:
+            logger.error({"message": "Failed to get document", "error": str(e)})
+            raise e
 
 
 class RerankerServiceHelper:
