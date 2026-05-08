@@ -21,7 +21,7 @@ import os
 
 
 SUPERVISOR_AGENT = "supervisor_agent"
-CHUNKS_PARSER_AGENT = "CHUNKS_PARSER_AGENT"
+CHUNKS_PARSER_AGENT = "chunks_parser_agent"
 LLM_AGENT = "llm_agent"
 EMBEDDING_AGENT = "embedding_agent"
 SPARSE_AGENT = "sparse_agent"

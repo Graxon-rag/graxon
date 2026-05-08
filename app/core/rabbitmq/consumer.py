@@ -100,5 +100,4 @@ class GMQDocumentConsumer:
     async def _process_document(self, document: DocumentGetSchema):
         org_id: str = document.org_id
         project_id: uuid.UUID = document.project_id
-        document_id: uuid.UUID = document.id
-        await DocumentWorkflow(org_id=org_id, project_id=project_id, document_id=document_id).process(document)
+        await DocumentWorkflow(org_id=org_id, project_id=project_id).process(document)

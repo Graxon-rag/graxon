@@ -37,10 +37,9 @@ class DocumentServiceHelper:
 
 
 class RerankerServiceHelper:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
-        self.document_id = document_id
         self._service = ReRankerService(org_id=self.org_id)
 
     async def get_reranker(self, reranker_id: uuid.UUID) -> ReRankerGetSchema:
@@ -55,10 +54,9 @@ class RerankerServiceHelper:
 
 
 class LLMModelServiceHelper:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
-        self.document_id = document_id
         self._service = LLMModelService(org_id=self.org_id)
 
     async def get_llm_model(self, llm_model_id: uuid.UUID) -> LLMModelGetSchema:
@@ -73,10 +71,9 @@ class LLMModelServiceHelper:
 
 
 class EmbeddingModelServiceHelper:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
-        self.document_id = document_id
         self._service = EmbeddingModelService(org_id=self.org_id)
 
     async def get_embedding_model(self, embedding_model_id: uuid.UUID) -> EmbeddingModelGetSchema:
@@ -91,10 +88,9 @@ class EmbeddingModelServiceHelper:
 
 
 class SparseTextModelServiceHelper:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
-        self.document_id = document_id
         self._service = SparseTextModelService(org_id=self.org_id)
 
     async def get_sparse_model(self, sparse_model_id: uuid.UUID) -> SparseTextModelGetSchema:
@@ -109,10 +105,9 @@ class SparseTextModelServiceHelper:
 
 
 class ModelCredentialServiceHelper:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
-        self.document_id = document_id
         self._service = ModelCredentialService(org_id=self.org_id)
 
     async def get_model_credential(self, model_credential_id: uuid.UUID) -> ModelCredentialGetSchema:
@@ -128,10 +123,9 @@ class ModelCredentialServiceHelper:
 
 
 class ProjectServiceHelper:
-    def __init__(self, org_id: str, project_id: uuid.UUID, document_id: uuid.UUID):
+    def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
-        self.document_id = document_id
         self._service = ProjectService(org_id=self.org_id)
 
     async def get_project(self) -> ProjectGetSchema:

@@ -36,3 +36,12 @@ class ProviderSchema(BaseModel):
     embedding: EmbeddingProviderSchema
     sparse_model: SparseModelProviderSchema
     reranker: RerankerProviderSchema
+
+
+class QueryProviderSchema(BaseModel):
+    org_id: str
+    project_id: uuid.UUID
+    llm: LLMProviderSchema
+    embedding: EmbeddingProviderSchema
+    sparse_model: SparseModelProviderSchema
+    reranker: RerankerProviderSchema
