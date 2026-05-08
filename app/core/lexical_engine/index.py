@@ -2,6 +2,7 @@ import re
 from pydantic import BaseModel, Field
 from app.utils.logger import logger
 import spacy
+import math
 from app.constants.neo4j import GNeo4jEdges
 from typing import List
 from collections import defaultdict
@@ -13,7 +14,8 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 STOP_WORDS = {
     # articles, pronouns, prepositions, conjunctions
     "a", "an", "the", "and", "or", "but", "if", "in", "on", "at", "to", "for", "of", "with", 
-    "by", "from", "as", "is", "was", "are", "were", "be", "been", "being", "have", "has", 
+    "by", "from", "as", "is", "was", "are", "were", "be", "been", "being", "have", "has",
+    "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", 
     "had", "do", "does", "did", "will", "would", "could", "should", "may", "might", "shall", 
     "can", "not", "no", "nor", "so", "yet", "both", "either", "neither", "each", "every", 
     "all", "any", "few", "more", "most", "other", "some", "such", "than", "then", "that", 
@@ -43,6 +45,14 @@ _TECHNICAL_NOUN_PATTERN = re.compile(
 )
 
 _DEF_RE = re.compile(r'\b([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)\s*\(([A-Z]{2,6})\)')
+
+# Only link chunks where the keyword actually matters to both
+TFIDF_SCORE_THRESHOLD = 0.05
+TFIDF_MAX_DF = 0.4
+TFIDF_MAX_FEATURES = 500
+ENTITY_MAX_CHUNK_FRAC = 0.5
+PHRASE_N = 4
+PHRASE_MAX_SHARE = 3
 
 
 class LEChunk(BaseModel):
@@ -113,8 +123,6 @@ class LexicalEngine:
 
     #  NER + NOUN PHRASES  (spaCy path)
     def _extract_spacy(self, chunks: List[LEChunk]):
-        """Returns entity_map and concept_map using spaCy."""
-
         try:
             entity_map: dict[str, set] = defaultdict(set)
             concept_map: dict[str, set] = defaultdict(set)
@@ -133,6 +141,10 @@ class LexicalEngine:
                         content = [w for w in words if w not in STOP_WORDS and len(w) > 2]
                         if content:
                             concept_map[phrase].add(chunk.chunk_id)
+
+            # NEW — drop entities that are too ubiquitous to be meaningful
+            max_chunks = len(chunks) * ENTITY_MAX_CHUNK_FRAC
+            entity_map = {e: ids for e, ids in entity_map.items() if len(ids) <= max_chunks}
 
             return dict(entity_map), dict(concept_map)
 
@@ -171,14 +183,14 @@ class LexicalEngine:
     def extract_tfidf_keywords(self, chunks: list[LEChunk]):
         """
         Finds rare, meaningful nouns using TF-IDF.
-        min_df=2  : must appear in at least 2 chunks
-        max_df=0.6: ignore words in >60% of chunks (too common)
-        sublinear_tf: dampens high-frequency words
+        min_df=2      : must appear in at least 2 chunks
+        max_df=0.4    : stricter — ignore words in >40% of chunks
+        max_features  : cap vocabulary to 200
+        score threshold: only link chunks where word actually scores meaningfully
         """
         try:
             texts = [c.text for c in chunks]
 
-            # Build noun-only vocab first (POS filter via spaCy or regex)
             if self.SPACY_AVAILABLE:
                 allowed_nouns = set()
                 for doc in self._nlp.pipe(texts, batch_size=32):
@@ -188,14 +200,14 @@ class LexicalEngine:
                             allowed_nouns.add(w)
                 vocabulary = list(allowed_nouns) if allowed_nouns else None
             else:
-                # Regex fallback: keep words matching technical noun patterns
-                vocabulary = None   # let TF-IDF decide, stopwords will filter
+                vocabulary = None
 
             vectorizer = TfidfVectorizer(
                 vocabulary=vocabulary,
                 stop_words=list(STOP_WORDS),
                 min_df=2,
-                max_df=0.6,
+                max_df=TFIDF_MAX_DF,  # stricter — ignore words in >40% of chunks
+                max_features=TFIDF_MAX_FEATURES,       # caps vocabulary
                 sublinear_tf=True,
                 token_pattern=r'\b[a-zA-Z]{4,}\b',
             )
@@ -206,9 +218,10 @@ class LexicalEngine:
                 return {}, []
 
             feature_names = vectorizer.get_feature_names_out()
-            keyword_map: dict[str, set] = defaultdict(set)
 
-            # Track what got filtered out (for display)
+            # store per-chunk TF-IDF scores instead of just presence
+            keyword_map: dict[str, dict[str, float]] = defaultdict(dict)
+
             all_raw_words = set(
                 w.lower() for c in chunks
                 for w in re.findall(r'\b[a-zA-Z]{4,}\b', c.text)
@@ -217,21 +230,32 @@ class LexicalEngine:
             tfidf_vocab = set(feature_names)
             noise_caught = sorted(all_raw_words - tfidf_vocab - STOP_WORDS)[:15]
 
-            cx = matrix.tocsc()
+            cx = matrix.tocsc()  # type: ignore
             for col_idx, word in enumerate(feature_names):
-                rows = cx.getcol(col_idx).nonzero()[0]
-                if len(rows) >= 2:
-                    for row_idx in rows:
-                        keyword_map[word].add(chunks[row_idx].chunk_id)
+                col = cx.getcol(col_idx)
+                rows = col.nonzero()[0]
+                scores = col.data
+                # only keep rows where the score clears the threshold
+                for row_idx, score in zip(rows, scores):
+                    if score >= TFIDF_SCORE_THRESHOLD:
+                        keyword_map[word][chunks[row_idx].chunk_id] = float(score)
+
+            # Filter to only words that still link 2+ chunks after threshold
+            keyword_map = {w: m for w, m in keyword_map.items() if len(m) >= 2}
 
             return dict(keyword_map), noise_caught
+
         except Exception as e:
             logger.error({"message": "Failed to run TF-IDF agent", "error": str(e)})
             return {}, []
 
     # STEP 3 — EXACT N-GRAM PHRASE BRIDGES
 
-    def _extract_phrase_bridges(self, chunks: list[LEChunk], n: int = 3, max_share: int = 4):
+    def _extract_phrase_bridges(self, chunks: list[LEChunk], n: int = 4, max_share: int = 3):
+        """
+        n=4        : longer phrases are more specific (was 3)
+        max_share=3: phrases shared by too many chunks are noise (was 4)
+        """
         try:
             phrase_map: dict[str, set] = defaultdict(set)
 
@@ -273,19 +297,34 @@ class LexicalEngine:
 
     # EDGE BUILDER
 
-    def _bridge_to_edges(self, bridge_map, edge_type: str, weight: float) -> list[LexicalEdge]:
+    def _bridge_to_edges(self, bridge_map, edge_type: str, base_weight: float) -> list[LexicalEdge]:
+        """
+        bridge_map values can be either:
+        - set of chunk_ids  (entity / phrase maps)
+        - dict of {chunk_id: score}  (tfidf keyword map)
+        Weight is geometric mean of scores when available, else base_weight.
+        """
         try:
             edges = []
-            for label, ids in bridge_map.items():
-                sorted_ids = sorted(ids)
+            for label, id_data in bridge_map.items():
+                # Normalise to {chunk_id: score}
+                if isinstance(id_data, set):
+                    score_map = {cid: base_weight for cid in id_data}
+                else:
+                    score_map = id_data  # already {chunk_id: float}
+
+                sorted_ids = sorted(score_map)
                 for i in range(len(sorted_ids)):
                     for j in range(i + 1, len(sorted_ids)):
+                        src, tgt = sorted_ids[i], sorted_ids[j]
+                        # Geometric mean — rewards chunks that BOTH score highly
+                        weight = math.sqrt(score_map[src] * score_map[tgt])
                         edges.append(LexicalEdge(
-                            source=sorted_ids[i],
-                            target=sorted_ids[j],
+                            source=src,
+                            target=tgt,
                             edge_type=edge_type,
                             label=label,
-                            weight=weight,
+                            weight=round(weight, 4),
                         ))
             return edges
         except Exception as e:
@@ -310,9 +349,14 @@ class LexicalEngine:
             return []
 
     def _deduplicate(self, edges: list[LexicalEdge]) -> list[LexicalEdge]:
+        """
+        Keep only the single strongest edge per (source, target) pair
+        regardless of edge_type — prevents the same chunk pair from
+        accumulating 4+ edges from different strategies.
+        """
         best = {}
         for e in edges:
-            key = (e.source, e.target, e.edge_type)
+            key = (min(e.source, e.target), max(e.source, e.target))  # normalize direction
             if key not in best or e.weight > best[key].weight:
                 best[key] = e
         return list(best.values())
