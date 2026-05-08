@@ -20,11 +20,12 @@ class DocumentWorkflow:
     def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
+        self.graph = Graph(org_id=self.org_id, project_id=self.project_id)
 
     async def process(self, document: DocumentGetSchema):
         try:
             providers = await self._get_providers(document.id, document.readable_id)
-            return await Graph(org_id=self.org_id, project_id=self.project_id).inject_document(document, providers)
+            return await self.graph.inject_document(document, providers)
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
             raise e
@@ -32,7 +33,7 @@ class DocumentWorkflow:
     async def query(self, query: str, document_id: Optional[uuid.UUID] = None, top_k: int = 10):
         try:
             providers = await self._get_query_providers()
-            return await Graph(org_id=self.org_id, project_id=self.project_id).query_documents(providers, query, document_id, top_k)
+            return await self.graph.query_documents(providers, query, document_id, top_k)
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
             raise e

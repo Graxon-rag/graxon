@@ -12,9 +12,11 @@ from app.utils.logger import logger
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 from app.core.qdrant.inject import QdrantInjector
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Annotated
+from langgraph.types import Send
 import traceback
 from langchain_core.documents import Document
+import operator
 import asyncio
 import uuid
 import os
@@ -45,8 +47,8 @@ class DIGState(TypedDict):
     chunk_overlap: int
 
     chunks: Optional[List[Chunk] | None]
-    chunks_embeddings: Optional[List[ChunkEmbedding] | None]
-    chunks_sparse_embeddings: Optional[List[ChunkSparseEmbedding] | None]
+    chunks_embeddings: Annotated[List[ChunkEmbedding], operator.add]
+    chunks_sparse_embeddings: Annotated[List[ChunkSparseEmbedding], operator.add]
 
 
 class DocumentInjectGraph:
@@ -77,19 +79,18 @@ class DocumentInjectGraph:
             graph.add_edge(START, SUPERVISOR_AGENT)
             graph.add_edge(SUPERVISOR_AGENT, CHUNKS_PARSER_AGENT)
 
-            graph.add_edge(CHUNKS_PARSER_AGENT, LLM_AGENT)
-            graph.add_edge(CHUNKS_PARSER_AGENT, EMBEDDING_AGENT)
-            graph.add_edge(CHUNKS_PARSER_AGENT, SPARSE_AGENT)
-            graph.add_edge(CHUNKS_PARSER_AGENT, LEXICAL_ENGINE_AGENT)
+            # Fan-out: chunks_parser dispatches all 4 agents simultaneously
+            graph.add_conditional_edges(
+                CHUNKS_PARSER_AGENT,
+                self._fan_out,
+                [LLM_AGENT, EMBEDDING_AGENT, SPARSE_AGENT, LEXICAL_ENGINE_AGENT],
+            )
 
+            # Fan-in: all 4 converge on chunk_processor
             graph.add_edge(LLM_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(EMBEDDING_AGENT, CHUNK_PROCESSOR_AGENT)
             graph.add_edge(SPARSE_AGENT, CHUNK_PROCESSOR_AGENT)
-            graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)
-
-            graph.add_edge(CHUNK_PROCESSOR_AGENT, DATABASE_AGENT)
-
-            graph.add_edge(DATABASE_AGENT, END)            
+            graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)            
 
             workflow = graph.compile()
             mermaid = workflow.get_graph().draw_mermaid()
@@ -101,6 +102,16 @@ class DocumentInjectGraph:
         except Exception as e:
             logger.error({"message": "Failed to build graph", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             pass
+
+    def _fan_out(self, state: DIGState) -> list[Send]:
+        # Each Send dispatches a node with a copy of the current state.
+        # LangGraph runs all of them concurrently.
+        return [
+            Send(LLM_AGENT, state),
+            Send(EMBEDDING_AGENT, state),
+            Send(SPARSE_AGENT, state),
+            Send(LEXICAL_ENGINE_AGENT, state),
+        ]
 
     async def _supervisor_agent(self, state: DIGState):
         try:

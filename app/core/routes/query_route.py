@@ -32,7 +32,7 @@ async def query(org_id: str, project_id: uuid.UUID, query: str = Query(..., desc
         if not result:
             logger.error({"message": "Failed to query", "result": result})
             return error_response("Failed to query", HTTP_404_NOT_FOUND)
-        return success_response(data=result.model_dump(mode="json"))
+        return success_response(data=result)
     except Exception as e:
         logger.error({"message": "Failed to query", "error": str(e)})
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
