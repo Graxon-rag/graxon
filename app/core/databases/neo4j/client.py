@@ -89,6 +89,9 @@ class GNeo4jClient:
             project_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.PROJECT, GN4jNodesIds.PROJECT_ID, "id")
             await cls.run_graph_query(project_con_str)
 
+            doc_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.DOCUMENT, GN4jNodesIds.DOCUMENT_ID, "id")
+            await cls.run_graph_query(doc_con_str)
+
             logger.info("Constraints created or initialized successfully.")
 
         except Exception as e:

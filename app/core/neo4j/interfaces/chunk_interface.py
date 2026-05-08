@@ -1,0 +1,15 @@
+
+class N4jChunkInterface:
+    org_id = "org_id"
+    project_id = "project_id"
+    document_id = "document_id"
+    document_readable_id = "document_readable_id"
+    id = "id"
+    chunk_id = "chunk_id"
+    chunk_number = "chunk_number"
+    text = "text"
+    page_number = "page_number"
+    title = "title"
+    source = "source"
+    created_at = "created_at"
+    updated_at = "updated_at"

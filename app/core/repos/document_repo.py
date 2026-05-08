@@ -1,9 +1,10 @@
 from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
+from ..neo4j.document import GN4jDocument
+from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
 from app.constants.minio import MinioConstant
-from app.constants.document import DocumentStatus
 from ..qdrant.delete import QDrantCleaner
 from app.utils.logger import logger
 from sqlalchemy import select
@@ -17,11 +18,13 @@ class DocumentRepo:
         self.project_id = project_id
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=self.project_id)
         self.qdrant_cleaner = QDrantCleaner(org_id=self.org_id, project_id=self.project_id)
+        self.neo4j_document = GN4jDocument(org_id=self.org_id, project_id=self.project_id)
 
     async def create(self, doc: DocumentCreateSchema) -> DocumentGetSchema:
         try:
             async with self.db.get_session() as session:
                 new_doc = Document(
+                    id=uuid.uuid4(),
                     org_id=self.org_id,
                     project_id=self.project_id,
                     readable_id=doc.readable_id,
@@ -32,6 +35,7 @@ class DocumentRepo:
                     status=doc.status
                 )
                 session.add(new_doc)
+                await self.neo4j_document.create(new_doc.id, new_doc.readable_id)
                 await session.commit()
 
                 return DocumentGetSchema(**new_doc.to_dict())
@@ -93,6 +97,7 @@ class DocumentRepo:
                 await self.minio_helper.delete_file(bucket=bucket, key=key)
 
                 await session.delete(document)
+                await self.neo4j_document.delete(document_id)
                 await session.commit()
 
                 try:

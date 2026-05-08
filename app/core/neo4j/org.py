@@ -39,7 +39,7 @@ class GN4jOrg:
                 "message": "Failed to create org",
                 "error": str(e)
             })
-            raise
+            raise e
 
     async def get(self, org_id: str):
         try:
@@ -55,7 +55,7 @@ class GN4jOrg:
                 "message": "Failed to get org",
                 "error": str(e)
             })
-            raise
+            raise e
 
     async def delete(self, org_id: str):
         try:
@@ -70,4 +70,4 @@ class GN4jOrg:
                 "message": "Failed to delete org",
                 "error": str(e)
             })
-            raise
+            raise e

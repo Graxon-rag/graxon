@@ -1,6 +1,8 @@
 
 class GNeo4jEdges:
     HAS_PROJECT = "HAS_PROJECT"
+    HAS_DOCUMENT = "HAS_DOCUMENT"
+    HAS_CHUNK = "HAS_CHUNK"
     SHARES_ENTITY = "SHARES_ENTITY"
     SHARES_CONCEPT = "SHARES_CONCEPT"
     SHARES_KEYWORD = "SHARES_KEYWORD"
@@ -10,11 +12,13 @@ class GNeo4jEdges:
 
 class GN4jNodes:
     CHUNK = "CHUNK"
+    DOCUMENT = "DOCUMENT"
     ORGANIZATION = "ORGANIZATION"
     PROJECT = "PROJECT"
 
 
 class GN4jNodesIds:
     CHUNK_ID = "id"
+    DOCUMENT_ID = "id"
     ORGANIZATION_ID = "id"
     PROJECT_ID = "id"
