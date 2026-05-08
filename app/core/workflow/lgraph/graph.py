@@ -1,7 +1,8 @@
 from .document_inject_graph import DocumentInjectGraph, DIGState
-from app.utils.logger import logger
 from app.core.schemas.document_schema import DocumentGetSchema
 from ..schemas.provider_schema import ProviderSchema
+from app.utils.logger import logger
+from typing import Optional
 from app.config.env import Env
 import uuid
 
@@ -55,4 +56,11 @@ class Graph:
 
         except Exception as e:
             logger.error({"message": "Failed to inject document", "error": str(e)})
+            raise e
+
+    async def query_documents(self, query: str, document_id: Optional[uuid.UUID] = None, top_k: int = 10):
+        try:
+            pass
+        except Exception as e:
+            logger.error({"message": "Failed to query", "error": str(e)})
             raise e
