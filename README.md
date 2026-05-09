@@ -22,6 +22,11 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
+#### Errors
+
+1. If you encounter error regarding the `psycopg2` then remove `psycopg2==2.9.12` from `requirements.txt`
+2. If you encounter error regarding the `pypdf` then update it's version to `pypdf==6.4.9` in `requirements.txt`
+
 ### 2. Configure environment variables
 
 Copy the example env file and fill in your values:
