@@ -1,6 +1,7 @@
 from ..schemas.org_schema import OrgCreateSchema, OrgGetSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Organization
+from ..neo4j.org import GN4jOrg
 from ..libs.org_lib import OrgLib
 from app.utils.logger import logger
 from sqlalchemy import select
@@ -9,6 +10,7 @@ from sqlalchemy import select
 class OrgRepo:
     def __init__(self):
         self.db = GPostgresqlClient()
+        self.neo4j_org = GN4jOrg()
 
     async def create(self, data: OrgCreateSchema) -> OrgGetSchema:
         try:
@@ -29,6 +31,7 @@ class OrgRepo:
                     description=data.description
                 )
                 session.add(org)
+                await self.neo4j_org.create(id, data.name, data.description)
                 await session.commit()
                 return OrgGetSchema(**org.to_dict())
         except Exception as e:
