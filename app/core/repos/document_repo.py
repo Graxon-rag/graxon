@@ -104,27 +104,43 @@ class DocumentRepo:
                 await session.commit()
 
                 try:
-                    lexical_engine_output_file = MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE
-                    leo_key = f"{self.project_id}/{document.readable_id}/{lexical_engine_output_file}.json"
-                    seo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE}.json"
-                    eo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.EMBEDDING_OUTPUT_FILE}.json"
-                    lo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.LLM_OUTPUT_FILE}.json"
-                    ltr_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.LLM_TAG_RESPONSE}.json"
-                    npo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT}.json"
-                    eto_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.N4J_EDGES_TAG_OUTPUT}.json"
-                    ero_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.N4J_EDGES_REFERENCE_OUTPUT}.json"
+                    files_to_delete = [
+                        MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE,
+                        MinioConstant.EMBEDDING_OUTPUT_FILE,
+                        MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE,
+                        MinioConstant.LLM_OUTPUT_FILE,
+                        MinioConstant.LLM_TAG_RESPONSE,
+                        MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT,
+                        MinioConstant.N4J_EDGES_TAG_OUTPUT,
+                        MinioConstant.N4J_EDGES_REFERENCE_OUTPUT,
+                    ]
 
-                    await self.minio_helper.delete_file(bucket=bucket, key=seo_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=eo_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=leo_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=lo_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=ltr_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=npo_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=eto_key)
-                    await self.minio_helper.delete_file(bucket=bucket, key=ero_key)
+                    for file_name in files_to_delete:
+                        key = f"{self.project_id}/{document.readable_id}/{file_name}.json"
+
+                        try:
+                            await self.minio_helper.delete_file(
+                                bucket=bucket,
+                                key=key
+                            )
+
+                            logger.info({
+                                "message": "Deleted file from MinIO",
+                                "key": key
+                            })
+
+                        except Exception as delete_error:
+                            logger.warning({
+                                "message": "Failed to delete file from MinIO",
+                                "key": key,
+                                "error": str(delete_error)
+                            })
 
                 except Exception as e:
-                    logger.warning({"message": "Failed to delete lexical engine output, sparse embedding output or embedding output file", "error": str(e)})
+                    logger.warning({
+                        "message": "Unexpected error during MinIO cleanup",
+                        "error": str(e)
+                    })
 
                 return True
         except Exception as e:

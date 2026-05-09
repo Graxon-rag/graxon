@@ -12,6 +12,7 @@ from app.core.qdrant.inject import QdrantInjector
 from .prompts.tag_prompt import Tagging_Prompt
 from app.constants.minio import MinioConstant
 from langchain_core.documents import Document
+from app.constants.neo4j import GNeo4jEdges
 from app.core.neo4j.chunk import GN4jChunk
 from app.core.libs.id import IDLibs
 from app.utils.logger import logger
@@ -30,7 +31,7 @@ LLM_AGENT = "llm_agent"
 EMBEDDING_AGENT = "embedding_agent"
 SPARSE_AGENT = "sparse_agent"
 LEXICAL_ENGINE_AGENT = "lexical_engine_agent"
-CHUNK_PROCESSOR_AGENT = "chunk_processor_agent"
+VECTOR_DATABASE_AGENT = "vector_database_agent"
 GRAPH_DATABASE_AGENT = "graph_database_agent"
 
 
@@ -50,6 +51,7 @@ class DIGState(TypedDict):
 
     chunks: Optional[List[Chunk] | None]
     tags: Optional[List[ChunkTags] | None]
+    chunk_tag_results: Optional[List[ChunkTagResult] | None]
     lexical_engine_data: Optional[LexicalResult | None]
     chunks_embeddings: Annotated[List[ChunkEmbedding], operator.add]
     chunks_sparse_embeddings: Annotated[List[ChunkSparseEmbedding], operator.add]
@@ -76,7 +78,7 @@ class DocumentInjectGraph:
             graph.add_node(EMBEDDING_AGENT, self._embedding_agent)
             graph.add_node(SPARSE_AGENT, self._sparse_agent)
             graph.add_node(LEXICAL_ENGINE_AGENT, self._lexical_engine_agent)
-            graph.add_node(CHUNK_PROCESSOR_AGENT, self._chunks_processor_agent)
+            graph.add_node(VECTOR_DATABASE_AGENT, self._vector_database_agent)
             graph.add_node(GRAPH_DATABASE_AGENT, self._graph_database_agent)
 
             # Edges
@@ -92,12 +94,12 @@ class DocumentInjectGraph:
             )
 
             # Fan-in: all 4 converge on chunk_processor
-            graph.add_edge(LLM_AGENT, CHUNK_PROCESSOR_AGENT)
-            graph.add_edge(EMBEDDING_AGENT, CHUNK_PROCESSOR_AGENT)
-            graph.add_edge(SPARSE_AGENT, CHUNK_PROCESSOR_AGENT)
-            graph.add_edge(LEXICAL_ENGINE_AGENT, CHUNK_PROCESSOR_AGENT)
+            graph.add_edge(LLM_AGENT, VECTOR_DATABASE_AGENT)
+            graph.add_edge(EMBEDDING_AGENT, VECTOR_DATABASE_AGENT)
+            graph.add_edge(SPARSE_AGENT, VECTOR_DATABASE_AGENT)
+            graph.add_edge(LEXICAL_ENGINE_AGENT, VECTOR_DATABASE_AGENT)
 
-            graph.add_edge(CHUNK_PROCESSOR_AGENT, GRAPH_DATABASE_AGENT)
+            graph.add_edge(VECTOR_DATABASE_AGENT, GRAPH_DATABASE_AGENT)
 
             graph.add_edge(GRAPH_DATABASE_AGENT, END)
 
@@ -198,7 +200,7 @@ class DocumentInjectGraph:
             structured_llm = llm.with_structured_output(TagResponse)
 
             global_tags: List[str] = []
-            chunk_results: List[ChunkTagResult] = []   # in-memory store
+            chunk_tag_results: List[ChunkTagResult] = []   # in-memory store
 
             for chunk in chunks:
                 try:
@@ -219,7 +221,7 @@ class DocumentInjectGraph:
                             global_tags.append(new_tag)
 
                     # store in memory — nothing else
-                    chunk_results.append(ChunkTagResult(
+                    chunk_tag_results.append(ChunkTagResult(
                         chunk_id=chunk.chunk_id,
                         chunk_number=chunk.chunk_number,
                         tag_response=tag_response,
@@ -229,16 +231,10 @@ class DocumentInjectGraph:
                     logger.error({"message": "Failed to run LLM agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
             # Upload LLM results
-            chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_results]
+            chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_tag_results]
             await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_OUTPUT_FILE, json_data={"data": chunk_result_json}, document_name_id=self.document_readable_id)
 
-            tags = await self._llm_agent_process(chunk_results=chunk_results, chunks=chunks)
-
-            # Upload LLM tags
-            tags_json = [tag.model_dump_json() for tag in tags]
-            await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_name_id=self.document_readable_id)
-
-            return {"tags": tags}
+            return {"chunk_tag_results": chunk_tag_results}
         except Exception as e:
             logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
             raise e
@@ -332,7 +328,7 @@ class DocumentInjectGraph:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
 
-    async def _chunks_processor_agent(self, state: DIGState):
+    async def _vector_database_agent(self, state: DIGState):
         try:
             chunks = state["chunks"]
             if chunks is None:
@@ -373,6 +369,15 @@ class DocumentInjectGraph:
             if lexical_engine_data is not None:
                 logger.info({"message": "Creating graph database edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 await self.n4j_chunk_db.create_edges_by_lexical_engine_data(self.document_id, self.document_readable_id, lexical_engine_data)
+
+            chunk_tag_results = state["chunk_tag_results"]
+            if chunk_tag_results is not None:
+                logger.info({"message": "Creating graph database edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                tags = await self._llm_agent_process(chunk_results=chunk_tag_results, chunks=chunks)
+
+                # Upload LLM tags
+                tags_json = [tag.model_dump_json() for tag in tags]
+                await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_name_id=self.document_readable_id)
 
         except Exception as e:
             logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -472,7 +477,7 @@ class DocumentInjectGraph:
                     n4j_tag_edges.append(N4jChunkEdge(
                         from_chunk_id=chunk_id_a,
                         to_chunk_id=chunk_id_b,
-                        edge_name="HAS_TAG",
+                        edge_name=GNeo4jEdges.HAS_TAG,
                         label=tag,
                         weight=avg_weight,
                     ))
@@ -509,14 +514,14 @@ class DocumentInjectGraph:
                 n4j_nex_prev_edges.append(N4jChunkEdge(
                     from_chunk_id=chunk_id,
                     to_chunk_id=prev_chunk.chunk_id,
-                    edge_name="PREV",
+                    edge_name=GNeo4jEdges.PREV,
                     label="sequential",
                     weight=1.0,
                 ))
                 n4j_nex_prev_edges.append(N4jChunkEdge(
                     from_chunk_id=prev_chunk.chunk_id,
                     to_chunk_id=chunk_id,
-                    edge_name="NEXT",
+                    edge_name=GNeo4jEdges.NEXT,
                     label="sequential",
                     weight=1.0,
                 ))
@@ -532,7 +537,7 @@ class DocumentInjectGraph:
                 n4j_reference_edges.append(N4jChunkEdge(
                     from_chunk_id=chunk_id,
                     to_chunk_id=ref_chunk.chunk_id,
-                    edge_name="REFERENCES",
+                    edge_name=GNeo4jEdges.REFERENCES,
                     label=tag_response.reference_hint or "_",
                     weight=ref_weight,
                 ))
@@ -545,5 +550,10 @@ class DocumentInjectGraph:
         await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_TAG_OUTPUT, json_data={"data": n4j_tag_edges_json}, document_name_id=self.document_readable_id)
         await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT, json_data={"data": n4j_nex_prev_edges_json}, document_name_id=self.document_readable_id)
         await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_REFERENCE_OUTPUT, json_data={"data": n4j_reference_edges_json}, document_name_id=self.document_readable_id)
+
+        # Merge TO NEO4J
+        await self.n4j_chunk_db.create_edges(self.document_id, n4j_tag_edges)
+        await self.n4j_chunk_db.create_edges(self.document_id, n4j_nex_prev_edges)
+        await self.n4j_chunk_db.create_edges(self.document_id, n4j_reference_edges)
 
         return all_chunk_tags

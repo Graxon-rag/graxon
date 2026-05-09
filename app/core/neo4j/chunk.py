@@ -1,8 +1,8 @@
 from .interfaces.chunk_interface import N4jChunkInterface
 from app.constants.neo4j import GN4jNodes, GNeo4jEdges
+from ..schemas.chunk_schema import Chunk, N4jChunkEdge
 from ..databases.neo4j.client import GNeo4jClient
 from ..lexical_engine.index import LexicalResult
-from ..schemas.chunk_schema import Chunk
 from typing import cast, LiteralString
 from app.utils.logger import logger
 from itertools import groupby
@@ -91,6 +91,44 @@ class GN4jChunk:
                 logger.info(f"Merged {count} [{edge_type}] edges for document {document_readable_id}.")
 
             logger.info(f"Total edges merged: {total_merged} for document {document_readable_id}.")
+            return total_merged
+
+        except Exception as e:
+            logger.error({"message": "Failed to create edges", "error": str(e)})
+            raise e
+
+    async def create_edges(self, document_id: uuid.UUID, edges: list[N4jChunkEdge]):
+        try:
+            sorted_edges = sorted(edges, key=lambda e: e.edge_name)
+            grouped = groupby(sorted_edges, key=lambda e: e.edge_name)
+
+            total_merged = 0
+
+            for edge_name, edge_group in grouped:
+                edge_list = [
+                    {
+                        "source": e.from_chunk_id,
+                        "target": e.to_chunk_id,
+                        "label": e.label,
+                        "weight": e.weight,
+                    }
+                    for e in edge_group
+                ]
+                # Each group does UNWIND $edges — so all HAS_TAG edges merge in one shot, all NEXT edges in one shot etc.
+                query = cast(LiteralString, f"""
+                    UNWIND $edges AS edge
+                    MATCH (src:{GN4jNodes.CHUNK} {{id: edge.source}})
+                    MATCH (tgt:{GN4jNodes.CHUNK} {{id: edge.target}})
+                    MERGE (src)-[:{edge_name} {{label: edge.label, weight: edge.weight}}]->(tgt)
+                    RETURN count(*) AS merged_count
+                """)
+
+                result, _, _ = await self.graph.execute_query(query, {"edges": edge_list})
+                count = result[0]["merged_count"]
+                total_merged += count
+                logger.info(f"Merged {count} [{edge_name}] edges for document {document_id}.")
+
+            logger.info(f"Total edges merged: {total_merged} for document {document_id}.")
             return total_merged
 
         except Exception as e:
