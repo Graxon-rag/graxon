@@ -9,7 +9,7 @@ from itertools import groupby
 import uuid
 
 
-class N4jChunk:
+class GN4jChunk:
     def __init__(self, org_id: str, project_id: uuid.UUID):
         self.graph = GNeo4jClient.get_driver()
         self.org_id = org_id
@@ -95,4 +95,19 @@ class N4jChunk:
 
         except Exception as e:
             logger.error({"message": "Failed to create edges", "error": str(e)})
+            raise e
+
+    async def delete_by_doc_id(self, document_id: uuid.UUID):
+        try:
+            query = cast(LiteralString, f"""
+                MATCH (og:{GN4jNodes.ORGANIZATION} {{id: $org_id}})-[:{GNeo4jEdges.HAS_PROJECT}]->(pr:{GN4jNodes.PROJECT} {{id: $project_id}})
+                MATCH (pr)-[:{GNeo4jEdges.HAS_DOCUMENT}]->(dc:{GN4jNodes.DOCUMENT} {{id: $document_id}})
+                MATCH (dc)-[:{GNeo4jEdges.HAS_CHUNK}]->(ch:{GN4jNodes.CHUNK})
+                DETACH DELETE ch
+            """)
+
+            await self.graph.execute_query(query, {"org_id": self.org_id, "project_id": str(self.project_id), "document_id": str(document_id)})
+
+        except Exception as e:
+            logger.error({"message": "Failed to delete chunks", "error": str(e)})
             raise e

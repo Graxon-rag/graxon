@@ -2,6 +2,7 @@ from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
 from ..neo4j.document import GN4jDocument
+from ..neo4j.chunk import GN4jChunk
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
 from app.constants.minio import MinioConstant
@@ -19,6 +20,7 @@ class DocumentRepo:
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=self.project_id)
         self.qdrant_cleaner = QDrantCleaner(org_id=self.org_id, project_id=self.project_id)
         self.neo4j_document = GN4jDocument(org_id=self.org_id, project_id=self.project_id)
+        self.neo4j_chunk = GN4jChunk(org_id=self.org_id, project_id=self.project_id)
 
     async def create(self, doc: DocumentCreateSchema) -> DocumentGetSchema:
         try:
@@ -97,6 +99,7 @@ class DocumentRepo:
                 await self.minio_helper.delete_file(bucket=bucket, key=key)
 
                 await session.delete(document)
+                await self.neo4j_chunk.delete_by_doc_id(document_id)
                 await self.neo4j_document.delete(document_id)
                 await session.commit()
 
@@ -105,9 +108,20 @@ class DocumentRepo:
                     leo_key = f"{self.project_id}/{document.readable_id}/{lexical_engine_output_file}.json"
                     seo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE}.json"
                     eo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.EMBEDDING_OUTPUT_FILE}.json"
+                    lo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.LLM_OUTPUT_FILE}.json"
+                    ltr_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.LLM_TAG_RESPONSE}.json"
+                    npo_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT}.json"
+                    eto_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.N4J_EDGES_TAG_OUTPUT}.json"
+                    ero_key = f"{self.project_id}/{document.readable_id}/{MinioConstant.N4J_EDGES_REFERENCE_OUTPUT}.json"
+
                     await self.minio_helper.delete_file(bucket=bucket, key=seo_key)
                     await self.minio_helper.delete_file(bucket=bucket, key=eo_key)
                     await self.minio_helper.delete_file(bucket=bucket, key=leo_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=lo_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=ltr_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=npo_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=eto_key)
+                    await self.minio_helper.delete_file(bucket=bucket, key=ero_key)
 
                 except Exception as e:
                     logger.warning({"message": "Failed to delete lexical engine output, sparse embedding output or embedding output file", "error": str(e)})

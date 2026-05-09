@@ -98,22 +98,22 @@ class LexicalEngine:
 
             shared_entities = {e: ids for e, ids in entity_map.items() if len(ids) >= 2}
             shared_concepts = {c: ids for c, ids in concept_map.items() if len(ids) >= 2}
-            result.edges += self._bridge_to_edges(shared_entities, GNeo4jEdges.SHARES_ENTITY, 1.5)
-            result.edges += self._bridge_to_edges(shared_concepts, GNeo4jEdges.SHARES_CONCEPT, 1.2)
+            result.edges += self._bridge_to_edges(shared_entities, GNeo4jEdges.SHARES_ENTITY, 1.0)
+            result.edges += self._bridge_to_edges(shared_concepts, GNeo4jEdges.SHARES_CONCEPT, 0.75)
 
             # Step 2 — TF-IDF keywords
             keyword_map, noise = self.extract_tfidf_keywords(chunks)
-            result.edges += self._bridge_to_edges(keyword_map, GNeo4jEdges.SHARES_KEYWORD, 1.0)
+            result.edges += self._bridge_to_edges(keyword_map, GNeo4jEdges.SHARES_KEYWORD, 0.65)
             result.filtered_noise = noise
 
             # Step 3 — phrases
             phrase_map = self._extract_phrase_bridges(chunks)
-            result.edges += self._bridge_to_edges(phrase_map, GNeo4jEdges.SHARES_PHRASE, 1.3)
+            result.edges += self._bridge_to_edges(phrase_map, GNeo4jEdges.SHARES_PHRASE, 0.85)
 
             # Step 4 — acronyms
             acronyms = self._extract_acronyms(chunks)
             result.acronyms = acronyms
-            result.edges += self._acronym_to_edges(acronyms, GNeo4jEdges.SHARES_ACRONYM, 1.4)
+            result.edges += self._acronym_to_edges(acronyms, GNeo4jEdges.SHARES_ACRONYM, 0.9)
 
             result.edges = self._deduplicate(result.edges)
             return result

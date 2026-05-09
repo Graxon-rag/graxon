@@ -1,4 +1,4 @@
-from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding
+from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding, ChunkTags, TagResponse, ChunkTagResult, N4jChunkEdge
 from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
@@ -9,13 +9,14 @@ from ..schemas.provider_schema import ProviderSchema
 from langgraph.graph import StateGraph, START, END
 from typing import Dict, List, Optional, Annotated
 from app.core.qdrant.inject import QdrantInjector
+from .prompts.tag_prompt import Tagging_Prompt
 from app.constants.minio import MinioConstant
 from langchain_core.documents import Document
-from app.core.neo4j.chunk import N4jChunk
+from app.core.neo4j.chunk import GN4jChunk
 from app.core.libs.id import IDLibs
 from app.utils.logger import logger
+from typing import TypedDict, Tuple
 from langgraph.types import Send
-from typing import TypedDict
 import traceback
 import operator
 import asyncio
@@ -48,6 +49,7 @@ class DIGState(TypedDict):
     chunk_overlap: int
 
     chunks: Optional[List[Chunk] | None]
+    tags: Optional[List[ChunkTags] | None]
     lexical_engine_data: Optional[LexicalResult | None]
     chunks_embeddings: Annotated[List[ChunkEmbedding], operator.add]
     chunks_sparse_embeddings: Annotated[List[ChunkSparseEmbedding], operator.add]
@@ -61,7 +63,7 @@ class DocumentInjectGraph:
         self.document_readable_id = document_readable_id
         self.injector = QdrantInjector(org_id=org_id, project_id=project_id)
         self.minio_helper = MinioHelper(org_id=org_id, project_id=project_id)
-        self.n4j_chunk_db = N4jChunk(org_id=org_id, project_id=project_id)
+        self.n4j_chunk_db = GN4jChunk(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -186,21 +188,57 @@ class DocumentInjectGraph:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 raise
 
+            # tags: List[ChunkTags] = state["tags"] or []
             providers = state["providers"]
             llm_provider = providers.llm.provider
             api_key = providers.llm.api_key
             model = providers.llm.model
 
             llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
+            structured_llm = llm.with_structured_output(TagResponse)
+
+            global_tags: List[str] = []
+            chunk_results: List[ChunkTagResult] = []   # in-memory store
 
             for chunk in chunks:
                 try:
-
                     logger.info({"message": "LLM chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    pass
+                    existing_tags_str = ", ".join(global_tags) if global_tags else "None yet — this is the first chunk."
+                    formatted_prompt = Tagging_Prompt.format(
+                        existing_tags=existing_tags_str,
+                        chunk_text=chunk.text,
+                    )
+                    tag_response: TagResponse = await structured_llm.ainvoke(formatted_prompt)
+
+                    # hallucination guard
+                    tag_response.validate_similar_tags_against_pool(global_tags)
+
+                    # grow global pool
+                    for new_tag in tag_response.new_tags:
+                        if new_tag not in global_tags:
+                            global_tags.append(new_tag)
+
+                    # store in memory — nothing else
+                    chunk_results.append(ChunkTagResult(
+                        chunk_id=chunk.chunk_id,
+                        chunk_number=chunk.chunk_number,
+                        tag_response=tag_response,
+                    ))
+
                 except Exception as e:
                     logger.error({"message": "Failed to run LLM agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
 
+            # Upload LLM results
+            chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_results]
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_OUTPUT_FILE, json_data={"data": chunk_result_json}, document_name_id=self.document_readable_id)
+
+            tags = await self._llm_agent_process(chunk_results=chunk_results, chunks=chunks)
+
+            # Upload LLM tags
+            tags_json = [tag.model_dump_json() for tag in tags]
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_name_id=self.document_readable_id)
+
+            return {"tags": tags}
         except Exception as e:
             logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
             raise e
@@ -353,3 +391,159 @@ class DocumentInjectGraph:
 
     def _get_model_key(self, provider: str, dimension: int) -> str:
         return f"{provider}_{dimension}"
+
+    def _build_tag_map(self, chunk_results: List[ChunkTagResult]) -> Dict[str, List[Tuple[str, float]]]:
+        """
+        Returns:
+        {
+            "tag_name": [(chunk_id, confidence), (chunk_id, confidence), ...]
+        }
+        new_tags always get confidence 1.0
+        similar_tags use LLM confidence score
+        """
+        tag_map: Dict[str, List[Tuple[str, float]]] = {}
+
+        for result in chunk_results:
+            # new_tags — confidence always 1.0
+            for tag in result.tag_response.new_tags:
+                tag_map.setdefault(tag, [])
+                tag_map[tag].append((result.chunk_id, 1.0))
+
+            # similar_tags — LLM confidence
+            for similar in result.tag_response.similar_tags:
+                tag_map.setdefault(similar.tag, [])
+                tag_map[similar.tag].append((result.chunk_id, similar.confidence))
+
+        return tag_map
+
+    # TEXT SEARCH
+    def _find_referenced_chunks(self, reference_hint: str, chunks: list[Chunk], current_chunk_number: int) -> List[int]:
+        matched = []
+        hint_lower = reference_hint.strip().lower()
+
+        vague_signals = ["earlier", "above", "previous", "before", "prior", "as defined", "as mentioned"]
+        is_vague = any(signal in hint_lower for signal in vague_signals)
+
+        if is_vague:
+            prev = current_chunk_number - 1
+            if prev >= 0:
+                matched.append(prev)
+            return matched
+
+        for chunk in chunks:
+            if chunk.chunk_number == current_chunk_number:
+                continue
+            if hint_lower in chunk.text.lower():
+                matched.append(chunk.chunk_number)
+
+        return matched
+
+    # POST PROCESSING
+    async def _llm_agent_process(self, chunk_results: List[ChunkTagResult], chunks: list[Chunk]) -> List[ChunkTags]:
+        """
+        - Text search for all reference_hints
+        - Build ChunkTags
+        - Create all Neo4j edges
+        """
+        all_chunk_tags: List[ChunkTags] = []
+
+        # BUILD TAG MAP
+        tag_map = self._build_tag_map(chunk_results)
+
+        n4j_tag_edges: list[N4jChunkEdge] = []
+        n4j_nex_prev_edges: list[N4jChunkEdge] = []
+        n4j_reference_edges: list[N4jChunkEdge] = []
+
+        # HAS_TAG EDGES: chunk → chunk (bidirectional, avg confidence)
+        for tag, chunk_confidences in tag_map.items():
+            # need at least 2 chunks sharing a tag to create an edge
+            if len(chunk_confidences) < 2:
+                continue
+
+            for i in range(len(chunk_confidences)):
+                for j in range(len(chunk_confidences)):
+                    if i == j:
+                        continue
+
+                    chunk_id_a, conf_a = chunk_confidences[i]
+                    chunk_id_b, conf_b = chunk_confidences[j]
+                    avg_weight = round((conf_a + conf_b) / 2, 2)
+
+                    n4j_tag_edges.append(N4jChunkEdge(
+                        from_chunk_id=chunk_id_a,
+                        to_chunk_id=chunk_id_b,
+                        edge_name="HAS_TAG",
+                        label=tag,
+                        weight=avg_weight,
+                    ))
+
+        # PER CHUNK: NEXT/PREV + REFERENCES
+        for result in chunk_results:
+            chunk_id = result.chunk_id
+            chunk_number = result.chunk_number
+            tag_response = result.tag_response
+
+            # RESOLVE REFERENCES
+            reference_chunk_numbers = []
+            if tag_response.has_backward_reference and tag_response.reference_hint:
+                reference_chunk_numbers = self._find_referenced_chunks(
+                    reference_hint=tag_response.reference_hint,
+                    chunks=chunks,
+                    current_chunk_number=chunk_number,
+                )
+
+            # BUILD ChunkTags
+            chunk_tags = ChunkTags(
+                chunk_id=chunk_id,
+                chunk_number=chunk_number,
+                new_tags=tag_response.new_tags,
+                similar_tags=tag_response.similar_tags,
+                reference_chunk_numbers=reference_chunk_numbers,
+            )
+            all_chunk_tags.append(chunk_tags)
+
+            # NEXT / PREV EDGES
+            if chunk_number > 0:
+                prev_chunk = chunks[chunk_number - 1]
+
+                n4j_nex_prev_edges.append(N4jChunkEdge(
+                    from_chunk_id=chunk_id,
+                    to_chunk_id=prev_chunk.chunk_id,
+                    edge_name="PREV",
+                    label="sequential",
+                    weight=1.0,
+                ))
+                n4j_nex_prev_edges.append(N4jChunkEdge(
+                    from_chunk_id=prev_chunk.chunk_id,
+                    to_chunk_id=chunk_id,
+                    edge_name="NEXT",
+                    label="sequential",
+                    weight=1.0,
+                ))
+
+            # REFERENCES EDGES
+            for ref_chunk_number in reference_chunk_numbers:
+                ref_chunk = chunks[ref_chunk_number]
+                if len(reference_chunk_numbers) == 1:
+                    ref_weight = 1.0 if tag_response.reference_hint != "previous" else 0.6
+                else:
+                    ref_weight = 0.7
+
+                n4j_reference_edges.append(N4jChunkEdge(
+                    from_chunk_id=chunk_id,
+                    to_chunk_id=ref_chunk.chunk_id,
+                    edge_name="REFERENCES",
+                    label=tag_response.reference_hint or "_",
+                    weight=ref_weight,
+                ))
+
+        n4j_tag_edges_json = [edge.model_dump_json() for edge in n4j_tag_edges]
+        n4j_nex_prev_edges_json = [edge.model_dump_json() for edge in n4j_nex_prev_edges]
+        n4j_reference_edges_json = [edge.model_dump_json() for edge in n4j_reference_edges]
+
+        # UPLOAD TO MINIO
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_TAG_OUTPUT, json_data={"data": n4j_tag_edges_json}, document_name_id=self.document_readable_id)
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT, json_data={"data": n4j_nex_prev_edges_json}, document_name_id=self.document_readable_id)
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_REFERENCE_OUTPUT, json_data={"data": n4j_reference_edges_json}, document_name_id=self.document_readable_id)
+
+        return all_chunk_tags
