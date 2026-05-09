@@ -99,3 +99,8 @@ class N4jChunkEdge(BaseModel):
     edge_name: str
     label: str
     weight: float
+
+
+class ChunkDenseVectorScore(BaseModel):
+    chunk_id: str
+    score: float

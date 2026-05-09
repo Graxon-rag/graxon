@@ -57,3 +57,4 @@ class Env:
     # Chunks
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1500))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 200))
+    MAX_CHUNKS: int = int(os.getenv("MAX_CHUNKS", 10000))

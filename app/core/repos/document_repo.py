@@ -1,12 +1,12 @@
 from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
-from ..neo4j.document import GN4jDocument
-from ..neo4j.chunk import GN4jChunk
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
 from app.constants.minio import MinioConstant
+from ..neo4j.document import GN4jDocument
 from ..qdrant.delete import QDrantCleaner
+from ..neo4j.chunk import GN4jChunk
 from app.utils.logger import logger
 from sqlalchemy import select
 import uuid
@@ -98,9 +98,9 @@ class DocumentRepo:
                 bucket = document.bucket
                 await self.minio_helper.delete_file(bucket=bucket, key=key)
 
-                await session.delete(document)
                 await self.neo4j_chunk.delete_by_doc_id(document_id)
                 await self.neo4j_document.delete(document_id)
+                await session.delete(document)
                 await session.commit()
 
                 try:

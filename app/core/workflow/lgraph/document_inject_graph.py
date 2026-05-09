@@ -1,9 +1,10 @@
-from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding, ChunkTags, TagResponse, ChunkTagResult, N4jChunkEdge
+from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding, ChunkTags, TagResponse, ChunkTagResult, N4jChunkEdge, ChunkDenseVectorScore
 from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 from app.core.schemas.document_schema import DocumentGetSchema
 from .processor.processor_factory import ProcessorFactory
+from app.core.qdrant.similarity import QdrantSimilarity
 from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
 from langgraph.graph import StateGraph, START, END
@@ -33,6 +34,7 @@ SPARSE_AGENT = "sparse_agent"
 LEXICAL_ENGINE_AGENT = "lexical_engine_agent"
 VECTOR_DATABASE_AGENT = "vector_database_agent"
 GRAPH_DATABASE_AGENT = "graph_database_agent"
+SIMILARITY_SYNC_AGENT = "similarity_sync_agent"
 
 
 class DIGState(TypedDict):
@@ -42,6 +44,7 @@ class DIGState(TypedDict):
     request_id: str
     document: DocumentGetSchema
     providers: ProviderSchema
+    ep_model_key: str
 
     temp_path: str | None
     file_path: str | None
@@ -66,6 +69,7 @@ class DocumentInjectGraph:
         self.injector = QdrantInjector(org_id=org_id, project_id=project_id)
         self.minio_helper = MinioHelper(org_id=org_id, project_id=project_id)
         self.n4j_chunk_db = GN4jChunk(org_id=org_id, project_id=project_id)
+        self.qdrant_similarity = QdrantSimilarity(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -80,6 +84,7 @@ class DocumentInjectGraph:
             graph.add_node(LEXICAL_ENGINE_AGENT, self._lexical_engine_agent)
             graph.add_node(VECTOR_DATABASE_AGENT, self._vector_database_agent)
             graph.add_node(GRAPH_DATABASE_AGENT, self._graph_database_agent)
+            graph.add_node(SIMILARITY_SYNC_AGENT, self._similarity_sync_agent)
 
             # Edges
 
@@ -101,7 +106,9 @@ class DocumentInjectGraph:
 
             graph.add_edge(VECTOR_DATABASE_AGENT, GRAPH_DATABASE_AGENT)
 
-            graph.add_edge(GRAPH_DATABASE_AGENT, END)
+            graph.add_edge(GRAPH_DATABASE_AGENT, SIMILARITY_SYNC_AGENT)
+
+            graph.add_edge(SIMILARITY_SYNC_AGENT, END)
 
             workflow = graph.compile()
             mermaid = workflow.get_graph().draw_mermaid()
@@ -344,12 +351,9 @@ class DocumentInjectGraph:
                 logger.error({"message": "Chunks sparse embeddings is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 raise ValueError("Chunks sparse embeddings is None")
 
-            providers = state["providers"]
-            embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
-            dimension = providers.embedding.dimension
-            model_key = self._get_model_key(embedder_provider, dimension)
+            ep_model_key = state["ep_model_key"]
 
-            await self.injector.inject(model_key=model_key, document_id=self.document_id, chunks=chunks, chunk_embeddings=chunks_embeddings, chunk_sparse_embeddings=chunks_sparse_embeddings)
+            await self.injector.inject(model_key=ep_model_key, document_id=self.document_id, chunks=chunks, chunk_embeddings=chunks_embeddings, chunk_sparse_embeddings=chunks_sparse_embeddings)
 
         except Exception as e:
             logger.error({"message": "Failed to run chunks processor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -383,6 +387,31 @@ class DocumentInjectGraph:
             logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
 
+    async def _similarity_sync_agent(self, state: DIGState):
+        try:
+            ep_model_key = state["ep_model_key"]
+            chunks = state["chunks"]
+            if chunks is None:
+                logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Chunks is None")
+
+            chunk_ids = [chunk.chunk_id for chunk in chunks]
+
+            result: dict[str, list[ChunkDenseVectorScore]] = await self.qdrant_similarity.get_similar_chunks(model_key=ep_model_key, document_id=self.document_id, chunk_ids=chunk_ids, top_k=3)
+
+            n4j_similarity_edges: list[N4jChunkEdge] = []
+
+            for from_chunk_id, obj in result.items():
+                for cs in obj:
+                    n4j_similarity_edges.append(N4jChunkEdge(from_chunk_id=from_chunk_id, to_chunk_id=cs.chunk_id, edge_name=GNeo4jEdges.VECTOR_SIMILARITY, label="vector_similarity", weight=cs.score))
+
+            logger.info({"message": "Creating vector similarity edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
+            await self.n4j_chunk_db.create_edges(self.document_id, n4j_similarity_edges)
+
+        except Exception as e:
+            logger.error({"message": "Failed to run similarity sync agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+            raise e
+
     def _get_temp_path(self) -> str:
         base_tmp_path = "/tmp/graxon"
 
@@ -393,9 +422,6 @@ class DocumentInjectGraph:
         # Ensure directory exists
         os.makedirs(run_path, exist_ok=True)
         return run_path
-
-    def _get_model_key(self, provider: str, dimension: int) -> str:
-        return f"{provider}_{dimension}"
 
     def _build_tag_map(self, chunk_results: List[ChunkTagResult]) -> Dict[str, List[Tuple[str, float]]]:
         """

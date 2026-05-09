@@ -17,6 +17,9 @@ class Graph:
         try:
             print("Document:", document.model_dump(mode="json"))
             print("Providers:", providers.model_dump(mode="json"))
+            embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
+            dimension = providers.embedding.dimension
+            ep_model_key = self._get_model_key(embedder_provider, dimension)
 
             request_id = str(uuid.uuid4())
             graph = DocumentInjectGraph(org_id=self.org_id, project_id=self.project_id, document_id=document.id, document_readable_id=document.readable_id)
@@ -26,6 +29,7 @@ class Graph:
                 "org_id": self.org_id,
                 "project_id": self.project_id,
                 "document_id": document.id,
+                "ep_model_key": ep_model_key,
                 "document": document,
                 "providers": providers,
                 "temp_path": None,
@@ -93,3 +97,6 @@ class Graph:
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
             raise e
+
+    def _get_model_key(self, provider: str, dimension: int) -> str:
+        return f"{provider}_{dimension}"
