@@ -26,7 +26,7 @@ class SeedDefaultData:
                 logger.info("Data already seeded. Skipping...")
                 return
             await self._pg()
-            # await self._neo4j()
+            await self._neo4j()
             await self._mark_as_seeded()
             logger.info("Default data seeded successfully.")
         except Exception as e:
@@ -62,13 +62,13 @@ class SeedDefaultData:
             )
             await session.commit()
 
-    # async def _neo4j(self):
-    #     try:
-    #         org = GN4jOrg()
-    #         await org.create(org_id="dev", name="Development", description="Default Organization")
-    #     except Exception as e:
-    #         logger.error({"message": "Failed to seed neo4j", "error": str(e)})
-    #         raise e
+    async def _neo4j(self):
+        try:
+            org = GN4jOrg()
+            await org.create(org_id="dev", name="Development", description="Default Organization")
+        except Exception as e:
+            logger.error({"message": "Failed to seed neo4j", "error": str(e)})
+            raise e
 
     async def _pg(self):
         try:

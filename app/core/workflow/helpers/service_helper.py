@@ -7,7 +7,7 @@ from ...services.llm_model_service import LLMModelService
 from ...services.document_service import DocumentService
 
 from ...schemas.project_schema import ProjectGetSchema
-from ...schemas.document_schema import DocumentGetSchema
+from ...schemas.document_schema import DocumentGetSchema, DocumentStatus
 from ...schemas.model_credential_schema import ModelCredentialGetSchema
 from ...schemas.reranker_schema import ReRankerGetSchema
 from ...schemas.embedding_model_schema import EmbeddingModelGetSchema
@@ -33,6 +33,13 @@ class DocumentServiceHelper:
             return document
         except Exception as e:
             logger.error({"message": "Failed to get document", "error": str(e)})
+            raise e
+
+    async def update_document_status(self, document_id: uuid.UUID, status: DocumentStatus):
+        try:
+            return await self._service.change_document_status(document_id, status)
+        except Exception as e:
+            logger.error({"message": "Failed to update document status", "error": str(e)})
             raise e
 
 

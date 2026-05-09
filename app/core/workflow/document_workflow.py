@@ -1,5 +1,5 @@
-from app.core.schemas.document_schema import DocumentGetSchema
 from .schemas.provider_schema import ProviderSchema, LLMProviderSchema, EmbeddingProviderSchema, SparseModelProviderSchema, RerankerProviderSchema, QueryProviderSchema
+from app.core.schemas.document_schema import DocumentGetSchema, DocumentStatus
 from .helpers.service_helper import (
     LLMModelServiceHelper,
     EmbeddingModelServiceHelper,
@@ -24,10 +24,14 @@ class DocumentWorkflow:
 
     async def process(self, document: DocumentGetSchema):
         try:
+            await DocumentServiceHelper(self.org_id, self.project_id, document.id).update_document_status(document.id, DocumentStatus.PROCESSING)
             providers = await self._get_providers(document.id, document.readable_id)
-            return await self.graph.inject_document(document, providers)
+            result = await self.graph.inject_document(document, providers)
+            await DocumentServiceHelper(self.org_id, self.project_id, document.id).update_document_status(document.id, DocumentStatus.PROCESSED)
+            return result
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
+            await DocumentServiceHelper(self.org_id, self.project_id, document.id).update_document_status(document.id, DocumentStatus.FAILED)
             raise e
 
     async def query(self, query: str, document_id: Optional[uuid.UUID] = None, top_k: int = 10):
