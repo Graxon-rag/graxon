@@ -80,17 +80,26 @@ class GNeo4jClient:
     @classmethod
     async def _create_or_initialize_constraints(cls):
         try:
-            chunk_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.CHUNK, GN4jNodesIds.CHUNK_ID, "id")
-            await cls.run_graph_query(chunk_con_str)
+            constraint_configs = [
+                (GN4jNodes.CHUNK, GN4jNodesIds.CHUNK_ID),
+                (GN4jNodes.ORGANIZATION, GN4jNodesIds.ORGANIZATION_ID),
+                (GN4jNodes.PROJECT, GN4jNodesIds.PROJECT_ID),
+                (GN4jNodes.DOCUMENT, GN4jNodesIds.DOCUMENT_ID),
+                (GN4jNodes.TAG, GN4jNodesIds.TAG_ID),
+                (GN4jNodes.CONCEPT, GN4jNodesIds.CONCEPT_ID),
+                (GN4jNodes.ENTITY, GN4jNodesIds.ENTITY_ID),
+                (GN4jNodes.PHRASE, GN4jNodesIds.PHRASE_ID),
+                (GN4jNodes.KEYWORD, GN4jNodesIds.KEYWORD_ID),
+                (GN4jNodes.ACRONYM, GN4jNodesIds.ACRONYM_ID),
+            ]
 
-            org_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.ORGANIZATION, GN4jNodesIds.ORGANIZATION_ID, "id")
-            await cls.run_graph_query(org_con_str)
-
-            project_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.PROJECT, GN4jNodesIds.PROJECT_ID, "id")
-            await cls.run_graph_query(project_con_str)
-
-            doc_con_str = Neo4jHelper.get_unique_constraint_string(GN4jNodes.DOCUMENT, GN4jNodesIds.DOCUMENT_ID, "id")
-            await cls.run_graph_query(doc_con_str)
+            for node, node_id in constraint_configs:
+                constraint_query = Neo4jHelper.get_unique_constraint_string(
+                    node,
+                    node_id,
+                    "id"
+                )
+                await cls.run_graph_query(constraint_query)
 
             logger.info("Constraints created or initialized successfully.")
 

@@ -1,7 +1,8 @@
 from pydantic import BaseModel
-import re
 import secrets
+import hashlib
 import string
+import re
 
 
 class ParseId(BaseModel):
@@ -92,3 +93,27 @@ class IDLibs:
         document_id = IDLibs.parse_document_id(chunk_id)
         project_id = IDLibs.parse_project_id(document_id)
         return ParseId(project_id=project_id, document_id=document_id, chunk_id=chunk_id)
+
+    @staticmethod
+    def tag_id(tag: str) -> str:
+        return hashlib.md5(tag.lower().strip().encode()).hexdigest()
+
+    @staticmethod
+    def entity_id(entity: str, label: str) -> str:
+        return hashlib.md5(f"{entity.lower().strip()}:{label}".encode()).hexdigest()
+
+    @staticmethod
+    def acronym_id(acronym: str) -> str:
+        return hashlib.md5(acronym.upper().strip().encode()).hexdigest()
+
+    @staticmethod
+    def phrase_id(phrase: str) -> str:
+        return hashlib.md5(phrase.lower().strip().encode()).hexdigest()
+
+    @staticmethod
+    def concept_id(concept: str) -> str:
+        return hashlib.md5(concept.lower().strip().encode()).hexdigest()
+
+    @staticmethod
+    def keyword_id(keyword: str) -> str:
+        return hashlib.md5(keyword.lower().strip().encode()).hexdigest()

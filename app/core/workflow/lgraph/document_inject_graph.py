@@ -2,9 +2,11 @@ from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding,
 from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
+from app.core.schemas.neo4j_schema import LexicalSemanticResult
 from app.core.schemas.document_schema import DocumentGetSchema
 from .processor.processor_factory import ProcessorFactory
 from app.core.qdrant.similarity import QdrantSimilarity
+from app.constants.neo4j import GNeo4jEdges, GN4jNodes
 from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
 from langgraph.graph import StateGraph, START, END
@@ -13,10 +15,11 @@ from app.core.qdrant.inject import QdrantInjector
 from .prompts.tag_prompt import Tagging_Prompt
 from app.constants.minio import MinioConstant
 from langchain_core.documents import Document
-from app.constants.neo4j import GNeo4jEdges
+from app.core.neo4j.interfaces import common
 from app.core.neo4j.chunk import GN4jChunk
 from app.core.libs.id import IDLibs
 from app.utils.logger import logger
+from collections import defaultdict
 from typing import TypedDict, Tuple
 from langgraph.types import Send
 import traceback
@@ -372,7 +375,8 @@ class DocumentInjectGraph:
             lexical_engine_data = state["lexical_engine_data"]
             if lexical_engine_data is not None:
                 logger.info({"message": "Creating graph database edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                await self.n4j_chunk_db.create_edges_by_lexical_engine_data(self.document_id, self.document_readable_id, lexical_engine_data)
+                semantic_result = self.to_lexical_semantic_result(lexical_engine_data)
+                await self.n4j_chunk_db.create_edges_by_lexical_engine_data(self.document_id, self.document_readable_id, semantic_result)
 
             chunk_tag_results = state["chunk_tag_results"]
             if chunk_tag_results is not None:
@@ -481,32 +485,12 @@ class DocumentInjectGraph:
         # BUILD TAG MAP
         tag_map = self._build_tag_map(chunk_results)
 
-        n4j_tag_edges: list[N4jChunkEdge] = []
         n4j_nex_prev_edges: list[N4jChunkEdge] = []
         n4j_reference_edges: list[N4jChunkEdge] = []
 
-        # HAS_TAG EDGES: chunk → chunk (bidirectional, avg confidence)
+        tag_data: dict[str, dict[str, float]] = {}
         for tag, chunk_confidences in tag_map.items():
-            # need at least 2 chunks sharing a tag to create an edge
-            if len(chunk_confidences) < 2:
-                continue
-
-            for i in range(len(chunk_confidences)):
-                for j in range(len(chunk_confidences)):
-                    if i == j:
-                        continue
-
-                    chunk_id_a, conf_a = chunk_confidences[i]
-                    chunk_id_b, conf_b = chunk_confidences[j]
-                    avg_weight = round((conf_a + conf_b) / 2, 2)
-
-                    n4j_tag_edges.append(N4jChunkEdge(
-                        from_chunk_id=chunk_id_a,
-                        to_chunk_id=chunk_id_b,
-                        edge_name=GNeo4jEdges.HAS_TAG,
-                        label=tag,
-                        weight=avg_weight,
-                    ))
+            tag_data[tag] = {chunk_id: conf for chunk_id, conf in chunk_confidences}
 
         # PER CHUNK: NEXT/PREV + REFERENCES
         for result in chunk_results:
@@ -568,18 +552,65 @@ class DocumentInjectGraph:
                     weight=ref_weight,
                 ))
 
-        n4j_tag_edges_json = [edge.model_dump_json() for edge in n4j_tag_edges]
         n4j_nex_prev_edges_json = [edge.model_dump_json() for edge in n4j_nex_prev_edges]
         n4j_reference_edges_json = [edge.model_dump_json() for edge in n4j_reference_edges]
 
         # UPLOAD TO MINIO
-        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_TAG_OUTPUT, json_data={"data": n4j_tag_edges_json}, document_name_id=self.document_readable_id)
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_TAG_OUTPUT, json_data=tag_data, document_name_id=self.document_readable_id)
         await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT, json_data={"data": n4j_nex_prev_edges_json}, document_name_id=self.document_readable_id)
         await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_REFERENCE_OUTPUT, json_data={"data": n4j_reference_edges_json}, document_name_id=self.document_readable_id)
 
         # Merge TO NEO4J
-        await self.n4j_chunk_db.create_edges(self.document_id, n4j_tag_edges)
+        await self.n4j_chunk_db.create_semantic_nodes_and_edges(
+            document_id=self.document_id,
+            node_type=GN4jNodes.TAG,
+            edge_type=GNeo4jEdges.HAS_TAG,
+            value_field=common.N4jTagInterface.value,
+            data=tag_data,
+        )
         await self.n4j_chunk_db.create_edges(self.document_id, n4j_nex_prev_edges)
         await self.n4j_chunk_db.create_edges(self.document_id, n4j_reference_edges)
 
         return all_chunk_tags
+
+    def to_lexical_semantic_result(self, result: LexicalResult) -> LexicalSemanticResult:
+        """
+        Converts LexicalResult (chunk↔chunk edges) into LexicalSemanticResult
+        (value → {chunk_id: weight} maps) without touching LexicalEngine at all.
+        """
+
+        edge_type_to_field = {
+            GNeo4jEdges.SHARES_ENTITY: "entity_map",
+            GNeo4jEdges.SHARES_CONCEPT: "concept_map",
+            GNeo4jEdges.SHARES_KEYWORD: "keyword_map",
+            GNeo4jEdges.SHARES_PHRASE: "phrase_map",
+        }
+
+        # {field_name: {label: {chunk_id: best_weight}}}
+        maps: dict[str, dict[str, dict[str, float]]] = {
+            "entity_map": defaultdict(dict),
+            "concept_map": defaultdict(dict),
+            "keyword_map": defaultdict(dict),
+            "phrase_map": defaultdict(dict),
+        }
+
+        for edge in result.edges:
+            field = edge_type_to_field.get(edge.edge_type)
+            if field is None:
+                continue  # SHARES_ACRONYM handled via acronyms dict, skip others
+
+            label_map = maps[field][edge.label]
+
+            # Each edge is (source, target, weight) — assign weight to both chunks
+            # take max if chunk already seen from another edge
+            label_map[edge.source] = max(label_map.get(edge.source, 0.0), edge.weight)
+            label_map[edge.target] = max(label_map.get(edge.target, 0.0), edge.weight)
+
+        return LexicalSemanticResult(
+            filtered_noise=result.filtered_noise,
+            entity_map=dict(maps["entity_map"]),
+            concept_map=dict(maps["concept_map"]),
+            keyword_map=dict(maps["keyword_map"]),
+            phrase_map=dict(maps["phrase_map"]),
+            acronyms=result.acronyms,  # already correct shape
+        )
