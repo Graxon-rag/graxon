@@ -23,6 +23,7 @@ class GN4jDocument:
                     dc.{N4jDocumentInterface.project_id} = $project_id,
                     dc.{N4jDocumentInterface.id} = $doc_id,
                     dc.{N4jDocumentInterface.readable_id} = $doc_readable_id,
+                    dc.{N4jDocumentInterface.type} = $type,
                     dc.{N4jDocumentInterface.created_at} = datetime(),
                     dc.{N4jDocumentInterface.updated_at} = datetime()
                 MERGE (pr)-[:{GNeo4jEdges.HAS_DOCUMENT}]->(dc)
@@ -34,7 +35,8 @@ class GN4jDocument:
                     "org_id": self.org_id,
                     "project_id": str(self.project_id),
                     "doc_id": str(doc_id),
-                    "doc_readable_id": doc_readable_id
+                    "doc_readable_id": doc_readable_id,
+                    "type": GN4jNodes.DOCUMENT,
                 }
             )
 

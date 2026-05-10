@@ -21,6 +21,7 @@ class GN4jOrg:
                 SET
                     og.{N4jOrgInterface.name} = $name,
                     og.{N4jOrgInterface.description} = $description,
+                    og.{N4jOrgInterface.type} = $type,
                     og.{N4jOrgInterface.created_at} = datetime(),
                     og.{N4jOrgInterface.updated_at} = datetime()
                 """
@@ -30,7 +31,8 @@ class GN4jOrg:
                 {
                     "org_id": org_id,
                     "name": name,
-                    "description": description
+                    "description": description,
+                    "type": GN4jNodes.ORGANIZATION
                 }
             )
 

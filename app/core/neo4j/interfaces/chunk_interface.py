@@ -4,6 +4,7 @@ class N4jChunkInterface:
     project_id = "project_id"
     document_id = "document_id"
     document_readable_id = "document_readable_id"
+    type = "type"
     id = "id"
     chunk_id = "chunk_id"
     chunk_number = "chunk_number"

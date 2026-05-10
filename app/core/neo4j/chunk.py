@@ -3,12 +3,11 @@ from ..schemas.neo4j_schema import LexicalSemanticResult
 from app.constants.neo4j import GN4jNodes, GNeo4jEdges
 from ..schemas.chunk_schema import Chunk, N4jChunkEdge
 from ..databases.neo4j.client import GNeo4jClient
-from ..lexical_engine.index import LexicalResult
 from typing import cast, LiteralString
 from app.utils.logger import logger
 from .interfaces import common
-import hashlib
 from itertools import groupby
+import hashlib
 import uuid
 
 
@@ -34,6 +33,7 @@ class GN4jChunk:
                     ch.{N4jChunkInterface.document_readable_id} = $document_readable_id,
                     ch.{N4jChunkInterface.created_at} = datetime(),
                     ch.{N4jChunkInterface.updated_at} = datetime(),
+                    ch.{N4jChunkInterface.type} = $type,
                     ch.{N4jChunkInterface.text} = chunk_item.text,
                     ch.{N4jChunkInterface.page_number} = chunk_item.page_number,
                     ch.{N4jChunkInterface.title} = chunk_item.title,
@@ -49,7 +49,8 @@ class GN4jChunk:
                 "project_id": str(self.project_id),
                 "document_id": str(document_id),
                 "document_readable_id": document_readable_id,
-                "chunks_list": chunk_data
+                "chunks_list": chunk_data,
+                "type": GN4jNodes.CHUNK,
             }
 
             result, _, _ = await self.graph.execute_query(
@@ -84,7 +85,7 @@ class GN4jChunk:
         query = cast(LiteralString, f"""
             UNWIND $rows AS row
             MERGE (n:{GN4jNodes.ACRONYM} {{id: row.node_id}})
-            ON CREATE SET n.{common.N4jAcronymInterface.value} = row.acronym, n.{common.N4jAcronymInterface.expansion} = row.expansion, n.frequency = 1
+            ON CREATE SET n.{common.N4jAcronymInterface.value} = row.acronym, n.{common.N4jAcronymInterface.expansion} = row.expansion, n.frequency = 1, n.{common.N4jAcronymInterface.type} = $type
             ON MATCH  SET n.{common.N4jAcronymInterface.frequency} = n.frequency + 1
             WITH n, row
             MATCH (c:{GN4jNodes.CHUNK} {{id: row.chunk_id}})
@@ -94,7 +95,7 @@ class GN4jChunk:
             RETURN count(*) AS merged_count
         """)
 
-        result, _, _ = await self.graph.execute_query(query, {"rows": rows})
+        result, _, _ = await self.graph.execute_query(query, {"rows": rows, "type": GN4jNodes.ACRONYM})
         logger.info(f"Merged {result[0]['merged_count']} acronym nodes for document {document_id}.")
 
     async def create_edges_by_lexical_engine_data(self, document_id: uuid.UUID, document_readable_id: str, lexical_data: LexicalSemanticResult):
@@ -143,6 +144,7 @@ class GN4jChunk:
                         "value": value.lower().strip(),
                         "chunk_id": chunk_id,
                         "weight": weight,
+                        "type": node_type
                     })
 
             if not rows:
@@ -151,7 +153,7 @@ class GN4jChunk:
             query = cast(LiteralString, f"""
                 UNWIND $rows AS row
                 MERGE (n:{node_type} {{id: row.node_id}})
-                ON CREATE SET n.{value_field} = row.value, n.frequency = 1
+                ON CREATE SET n.{value_field} = row.value, n.frequency = 1, n.type = row.type
                 ON MATCH  SET n.frequency = n.frequency + 1
                 WITH n, row
                 MATCH (c:{GN4jNodes.CHUNK} {{id: row.chunk_id}})

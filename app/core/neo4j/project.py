@@ -22,6 +22,7 @@ class GN4Project:
                     pr.{N4jProjectInterface.readable_id} = $readable_id,
                     pr.{N4jProjectInterface.name} = $name,
                     pr.{N4jProjectInterface.description} = $description,
+                    pr.{N4jProjectInterface.type} = $type,
                     pr.{N4jProjectInterface.created_at} = datetime(),
                     pr.{N4jProjectInterface.updated_at} = datetime()
                 MERGE (og)-[:{GNeo4jEdges.HAS_PROJECT}]->(pr)
@@ -34,7 +35,8 @@ class GN4Project:
                     "id": id_str,
                     "readable_id": readable_id,
                     "name": name,
-                    "description": description
+                    "description": description,
+                    "type": GN4jNodes.PROJECT
                 }
             )
         except Exception as e:
