@@ -1,8 +1,10 @@
 from ..databases.redis.client import GRedisClient
 from app.utils.logger import logger
+from typing import Dict, Any, List
+from ..schemas import chunk_schema
 from app.constants import redis
-from typing import Dict, Any
 import uuid
+import json
 
 
 class GRedisTagsClient:
@@ -11,29 +13,29 @@ class GRedisTagsClient:
         self.project_id = project_id
         self.client = GRedisClient().get_client()
 
-    #  Adding tags for temporary for checkpoint into array
-    async def add_tag_temporary(self, document_id: uuid.UUID, chunk_number: int, data: Dict[str, Any], ttl: int = 604800):  # 1 week
+    def _build_key(self, document_id: uuid.UUID) -> str:
+        prefix_key = redis.GRedisKeys.TAG_TEMP_KEY
+        return f"{prefix_key}:{self.org_id}:{self.project_id}:{document_id}"
+
+    async def add_tag_temporary(
+        self,
+        document_id: uuid.UUID,
+        chunk_number: int,
+        data: chunk_schema.TagResponse,
+        ttl: int = 604800,  # 7 days
+    ):
         try:
-            str_project_id = str(self.project_id)
-            str_document_id = str(document_id)
-            prefix_key = f"{redis.GRedisKeys.TAG_TEMP_KEY}"
-            key = f"{prefix_key}:{self.org_id}:{str_project_id}:{str_document_id}"
+            key = self._build_key(document_id)
 
             data_object: Dict[str, Any] = {
                 "chunk_number": chunk_number,
-                "data": data
+                "data": data.model_dump()
             }
 
-            # Recommendation: Use json.dumps(data_object) instead of str() for better compatibility
-            data_obj_str = str(data_object)
-
-            # Push the data to the list
-            result = self.client.rpush(key, data_obj_str)
+            result = await self.client.rpush(key, json.dumps(data_object))  # type: ignore
 
             if result:
-                # Set the TTL (expire) on the key
-                # This ensures the entire list is deleted after the ttl seconds
-                self.client.expire(key, ttl)
+                await self.client.expire(key, ttl)
             else:
                 logger.error({"message": "Failed to add tag temporary", "result": result})
                 raise Exception("Failed to add tag temporary")
@@ -43,18 +45,26 @@ class GRedisTagsClient:
             logger.error({"message": "Failed to add tag temporary", "error": str(e)})
             raise e
 
-    async def get_tag_temporary(self, document_id: uuid.UUID):
+    async def get_all_temporary_tags(self, document_id: uuid.UUID) -> Dict[int, List[chunk_schema.TagResponse]]:
         try:
-            str_project_id = str(self.project_id)
-            str_document_id = str(document_id)
-            prefix_key = f"{redis.GRedisKeys.TAG_TEMP_KEY}"
-            key = f"{prefix_key}:{self.org_id}:{str_project_id}:{str_document_id}"
+            key = self._build_key(document_id)
 
-            result = self.client.lrange(key, 0, -1)
+            raw_results = await self.client.lrange(key, 0, -1)  # type: ignore
 
-            if result is None:
-                logger.error({"message": "Failed to get tag temporary", "result": result})
-                raise Exception("Failed to get tag temporary")
+            if not raw_results:
+                return {}
+
+            result: Dict[int, List[chunk_schema.TagResponse]] = {}
+
+            for item in raw_results:
+                parsed = json.loads(item)
+                chunk_number = parsed["chunk_number"]
+                tag = chunk_schema.TagResponse(**parsed["data"])
+
+                if chunk_number not in result:
+                    result[chunk_number] = []
+
+                result[chunk_number].append(tag)
 
             return result
         except Exception as e:

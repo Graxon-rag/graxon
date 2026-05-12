@@ -224,7 +224,7 @@ class DocumentInjectGraph:
                     )
                     tag_response: TagResponse = await structured_llm.ainvoke(formatted_prompt)
 
-                    await self._tag_redis.add_tag_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, data=tag_response.model_dump())
+                    await self._tag_redis.add_tag_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, data=tag_response)
 
                     # hallucination guard
                     tag_response.validate_similar_tags_against_pool(global_tags)
