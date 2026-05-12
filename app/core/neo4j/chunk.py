@@ -226,3 +226,105 @@ class GN4jChunk:
         except Exception as e:
             logger.error({"message": "Failed to delete chunks", "error": str(e)})
             raise e
+
+
+class GN4jChunkEdgeClient:
+    def __init__(self, org_id: str, project_id: uuid.UUID):
+        self.graph = GNeo4jClient.get_driver()
+        self.org_id = org_id
+        self.project_id = project_id
+
+    async def get_chunk_ids_by_tag(self, tag_id: str) -> list[str]:
+        try:
+            query: LiteralString = f"""
+            MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+            -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+            -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
+            -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+            -[:{GNeo4jEdges.HAS_TAG}]->(:{GN4jNodes.TAG} {{id: $tag_id}})
+            RETURN chunk.id AS chunk_id
+            """
+            result = await self.graph.execute_query(
+                query,
+                {"org_id": self.org_id, "project_id": str(self.project_id), "tag_id": tag_id},
+            )
+            return [record["chunk_id"] for record in result[0]]
+        except Exception as e:
+            logger.error({"message": "Failed to get chunk ids by tag", "error": str(e)})
+            raise e
+
+    async def get_chunk_ids_by_entity(self, entity: str) -> list[str]:
+        try:
+            query: LiteralString = f"""
+            MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+            -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+            -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
+            -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+            -[:{GNeo4jEdges.HAS_ENTITY}]->(:{GN4jNodes.ENTITY} {{id: $entity}})
+            RETURN chunk.id AS chunk_id
+            """
+            result = await self.graph.execute_query(
+                query,
+                {"org_id": self.org_id, "project_id": str(self.project_id), "entity": entity},
+            )
+            return [record["chunk_id"] for record in result[0]]
+        except Exception as e:
+            logger.error({"message": "Failed to get chunk ids by entity", "error": str(e)})
+            raise e
+
+    async def get_chunk_ids_by_keyword(self, keyword: str) -> list[str]:
+        try:
+            query: LiteralString = f"""
+            MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+            -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+            -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
+            -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+            -[:{GNeo4jEdges.HAS_KEYWORD}]->(:{GN4jNodes.KEYWORD} {{id: $keyword}})
+            RETURN chunk.id AS chunk_id
+            """
+            result = await self.graph.execute_query(
+                query,
+                {"org_id": self.org_id, "project_id": str(self.project_id), "keyword": keyword},
+            )
+            return [record["chunk_id"] for record in result[0]]
+        except Exception as e:
+            logger.error({"message": "Failed to get chunk ids by keyword", "error": str(e)})
+            raise e
+
+    async def get_chunk_ids_by_concept(self, concept: str) -> list[str]:
+        try:
+            query: LiteralString = f"""
+            MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+            -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+            -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
+            -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+            -[:{GNeo4jEdges.HAS_CONCEPT}]->(:{GN4jNodes.CONCEPT} {{id: $concept}})
+            RETURN chunk.id AS chunk_id
+            """
+            result = await self.graph.execute_query(
+                query,
+                {"org_id": self.org_id, "project_id": str(self.project_id), "concept": concept},
+            )
+            return [record["chunk_id"] for record in result[0]]
+        except Exception as e:
+            logger.error({"message": "Failed to get chunk ids by concept", "error": str(e)})
+            raise e
+
+    async def get_chunk_ids_by_phrase(self, phrase: str) -> list[str]:
+        try:
+            query: LiteralString = f"""
+            MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+            -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+            -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
+            -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+            -[:{GNeo4jEdges.HAS_PHRASE}]->(:{GN4jNodes.PHRASE} {{id: $phrase}})
+            RETURN chunk.id AS chunk_id
+            """
+            result = await self.graph.execute_query(
+                query,
+                {"org_id": self.org_id, "project_id": str(self.project_id), "phrase": phrase},
+            )
+            return [record["chunk_id"] for record in result[0]]
+        except Exception as e:
+            logger.error({"message": "Failed to get chunk ids by phrase", "error": str(e)})
+            raise e

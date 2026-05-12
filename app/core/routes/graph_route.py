@@ -2,6 +2,7 @@ from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUE
 from app.utils.response_util import success_response, error_response
 from fastapi import HTTPException, APIRouter, Query
 from ..neo4j import common
+from ..neo4j.chunk import GN4jChunkEdgeClient
 from app.utils.logger import logger
 from typing import Optional
 import uuid
@@ -69,4 +70,54 @@ async def get_chunks(chunk_id: Optional[str] = Query(default=None, description="
         return await client.get_chunks(chunk_id, limit, offset)
     except Exception as e:
         logger.error(f"Failed to get chunks, error : {e}")
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/orgs/{org_id}/projects/{project_id}/chunks/tags/{tag_id}")
+async def get_chunks_by_tag(org_id: str, project_id: uuid.UUID, tag_id: str):
+    try:
+        client = GN4jChunkEdgeClient(org_id=org_id, project_id=project_id)
+        return await client.get_chunk_ids_by_tag(tag_id)
+    except Exception as e:
+        logger.error({"message": "Failed to get chunks by tag", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/orgs/{org_id}/projects/{project_id}/chunks/entities/{entity_id}")
+async def get_chunks_by_entity(org_id: str, project_id: uuid.UUID, entity_id: str):
+    try:
+        client = GN4jChunkEdgeClient(org_id=org_id, project_id=project_id)
+        return await client.get_chunk_ids_by_entity(entity_id)
+    except Exception as e:
+        logger.error({"message": "Failed to get chunks by entity", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/orgs/{org_id}/projects/{project_id}/chunks/keywords/{keyword_id}")
+async def get_chunks_by_keyword(org_id: str, project_id: uuid.UUID, keyword_id: str):
+    try:
+        client = GN4jChunkEdgeClient(org_id=org_id, project_id=project_id)
+        return await client.get_chunk_ids_by_keyword(keyword_id)
+    except Exception as e:
+        logger.error({"message": "Failed to get chunks by keyword", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/orgs/{org_id}/projects/{project_id}/chunks/phrases/{phrase_id}")
+async def get_chunks_by_phrase(org_id: str, project_id: uuid.UUID, phrase_id: str):
+    try:
+        client = GN4jChunkEdgeClient(org_id=org_id, project_id=project_id)
+        return await client.get_chunk_ids_by_phrase(phrase_id)
+    except Exception as e:
+        logger.error({"message": "Failed to get chunks by phrase", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/orgs/{org_id}/projects/{project_id}/chunks/concepts/{concept_id}")
+async def get_chunks_by_concept(org_id: str, project_id: uuid.UUID, concept_id: str):
+    try:
+        client = GN4jChunkEdgeClient(org_id=org_id, project_id=project_id)
+        return await client.get_chunk_ids_by_concept(concept_id)
+    except Exception as e:
+        logger.error({"message": "Failed to get chunks by concept", "error": str(e)})
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
