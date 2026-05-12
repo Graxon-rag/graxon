@@ -218,3 +218,56 @@ class GN4jKeywordClient:
         except Exception as e:
             logger.error(f"Failed to get keywords, error : {e}")
             raise e
+
+
+class GN4jPhraseClient:
+    def __init__(self):
+        self.graph = GNeo4jClient.get_driver()
+
+    async def get_phrases(self, phrase: Optional[str] = None, limit: int = 10, offset: int = 0) -> gs.GN4jPhraseGetSchema:
+        try:
+            skip = 0
+            if offset > 0:
+                skip = (offset - 1) * limit
+
+            where_clause = f"WHERE toLower(p.{common.N4jPhraseInterface.value}) CONTAINS toLower($phrase)" if phrase else ""
+            params = {"phrase": phrase} if phrase else {}
+
+            # Count query
+            count_query = cast(LiteralString, f"""
+                MATCH (p:{GN4jNodes.PHRASE})
+                {where_clause}
+                RETURN count(p) AS total
+            """)
+
+            # Data query
+            data_query = cast(LiteralString, f"""
+                MATCH (p:{GN4jNodes.PHRASE})
+                {where_clause}
+                RETURN p
+                ORDER BY p.created_at DESC
+                SKIP {skip}
+                LIMIT {limit}
+            """)
+
+            count_result = await self.graph.execute_query(count_query, parameters_=params)
+            total = count_result[0][0]["total"] if count_result[0] else 0
+            total_pages = math.ceil(total / limit) if total > 0 else 1
+            current_page = offset if offset > 0 else 1
+
+            data_result = await self.graph.execute_query(data_query, parameters_=params)
+            phrases = [gs.N4jPhraseSchema(**dict(record["p"])) for record in data_result[0]]
+            return gs.GN4jPhraseGetSchema(
+                data=phrases,
+                pagination=gs.Pagination(
+                    current_page=current_page,
+                    total_pages=total_pages,
+                    current_limit=limit,
+                    total_items=total,
+                    has_next=current_page < total_pages,
+                    has_previous=current_page > 1,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Failed to get phrases, error : {e}")
+            raise e

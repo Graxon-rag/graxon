@@ -38,6 +38,13 @@ class N4jKeywordSchema(BaseModel):
     frequency: int
 
 
+class N4jPhraseSchema(BaseModel):
+    id: str
+    type: str
+    value: str
+    frequency: int
+
+
 class GN4jTagGetSchema(BaseModel):
     data: list[N4jTagSchema]
     pagination: Pagination
@@ -55,4 +62,9 @@ class GN4jConceptGetSchema(BaseModel):
 
 class GN4jKeywordGetSchema(BaseModel):
     data: list[N4jKeywordSchema]
+    pagination: Pagination
+
+
+class GN4jPhraseGetSchema(BaseModel):
+    data: list[N4jPhraseSchema]
     pagination: Pagination

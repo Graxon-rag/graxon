@@ -50,3 +50,13 @@ async def get_keywords(keyword: Optional[str] = Query(default=None, description=
     except Exception as e:
         logger.error(f"Failed to get keywords, error : {e}")
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/phrases")
+async def get_phrases(phrase: Optional[str] = Query(default=None, description="Phrase name"), limit: int = Query(default=10, ge=1, le=100, description="Number of results"), offset: int = Query(default=0, ge=0, description="Offset")):
+    try:
+        client = common.GN4jPhraseClient()
+        return await client.get_phrases(phrase, limit, offset)
+    except Exception as e:
+        logger.error(f"Failed to get phrases, error : {e}")
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
