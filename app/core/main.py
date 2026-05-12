@@ -31,6 +31,8 @@ from .routes.org_route import router as org_router
 from .routes.project_route import router as project_router
 from .routes.document_route import router as document_router
 from .routes.query_route import router as query_router
+from .routes.graph_route import router as graph_router
+
 
 load_dotenv()
 load_imp_env()
@@ -124,6 +126,7 @@ app.include_router(org_router, prefix="/api/orgs")
 app.include_router(project_router, prefix="/api/projects")
 app.include_router(document_router, prefix="/api/documents")
 app.include_router(query_router, prefix="/api/query")
+app.include_router(graph_router, prefix="/api/graphs")
 
 
 @app.get("/")
