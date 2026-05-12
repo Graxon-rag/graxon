@@ -41,30 +41,23 @@ class GRedisEmbeddingsClient:
             return result
         except Exception as e:
             logger.error({"message": "Failed to add embedding temporary", "error": str(e)})
-            raise e
+            return None
 
     async def get_all_temporary_embeddings(self, document_id: uuid.UUID) -> Dict[int, List[float]]:
         try:
             key = self._build_temp_key(document_id)
-
             raw_results = await self.client.lrange(key, 0, -1)  # type: ignore
 
             if not raw_results:
                 return {}
 
             result: Dict[int, List[float]] = {}
-
             for item in raw_results:
                 parsed = json.loads(item)
                 chunk_number = parsed["chunk_number"]
-                embedding = parsed["embedding"]
-
-                if chunk_number not in result:
-                    result[chunk_number] = []
-
-                result[chunk_number].append(embedding)
+                result[chunk_number] = parsed["embedding"]
 
             return result
         except Exception as e:
             logger.error({"message": "Failed to get embedding temporary", "error": str(e)})
-            raise e
+            return {}

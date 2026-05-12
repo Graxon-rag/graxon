@@ -43,7 +43,7 @@ class GRedisTagsClient:
             return result
         except Exception as e:
             logger.error({"message": "Failed to add tag temporary", "error": str(e)})
-            raise e
+            return None
 
     async def get_all_temporary_tags(self, document_id: uuid.UUID) -> Dict[int, List[chunk_schema.TagResponse]]:
         try:
@@ -69,4 +69,4 @@ class GRedisTagsClient:
             return result
         except Exception as e:
             logger.error({"message": "Failed to get tag temporary", "error": str(e)})
-            raise e
+            return {}

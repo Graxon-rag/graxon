@@ -3,6 +3,7 @@ from ..databases.redis.client import GRedisClient
 from app.utils.logger import logger
 from app.constants import redis
 from typing import List, Dict
+from numpy import array
 import uuid
 import json
 
@@ -28,7 +29,8 @@ class GRedisSparseEmbeddingClient:
             key = self._build_temp_key(document_id)
             data: dict = {
                 "chunk_number": chunk_number,
-                "sparse_embedding": sparse_embedding,
+                "indices": sparse_embedding.indices.tolist(),   # numpy → list
+                "values": sparse_embedding.values.tolist(),     # numpy → list
             }
 
             result = await self.client.rpush(key, json.dumps(data))  # type: ignore
@@ -42,9 +44,9 @@ class GRedisSparseEmbeddingClient:
             return result
         except Exception as e:
             logger.error({"message": "Failed to add sparse embedding temporary", "error": str(e)})
-            raise e   
+            return None
 
-    async def get_all_temporary_sparse_embeddings(self, document_id: uuid.UUID) -> Dict[int, List[SparseEmbedding]]:
+    async def get_all_temporary_sparse_embeddings(self, document_id: uuid.UUID) -> Dict[int, SparseEmbedding]:
         try:
             key = self._build_temp_key(document_id)
 
@@ -53,19 +55,17 @@ class GRedisSparseEmbeddingClient:
             if not raw_results:
                 return {}
 
-            result: Dict[int, List[SparseEmbedding]] = {}
+            result: Dict[int, SparseEmbedding] = {}
 
             for item in raw_results:
                 parsed = json.loads(item)
                 chunk_number = parsed["chunk_number"]
-                sparse_embedding = parsed["sparse_embedding"]
-
-                if chunk_number not in result:
-                    result[chunk_number] = []
-
-                result[chunk_number].append(sparse_embedding)
+                result[chunk_number] = SparseEmbedding(
+                    indices=array(parsed["indices"]),
+                    values=array(parsed["values"]),
+                )
 
             return result
         except Exception as e:
             logger.error({"message": "Failed to get sparse embedding temporary", "error": str(e)})
-            raise e
+            return {}
