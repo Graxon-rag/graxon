@@ -12,6 +12,7 @@ from ..schemas.provider_schema import ProviderSchema
 from langgraph.graph import StateGraph, START, END
 from typing import Dict, List, Optional, Annotated
 from app.core.qdrant.inject import QdrantInjector
+from app.core.redis.tags import GRedisTagsClient
 from .prompts.tag_prompt import Tagging_Prompt
 from app.constants.minio import MinioConstant
 from langchain_core.documents import Document
@@ -73,6 +74,7 @@ class DocumentInjectGraph:
         self.minio_helper = MinioHelper(org_id=org_id, project_id=project_id)
         self.n4j_chunk_db = GN4jChunk(org_id=org_id, project_id=project_id)
         self.qdrant_similarity = QdrantSimilarity(org_id=org_id, project_id=project_id)
+        self._tag_redis = GRedisTagsClient(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -221,6 +223,8 @@ class DocumentInjectGraph:
                         chunk_text=chunk.text,
                     )
                     tag_response: TagResponse = await structured_llm.ainvoke(formatted_prompt)
+
+                    await self._tag_redis.add_tag_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, data=tag_response.model_dump())
 
                     # hallucination guard
                     tag_response.validate_similar_tags_against_pool(global_tags)

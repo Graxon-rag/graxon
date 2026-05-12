@@ -1,11 +1,10 @@
-import asyncio
-import redis.asyncio as redis
-from redis.asyncio import Redis
 from redis.exceptions import ConnectionError, TimeoutError
-from typing import Optional
-
-from app.config.env import Env
 from app.utils.logger import logger
+from redis.asyncio import Redis
+from app.config.env import Env
+import redis.asyncio as redis
+from typing import Optional
+import asyncio
 
 
 class GRedisClient:
@@ -42,7 +41,7 @@ class GRedisClient:
                     retry_on_timeout=True,
                 )
 
-                await client.ping() # type: ignore
+                await client.ping()  # type: ignore
 
                 cls._instance = client
                 logger.info("Connected to Redis")
