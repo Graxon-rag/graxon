@@ -1,3 +1,4 @@
+from .interfaces.chunk_interface import N4jChunkInterface
 from ..databases.neo4j.client import GNeo4jClient
 from app.constants.neo4j import GN4jNodes
 from ..schemas import graph_schema as gs
@@ -270,4 +271,58 @@ class GN4jPhraseClient:
             )
         except Exception as e:
             logger.error(f"Failed to get phrases, error : {e}")
+            raise e
+
+
+class GN4jChunkClient:
+    def __init__(self):
+        self.graph = GNeo4jClient.get_driver()
+
+    async def get_chunks(self, chunk_id: Optional[str] = None, limit: int = 10, offset: int = 0) -> gs.GN4jChunkGetSchema:
+        try:
+            skip = 0
+            if offset > 0:
+                skip = (offset - 1) * limit
+
+            where_clause = f"WHERE c.{N4jChunkInterface.id} = $chunk_id" if chunk_id else ""
+            params = {"chunk_id": chunk_id} if chunk_id else {}
+
+            # Count query
+            query = cast(LiteralString, f"""
+                MATCH (c:{GN4jNodes.CHUNK})
+                {where_clause}
+                RETURN count(c) AS total
+            """)
+
+            # Data query
+            data_query = cast(LiteralString, f"""
+                MATCH (c:{GN4jNodes.CHUNK})
+                {where_clause}
+                RETURN c
+                ORDER BY c.created_at DESC
+                SKIP {skip}
+                LIMIT {limit}
+            """)
+
+            count_result = await self.graph.execute_query(query, parameters_=params)
+            total = count_result[0][0]["total"] if count_result[0] else 0
+            total_pages = math.ceil(total / limit) if total > 0 else 1
+            current_page = offset if offset > 0 else 1
+
+            data_result = await self.graph.execute_query(data_query, parameters_=params)
+
+            chunks = [gs.N4jChunkSchema(**dict(record["c"])) for record in data_result[0]]
+            return gs.GN4jChunkGetSchema(
+                data=chunks,
+                pagination=gs.Pagination(
+                    current_page=current_page,
+                    total_pages=total_pages,
+                    current_limit=limit,
+                    total_items=total,
+                    has_next=current_page < total_pages,
+                    has_previous=current_page > 1,
+                ),
+            )
+        except Exception as e:
+            logger.error({"message": "Failed to get chunks", "error": str(e)})
             raise e

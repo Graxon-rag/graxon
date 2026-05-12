@@ -29,6 +29,8 @@ class GN4jChunk:
 
                 MERGE (ch:{GN4jNodes.CHUNK} {{id: chunk_item.chunk_id}})
                 SET
+                    ch.{N4jChunkInterface.org_id} = $org_id,
+                    ch.{N4jChunkInterface.project_id} = $project_id,
                     ch.{N4jChunkInterface.document_id} = $document_id,
                     ch.{N4jChunkInterface.document_readable_id} = $document_readable_id,
                     ch.{N4jChunkInterface.created_at} = datetime(),

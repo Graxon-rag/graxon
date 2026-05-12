@@ -60,3 +60,13 @@ async def get_phrases(phrase: Optional[str] = Query(default=None, description="P
     except Exception as e:
         logger.error(f"Failed to get phrases, error : {e}")
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/chunks")
+async def get_chunks(chunk_id: Optional[str] = Query(default=None, description="Chunk id"), limit: int = Query(default=10, ge=1, le=100, description="Number of results"), offset: int = Query(default=0, ge=0, description="Offset")):
+    try:
+        client = common.GN4jChunkClient()
+        return await client.get_chunks(chunk_id, limit, offset)
+    except Exception as e:
+        logger.error(f"Failed to get chunks, error : {e}")
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

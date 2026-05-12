@@ -1,4 +1,5 @@
 from pydantic import BaseModel, Field
+from typing import Optional
 
 
 class Pagination(BaseModel):
@@ -45,6 +46,20 @@ class N4jPhraseSchema(BaseModel):
     frequency: int
 
 
+class N4jChunkSchema(BaseModel):
+    org_id: Optional[str] = None
+    project_id: Optional[str] = None
+    document_id: str
+    document_readable_id: str
+    id: str
+    type: Optional[str] = "Chunk"
+    chunk_number: int
+    text: str
+    page_number: Optional[int] = None
+    title: Optional[str] = None
+    source: Optional[str] = None
+
+
 class GN4jTagGetSchema(BaseModel):
     data: list[N4jTagSchema]
     pagination: Pagination
@@ -67,4 +82,9 @@ class GN4jKeywordGetSchema(BaseModel):
 
 class GN4jPhraseGetSchema(BaseModel):
     data: list[N4jPhraseSchema]
+    pagination: Pagination
+
+
+class GN4jChunkGetSchema(BaseModel):
+    data: list[N4jChunkSchema]
     pagination: Pagination
