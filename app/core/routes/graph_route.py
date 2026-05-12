@@ -40,3 +40,13 @@ async def get_concepts(concept: Optional[str] = Query(default=None, description=
     except Exception as e:
         logger.error(f"Failed to get concepts, error : {e}")
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/keywords")
+async def get_keywords(keyword: Optional[str] = Query(default=None, description="Keyword name"), limit: int = Query(default=10, ge=1, le=100, description="Number of results"), offset: int = Query(default=0, ge=0, description="Offset")):
+    try:
+        client = common.GN4jKeywordClient()
+        return await client.get_keywords(keyword, limit, offset)
+    except Exception as e:
+        logger.error(f"Failed to get keywords, error : {e}")
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
