@@ -112,3 +112,56 @@ class GN4jEntityClient:
         except Exception as e:
             logger.error(f"Failed to get entities, error : {e}")
             raise e
+
+
+class GN4jConceptClient:
+    def __init__(self):
+        self.graph = GNeo4jClient.get_driver()
+
+    async def get_concepts(self, concept: Optional[str] = None, limit: int = 10, offset: int = 0) -> gs.GN4jConceptGetSchema:
+        try:
+            skip = 0
+            if offset > 0:
+                skip = (offset - 1) * limit
+
+            where_clause = f"WHERE toLower(c.{common.N4jConceptInterface.value}) CONTAINS toLower($concept)" if concept else ""
+            params = {"concept": concept} if concept else {}
+
+            # Count query
+            count_query = cast(LiteralString, f"""
+                MATCH (c:{GN4jNodes.CONCEPT})
+                {where_clause}
+                RETURN count(c) AS total
+            """)
+
+            # Data query
+            data_query = cast(LiteralString, f"""
+                MATCH (c:{GN4jNodes.CONCEPT})
+                {where_clause}
+                RETURN c
+                ORDER BY c.created_at DESC
+                SKIP {skip}
+                LIMIT {limit}
+            """)
+
+            count_result = await self.graph.execute_query(count_query, parameters_=params)
+            total = count_result[0][0]["total"] if count_result[0] else 0
+            total_pages = math.ceil(total / limit) if total > 0 else 1
+            current_page = offset if offset > 0 else 1
+
+            data_result = await self.graph.execute_query(data_query, parameters_=params)
+            concepts = [gs.N4jConceptSchema(**dict(record["c"])) for record in data_result[0]]
+            return gs.GN4jConceptGetSchema(
+                data=concepts,
+                pagination=gs.Pagination(
+                    current_page=current_page,
+                    total_pages=total_pages,
+                    current_limit=limit,
+                    total_items=total,
+                    has_next=current_page < total_pages,
+                    has_previous=current_page > 1,
+                )
+            )
+        except Exception as e:
+            logger.error(f"Failed to get concepts, error : {e}")
+            raise e

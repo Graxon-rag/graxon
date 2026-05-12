@@ -24,6 +24,13 @@ class N4jEntitySchema(BaseModel):
     frequency: int
 
 
+class N4jConceptSchema(BaseModel):
+    id: str
+    type: str
+    value: str
+    frequency: int
+
+
 class GN4jTagGetSchema(BaseModel):
     data: list[N4jTagSchema]
     pagination: Pagination
@@ -31,4 +38,9 @@ class GN4jTagGetSchema(BaseModel):
 
 class GN4jEntityGetSchema(BaseModel):
     data: list[N4jEntitySchema]
+    pagination: Pagination
+
+
+class GN4jConceptGetSchema(BaseModel):
+    data: list[N4jConceptSchema]
     pagination: Pagination
