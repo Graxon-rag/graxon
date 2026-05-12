@@ -1,9 +1,11 @@
 from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding, ChunkTags, TagResponse, ChunkTagResult, N4jChunkEdge, ChunkDenseVectorScore
 from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
+from app.core.redis.sparse_embedding import GRedisSparseEmbeddingClient
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 from app.core.schemas.neo4j_schema import LexicalSemanticResult
 from app.core.schemas.document_schema import DocumentGetSchema
+from app.core.redis.embeddings import GRedisEmbeddingsClient
 from .processor.processor_factory import ProcessorFactory
 from app.core.qdrant.similarity import QdrantSimilarity
 from app.constants.neo4j import GNeo4jEdges, GN4jNodes
@@ -75,6 +77,8 @@ class DocumentInjectGraph:
         self.n4j_chunk_db = GN4jChunk(org_id=org_id, project_id=project_id)
         self.qdrant_similarity = QdrantSimilarity(org_id=org_id, project_id=project_id)
         self._tag_redis = GRedisTagsClient(org_id=org_id, project_id=project_id)
+        self._embedding_redis = GRedisEmbeddingsClient(org_id=org_id, project_id=project_id)
+        self._sparse_embedding_redis = GRedisSparseEmbeddingClient(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -273,6 +277,9 @@ class DocumentInjectGraph:
                 try:
                     logger.info({"message": "Embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                     em_vector: list[float] = await embedder.aembed(chunk.text)
+
+                    await self._embedding_redis.add_embedding_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, embedding=em_vector)
+
                     chs_embeddings.append(ChunkEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run embedding agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -305,6 +312,9 @@ class DocumentInjectGraph:
                 try:
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                     em_vector: SparseEmbedding = await loop.run_in_executor(None, sparse_embedder.embed, chunk.text)
+
+                    await self._sparse_embedding_redis.add_sparse_embedding_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, sparse_embedding=em_vector)
+
                     chs_sparse_embeddings.append(ChunkSparseEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
