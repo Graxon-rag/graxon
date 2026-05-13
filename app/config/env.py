@@ -58,3 +58,6 @@ class Env:
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1500))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 200))
     MAX_CHUNKS: int = int(os.getenv("MAX_CHUNKS", 10000))
+
+    # Vector Similar
+    GTE_VECTOR_SIMILAR: float = float(os.getenv("GTE_VECTOR_SIMILAR", 0.80))

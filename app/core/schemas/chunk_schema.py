@@ -109,3 +109,23 @@ class ChunkDenseVectorScore(BaseModel):
 class ChunkQuerySchema(BaseModel):
     chunk_id: str
     text: str
+    weight: float
+
+
+class VectorSimilarity(BaseModel):
+    chunk_id: str
+    text: str
+    weight: float
+
+
+class ChunkPrevNext(BaseModel):
+    chunk_id: str
+    text: str
+    weight: float
+
+
+class ChunkPrevNextVecSimilarity(BaseModel):
+    chunk_id: str
+    prev_chunk: Optional[ChunkPrevNext] = None
+    next_chunk: Optional[ChunkPrevNext] = None
+    vector_similar_chunks: Optional[List[VectorSimilarity]] = None

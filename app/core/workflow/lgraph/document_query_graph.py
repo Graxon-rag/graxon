@@ -1,19 +1,20 @@
+from app.core.schemas.chunk_schema import ChunkQuerySchema, ChunkPrevNextVecSimilarity
+from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from qdrant_client.conversions.common_types import QueryResponse
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
-from app.core.schemas.chunk_schema import ChunkQuerySchema
-from ..schemas.provider_schema import QueryProviderSchema
 from app.core.qdrant.retrieval import QDrantRetrieval
 from ..provider import WorkflowReranker, WorkflowLLM
 from langgraph.graph import StateGraph, START, END
 from .prompts.answer_prompt import ANSWER_PROMPT
 from app.core.schemas import query_schema as qs
 from langchain_core.documents import Document
+from typing import TypedDict, Annotated, List
 from qdrant_client.models import ScoredPoint
-from typing import TypedDict, Annotated
+from app.core.neo4j.chunk import GN4jChunk
 from fastembed import SparseEmbedding
 from app.utils.logger import logger
 from langgraph.types import Send
-import operator
+from app.config.env import Env
 import uuid
 
 SUPERVISOR_AGENT = "supervisor_agent"
@@ -59,6 +60,7 @@ class DocumentQueryGraph():
         self.org_id = org_id
         self.project_id = project_id
         self.q_retrieval = QDrantRetrieval(org_id=org_id, project_id=project_id)
+        self._chunk_n4j = GN4jChunk(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -244,7 +246,7 @@ class DocumentQueryGraph():
                 if text is None or chunk_id is None:
                     continue
 
-                chunks.append(ChunkQuerySchema(chunk_id=chunk_id, text=text))
+                chunks.append(ChunkQuerySchema(chunk_id=chunk_id, text=text, weight=point.score))
 
             return {"chunks": chunks}
         except Exception as e:
@@ -253,6 +255,46 @@ class DocumentQueryGraph():
     async def _smart_query(self, state: DQGState):
         try:
             logger.info({"message": "Smart query"})
+            points = state["points"]
+
+            if points is None or len(points) == 0:
+                raise Exception("No points found")
+            document_id = state["document_id"]
+            chunk_ids: list[str] = [
+                chunk_id
+                for p in points
+                if p.payload is not None and (chunk_id := p.payload.get("chunk_id")) is not None
+            ]
+            prev_next_vector_similar_chunks: List[ChunkPrevNextVecSimilarity] = await self._chunk_n4j.get_prev_next_vector_similar_chunks(chunk_ids=chunk_ids, gte__vector_score=Env.GTE_VECTOR_SIMILAR, document_id=document_id)
+
+            chunks: list[ChunkQuerySchema] = []
+            for c in prev_next_vector_similar_chunks:
+                prev_chunk_id = c.prev_chunk.chunk_id if c.prev_chunk is not None else None
+                prev_chunk_text = c.prev_chunk.text if c.prev_chunk is not None else None
+                prev_chunk_weight = c.prev_chunk.weight if c.prev_chunk is not None else None
+
+                next_chunk_id = c.next_chunk.chunk_id if c.next_chunk is not None else None
+                next_chunk_text = c.next_chunk.text if c.next_chunk is not None else None
+                next_chunk_weight = c.next_chunk.weight if c.next_chunk is not None else None
+
+                if prev_chunk_id is not None and prev_chunk_text is not None and prev_chunk_weight is not None:
+                    chunks.append(ChunkQuerySchema(chunk_id=prev_chunk_id, text=prev_chunk_text, weight=prev_chunk_weight))
+                if next_chunk_id is not None and next_chunk_text is not None and next_chunk_weight is not None:
+                    chunks.append(ChunkQuerySchema(chunk_id=next_chunk_id, text=next_chunk_text, weight=next_chunk_weight))
+
+                for vs_chunk in c.vector_similar_chunks or []:
+                    chunks.append(ChunkQuerySchema(chunk_id=vs_chunk.chunk_id, text=vs_chunk.text, weight=vs_chunk.weight))
+
+            # Find unique chunks
+            unique_chunk_ids: list[str] = []
+            unique_chunks: list[ChunkQuerySchema] = []
+
+            for chunk in chunks:
+                if chunk.chunk_id not in unique_chunk_ids:
+                    unique_chunk_ids.append(chunk.chunk_id)
+                    unique_chunks.append(chunk)
+
+            return {"chunks": unique_chunks}
         except Exception as e:
             logger.error({"message": "Failed in smart query", "error": str(e)})
 
@@ -284,7 +326,7 @@ class DocumentQueryGraph():
 
             reranked_chunks: list[ChunkQuerySchema] = []
             for doc in rerank_docs:
-                reranked_chunks.append(ChunkQuerySchema(chunk_id=doc.metadata["chunk_id"], text=doc.page_content))
+                reranked_chunks.append(ChunkQuerySchema(chunk_id=doc.metadata["chunk_id"], text=doc.page_content, weight=1.0))
 
             return {"reranked_chunks": reranked_chunks}
         except Exception as e:
@@ -298,20 +340,30 @@ class DocumentQueryGraph():
                 raise Exception("No reranked chunks found")
 
             query = state["query"]
+            providers = state["providers"]
+            llm_provider = providers.llm
+
+            answer = await self._llm_call(query=query, provider=llm_provider, reranked_chunks=reranked_chunks)
+
+            return {"answer": answer}
+        except Exception as e:
+            logger.error({"message": "Failed to answer", "error": str(e)})
+            raise e
+
+    async def _llm_call(self, query: str, provider: LLMProviderSchema, reranked_chunks: list[ChunkQuerySchema]) -> str:
+        try:
+            llm_provider = provider.provider
+            api_key = provider.api_key
+            model = provider.model
             chunks_str = self._format_chunks(reranked_chunks)
 
             prompt = ANSWER_PROMPT.format(context=chunks_str, query=query)
-
-            providers = state["providers"]
-            llm_provider = providers.llm.provider
-            api_key = providers.llm.api_key
-            model = providers.llm.model
-
             llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
             response = await llm.ainvoke(prompt=prompt)
-            return {"answer": response.content}
+
+            return response.content
         except Exception as e:
-            logger.error({"message": "Failed to answer", "error": str(e)})
+            logger.error({"message": "Failed to llm call", "error": str(e)})
             raise e
 
     def _format_chunks(self, chunks: list[ChunkQuerySchema]) -> str:

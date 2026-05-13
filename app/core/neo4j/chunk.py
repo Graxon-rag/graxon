@@ -1,9 +1,9 @@
+from ..schemas.chunk_schema import Chunk, N4jChunkEdge, ChunkPrevNextVecSimilarity, ChunkPrevNext, VectorSimilarity
 from .interfaces.chunk_interface import N4jChunkInterface
 from ..schemas.neo4j_schema import LexicalSemanticResult
 from app.constants.neo4j import GN4jNodes, GNeo4jEdges
-from ..schemas.chunk_schema import Chunk, N4jChunkEdge
 from ..databases.neo4j.client import GNeo4jClient
-from typing import cast, LiteralString
+from typing import cast, LiteralString, List
 from app.utils.logger import logger
 from .interfaces import common
 from itertools import groupby
@@ -225,6 +225,85 @@ class GN4jChunk:
 
         except Exception as e:
             logger.error({"message": "Failed to delete chunks", "error": str(e)})
+            raise e
+
+    async def get_prev_next_vector_similar_chunks(
+        self,
+        chunk_ids: list[str],
+        gte__vector_score: float = 0.80,
+        document_id: uuid.UUID | None = None
+    ) -> List[ChunkPrevNextVecSimilarity]:
+        try:
+            query = f"""
+                MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+                -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+                -[:{GNeo4jEdges.HAS_DOCUMENT}]->(d:{GN4jNodes.DOCUMENT})
+                -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+                WHERE chunk.id IN $chunk_ids
+
+                // PREV chunk
+                OPTIONAL MATCH (chunk)-[prev_rel:{GNeo4jEdges.PREV}]->(prev_chunk:{GN4jNodes.CHUNK})
+
+                // NEXT chunk
+                OPTIONAL MATCH (chunk)-[next_rel:{GNeo4jEdges.NEXT}]->(next_chunk:{GN4jNodes.CHUNK})
+
+                // VECTOR_SIMILARITY chunks
+                OPTIONAL MATCH (chunk)-[vs_rel:{GNeo4jEdges.VECTOR_SIMILARITY}]->(vs_chunk:{GN4jNodes.CHUNK})
+                WHERE vs_rel.weight >= $gte__vector_score
+
+                RETURN
+                    chunk.id                    AS chunk_id,
+                    prev_chunk.id               AS prev_chunk_id,
+                    prev_chunk.text             AS prev_chunk_text,
+                    prev_rel.weight             AS prev_chunk_weight,
+                    next_chunk.id               AS next_chunk_id,
+                    next_chunk.text             AS next_chunk_text,
+                    next_rel.weight             AS next_chunk_weight,
+                    collect({{
+                        chunk_id: vs_chunk.id,
+                        text:     vs_chunk.text,
+                        score:    vs_rel.weight
+                    }})                         AS vector_similar_chunks
+            """
+
+            params = {
+                "org_id": str(self.org_id),
+                "project_id": str(self.project_id),
+                "document_id": str(document_id) if document_id else None,
+                "chunk_ids": chunk_ids,
+                "gte__vector_score": gte__vector_score,
+            }
+
+            results = await self.graph.execute_query(query, params)
+
+            if not results:
+                return []
+
+            keys = results.keys
+            rows = [dict(zip(keys, r)) for r in results.records]
+
+            return [
+                ChunkPrevNextVecSimilarity(
+                    chunk_id=row["chunk_id"],
+                    prev_chunk=ChunkPrevNext(
+                        chunk_id=row["prev_chunk_id"],
+                        text=row["prev_chunk_text"],
+                        weight=row["prev_chunk_weight"],
+                    ) if row["prev_chunk_id"] is not None else None,
+                    next_chunk=ChunkPrevNext(
+                        chunk_id=row["next_chunk_id"],
+                        text=row["next_chunk_text"],
+                        weight=row["next_chunk_weight"],
+                    ) if row["next_chunk_id"] is not None else None,
+                    vector_similar_chunks=[
+                        VectorSimilarity(chunk_id=c["chunk_id"], text=c["text"], weight=c["score"]) for c in row["vector_similar_chunks"]
+                        if c["chunk_id"] is not None
+                    ],
+                )
+                for row in rows
+            ]
+        except Exception as e:
+            logger.error({"message": "Failed to get prev next vector similar chunks", "error": str(e)})
             raise e
 
 
