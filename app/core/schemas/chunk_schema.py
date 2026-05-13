@@ -1,6 +1,7 @@
 from pydantic import BaseModel, model_serializer, Field, field_validator, model_validator
-from typing import Optional, List
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
+from typing import Optional, List
+from enum import Enum
 
 
 class Chunk(BaseModel):
@@ -129,3 +130,27 @@ class ChunkPrevNextVecSimilarity(BaseModel):
     prev_chunk: Optional[ChunkPrevNext] = None
     next_chunk: Optional[ChunkPrevNext] = None
     vector_similar_chunks: Optional[List[VectorSimilarity]] = None
+
+
+class ChunkRole(str, Enum):
+    SEED = "seed"
+    PREV = "prev"
+    NEXT = "next"
+    VECTOR_SIMILAR = "vector_similar"
+
+
+ROLE_PRIORITY = {
+    ChunkRole.SEED: 0,
+    ChunkRole.VECTOR_SIMILAR: 1,
+    ChunkRole.PREV: 2,
+    ChunkRole.NEXT: 3,
+}
+
+
+class ContextChunk(BaseModel):
+    chunk_id: str
+    text: str
+    role: ChunkRole
+    vector_score: Optional[float] = None      # RRF score (SEED) or vs weight (VECTOR_SIMILAR)
+    position_weight: Optional[float] = None   # edge weight (PREV / NEXT)
+    seed_chunk_ids: list[str] = []            # all seeds this chunk is attached to

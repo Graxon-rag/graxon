@@ -25,8 +25,12 @@ VECTOR_DATABASE_AGENT = "vector_database_agent"
 QUICK_QUERY_AGENT = "quick_query_agent"
 SMART_QUERY_AGENT = "smart_query_agent"
 EXPERT_QUERY_AGENT = "expert_query_agent"
-RERANKER_AGENT = "reranker_agent"
-ANSWER_AGENT = "answer_agent"
+QUICK_QUERY_RERANKER_AGENT = " quick_query_reranker_agent"
+QUICK_QUERY_ANSWER_AGENT = "quick_query_answer_agent"
+SMART_QUERY_RERANKER_AGENT = "smart_query_reranker_agent"
+SMART_QUERY_ANSWER_AGENT = "smart_query_answer_agent"
+EXPERT_QUERY_RERANKER_AGENT = "expert_query_reranker_agent"
+EXPERT_QUERY_ANSWER_AGENT = "expert_query_answer_agent"
 
 
 def merge_optional(a, b):
@@ -72,12 +76,18 @@ class DocumentQueryGraph():
             graph.add_node(EMBEDDING_AGENT, self._embedding)
             graph.add_node(SPARSE_EMBEDDING_AGENT, self._sparse_embedding)
             graph.add_node(VECTOR_DATABASE_AGENT, self._vector_database)
+
             graph.add_node(QUICK_QUERY_AGENT, self._quick_query)
             graph.add_node(SMART_QUERY_AGENT, self._smart_query)
             graph.add_node(EXPERT_QUERY_AGENT, self._expert_query)
 
-            graph.add_node(RERANKER_AGENT, self._reranker)
-            graph.add_node(ANSWER_AGENT, self._answer)
+            graph.add_node(QUICK_QUERY_RERANKER_AGENT, self._qq_reranker)
+            graph.add_node(SMART_QUERY_RERANKER_AGENT, self._sq_reranker)
+            graph.add_node(EXPERT_QUERY_RERANKER_AGENT, self._eq_reranker)
+
+            graph.add_node(QUICK_QUERY_ANSWER_AGENT, self._qq_answer)
+            graph.add_node(SMART_QUERY_ANSWER_AGENT, self._sq_answer)
+            graph.add_node(EXPERT_QUERY_ANSWER_AGENT, self._eq_answer)
 
             # Add edges
             graph.add_edge(START, SUPERVISOR_AGENT)
@@ -104,11 +114,17 @@ class DocumentQueryGraph():
                 }
             )
 
-            graph.add_edge(QUICK_QUERY_AGENT, RERANKER_AGENT)
-            graph.add_edge(SMART_QUERY_AGENT, RERANKER_AGENT)
-            graph.add_edge(EXPERT_QUERY_AGENT, RERANKER_AGENT)
-            graph.add_edge(RERANKER_AGENT, ANSWER_AGENT)
-            graph.add_edge(ANSWER_AGENT, END)
+            graph.add_edge(QUICK_QUERY_AGENT, QUICK_QUERY_RERANKER_AGENT)
+            graph.add_edge(SMART_QUERY_AGENT, SMART_QUERY_RERANKER_AGENT)
+            graph.add_edge(EXPERT_QUERY_AGENT, EXPERT_QUERY_RERANKER_AGENT)
+
+            graph.add_edge(QUICK_QUERY_RERANKER_AGENT, QUICK_QUERY_ANSWER_AGENT)
+            graph.add_edge(SMART_QUERY_RERANKER_AGENT, SMART_QUERY_ANSWER_AGENT)
+            graph.add_edge(EXPERT_QUERY_RERANKER_AGENT, EXPERT_QUERY_ANSWER_AGENT)
+
+            graph.add_edge(QUICK_QUERY_ANSWER_AGENT, END)
+            graph.add_edge(SMART_QUERY_ANSWER_AGENT, END)
+            graph.add_edge(EXPERT_QUERY_ANSWER_AGENT, END)
 
             workflow = graph.compile()
             mermaid = workflow.get_graph().draw_mermaid()
@@ -304,7 +320,7 @@ class DocumentQueryGraph():
         except Exception as e:
             logger.error({"message": "Failed in expert query", "error": str(e)})
 
-    async def _reranker(self, state: DQGState):
+    async def _qq_reranker(self, state: DQGState):
         try:
             query = state["query"]
             chunks = state["chunks"]
@@ -320,20 +336,22 @@ class DocumentQueryGraph():
 
             docs: list[Document] = []
             for chunk in chunks:
-                docs.append(Document(page_content=chunk.text, metadata={"chunk_id": chunk.chunk_id}))
+                docs.append(Document(page_content=chunk.text, metadata={"chunk_id": chunk.chunk_id, "weight": chunk.weight}))
 
             rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
 
             reranked_chunks: list[ChunkQuerySchema] = []
             for doc in rerank_docs:
-                reranked_chunks.append(ChunkQuerySchema(chunk_id=doc.metadata["chunk_id"], text=doc.page_content, weight=1.0))
+                reranked_chunks.append(ChunkQuerySchema(chunk_id=doc.metadata["chunk_id"], weight=doc.metadata["weight"] or 0.0, text=doc.page_content))
 
+            # sort by weight
+            reranked_chunks = sorted(reranked_chunks, key=lambda x: x.weight, reverse=True)
             return {"reranked_chunks": reranked_chunks}
         except Exception as e:
             logger.error({"message": "Failed to reranker", "error": str(e)})
             raise e
 
-    async def _answer(self, state: DQGState):
+    async def _qq_answer(self, state: DQGState):
         try:
             reranked_chunks = state["reranked_chunks"]
             if reranked_chunks is None or len(reranked_chunks) == 0:
@@ -343,19 +361,19 @@ class DocumentQueryGraph():
             providers = state["providers"]
             llm_provider = providers.llm
 
-            answer = await self._llm_call(query=query, provider=llm_provider, reranked_chunks=reranked_chunks)
+            answer = await self._qq_llm_call(query=query, provider=llm_provider, reranked_chunks=reranked_chunks)
 
             return {"answer": answer}
         except Exception as e:
             logger.error({"message": "Failed to answer", "error": str(e)})
             raise e
 
-    async def _llm_call(self, query: str, provider: LLMProviderSchema, reranked_chunks: list[ChunkQuerySchema]) -> str:
+    async def _qq_llm_call(self, query: str, provider: LLMProviderSchema, reranked_chunks: list[ChunkQuerySchema]) -> str:
         try:
             llm_provider = provider.provider
             api_key = provider.api_key
             model = provider.model
-            chunks_str = self._format_chunks(reranked_chunks)
+            chunks_str = self._qq_format_chunks(reranked_chunks)
 
             prompt = ANSWER_PROMPT.format(context=chunks_str, query=query)
             llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
@@ -366,8 +384,36 @@ class DocumentQueryGraph():
             logger.error({"message": "Failed to llm call", "error": str(e)})
             raise e
 
-    def _format_chunks(self, chunks: list[ChunkQuerySchema]) -> str:
+    def _qq_format_chunks(self, chunks: list[ChunkQuerySchema]) -> str:
         return "\n\n".join(
             f"[Chunk {i + 1}]:\n{chunk.text}"
             for i, chunk in enumerate(chunks)
         )
+
+    async def _sq_reranker(self, state: DQGState):
+        try:
+            pass
+        except Exception as e:
+            logger.error({"message": "Failed to sq_reranker", "error": str(e)})
+            raise e
+
+    async def _sq_answer(self, state: DQGState):
+        try:
+            pass
+        except Exception as e:
+            logger.error({"message": "Failed to sq_answer", "error": str(e)})
+            raise e
+
+    async def _eq_reranker(self, state: DQGState):
+        try:
+            pass
+        except Exception as e:
+            logger.error({"message": "Failed to eq_reranker", "error": str(e)})
+            raise e
+
+    async def _eq_answer(self, state: DQGState):
+        try:
+            pass
+        except Exception as e:
+            logger.error({"message": "Failed to eq_answer", "error": str(e)})
+            raise e
