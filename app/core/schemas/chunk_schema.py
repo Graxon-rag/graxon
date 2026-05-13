@@ -104,3 +104,8 @@ class N4jChunkEdge(BaseModel):
 class ChunkDenseVectorScore(BaseModel):
     chunk_id: str
     score: float
+
+
+class ChunkQuerySchema(BaseModel):
+    chunk_id: str
+    text: str

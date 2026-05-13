@@ -1,10 +1,10 @@
 from qdrant_client.models import Filter, FieldCondition, MatchValue, Condition, Prefetch, SparseVector, FusionQuery, Fusion
+from qdrant_client.conversions.common_types import QueryResponse
+from ..databases.qdrant.client import GQdrantClient
 from fastembed import SparseEmbedding
+from app.utils.logger import logger
 from typing import List, Optional
 import uuid
-
-from ..databases.qdrant.client import GQdrantClient
-from app.utils.logger import logger
 
 
 class QDrantRetrieval:
@@ -19,7 +19,7 @@ class QDrantRetrieval:
         query_sparse_embedding: SparseEmbedding,
         top_k: int = 10,
         document_id: Optional[uuid.UUID] = None,
-    ):
+    ) -> QueryResponse:
         try:
             coll, dense_vector_name = GQdrantClient._get_collection_vector_name(model_key)
 

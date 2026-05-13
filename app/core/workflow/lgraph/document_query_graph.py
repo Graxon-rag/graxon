@@ -1,8 +1,14 @@
+from qdrant_client.conversions.common_types import QueryResponse
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
+from app.core.schemas.chunk_schema import ChunkQuerySchema
 from ..schemas.provider_schema import QueryProviderSchema
 from app.core.qdrant.retrieval import QDrantRetrieval
+from ..provider import WorkflowReranker, WorkflowLLM
 from langgraph.graph import StateGraph, START, END
+from .prompts.answer_prompt import ANSWER_PROMPT
 from app.core.schemas import query_schema as qs
+from langchain_core.documents import Document
+from qdrant_client.models import ScoredPoint
 from typing import TypedDict, Annotated
 from fastembed import SparseEmbedding
 from app.utils.logger import logger
@@ -39,6 +45,9 @@ class DQGState(TypedDict):
 
     queries: list[str] | None
     document_id: uuid.UUID | None
+    points: list[ScoredPoint] | None
+    chunks: list[ChunkQuerySchema] | None
+    reranked_chunks: list[ChunkQuerySchema] | None
     query_dense_embedding: Annotated[list[float] | None, merge_optional]
     query_sparse_embedding: Annotated[SparseEmbedding | None, merge_optional]
 
@@ -209,9 +218,8 @@ class DocumentQueryGraph():
             if query_dense_embedding is None:
                 raise Exception("Query dense embedding is None")
 
-            result = await self.q_retrieval.retrieve(model_key=model_key, query_sparse_embedding=query_sparse_embedding, query_dense_embedding=query_dense_embedding, top_k=top_k, document_id=document_id)
-            result = result.model_dump(mode="json")
-            return {"answer": result}
+            result: QueryResponse = await self.q_retrieval.retrieve(model_key=model_key, query_sparse_embedding=query_sparse_embedding, query_dense_embedding=query_dense_embedding, top_k=top_k, document_id=document_id)
+            return {"points": result.points}
 
         except Exception as e:
             logger.error({"message": "Failed to vector database", "error": str(e)})
@@ -220,6 +228,25 @@ class DocumentQueryGraph():
     async def _quick_query(self, state: DQGState):
         try:
             logger.info({"message": "Quick query"})
+            points = state["points"]
+
+            if points is None or len(points) == 0:
+                raise Exception("No points found")
+
+            chunks: list[ChunkQuerySchema] = []
+            for point in points:
+                payload = point.payload
+                if payload is None:
+                    continue
+
+                text = payload.get("text")
+                chunk_id = payload.get("chunk_id")
+                if text is None or chunk_id is None:
+                    continue
+
+                chunks.append(ChunkQuerySchema(chunk_id=chunk_id, text=text))
+
+            return {"chunks": chunks}
         except Exception as e:
             logger.error({"message": "Failed in quick query", "error": str(e)})
 
@@ -237,14 +264,58 @@ class DocumentQueryGraph():
 
     async def _reranker(self, state: DQGState):
         try:
-            pass
+            query = state["query"]
+            chunks = state["chunks"]
+            top_k = state["top_k"]
+
+            if chunks is None or len(chunks) == 0:
+                raise Exception("No chunks found")
+            providers = state["providers"]
+            reranker_provider = providers.reranker.provider
+            reranker_model = providers.reranker.model
+
+            reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
+
+            docs: list[Document] = []
+            for chunk in chunks:
+                docs.append(Document(page_content=chunk.text, metadata={"chunk_id": chunk.chunk_id}))
+
+            rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
+
+            reranked_chunks: list[ChunkQuerySchema] = []
+            for doc in rerank_docs:
+                reranked_chunks.append(ChunkQuerySchema(chunk_id=doc.metadata["chunk_id"], text=doc.page_content))
+
+            return {"reranked_chunks": reranked_chunks}
         except Exception as e:
             logger.error({"message": "Failed to reranker", "error": str(e)})
             raise e
 
     async def _answer(self, state: DQGState):
         try:
-            pass
+            reranked_chunks = state["reranked_chunks"]
+            if reranked_chunks is None or len(reranked_chunks) == 0:
+                raise Exception("No reranked chunks found")
+
+            query = state["query"]
+            chunks_str = self._format_chunks(reranked_chunks)
+
+            prompt = ANSWER_PROMPT.format(context=chunks_str, query=query)
+
+            providers = state["providers"]
+            llm_provider = providers.llm.provider
+            api_key = providers.llm.api_key
+            model = providers.llm.model
+
+            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
+            response = await llm.ainvoke(prompt=prompt)
+            return {"answer": response.content}
         except Exception as e:
             logger.error({"message": "Failed to answer", "error": str(e)})
             raise e
+
+    def _format_chunks(self, chunks: list[ChunkQuerySchema]) -> str:
+        return "\n\n".join(
+            f"[Chunk {i + 1}]:\n{chunk.text}"
+            for i, chunk in enumerate(chunks)
+        )

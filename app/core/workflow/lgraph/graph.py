@@ -2,6 +2,7 @@ from ..schemas.provider_schema import ProviderSchema, QueryProviderSchema
 from .document_inject_graph import DocumentInjectGraph, DIGState
 from app.core.schemas.document_schema import DocumentGetSchema
 from .document_query_graph import DocumentQueryGraph, DQGState
+from .prompts.answer_prompt import DEFAULT_ANSWER_RESPONSE
 from app.core.schemas.query_schema import GQuery
 from app.utils.logger import logger
 from app.config.env import Env
@@ -93,15 +94,31 @@ class Graph:
                 "query_type": query.query_type,
                 "query_depth": query.query_depth,
                 "document_id": query.document_id,
+                "points": None,
+                "chunks": [],
+                "reranked_chunks": [],
                 "query_dense_embedding": None,
                 "query_sparse_embedding": None,
                 "answer": None
             }
             result = await workflow.ainvoke(initial_state)
-            return result.get("answer")
+            answer = result.get("answer") or DEFAULT_ANSWER_RESPONSE
+            reranked_chunks = result.get("reranked_chunks")
+            metadata = [self._safe_serialize(c) for c in reranked_chunks or []]
+            return {"answer": answer, "query": query.query, "metadata": metadata}
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
-            raise e
+            return DEFAULT_ANSWER_RESPONSE
 
     def _get_model_key(self, provider: str, dimension: int) -> str:
         return f"{provider}_{dimension}"
+
+    def _safe_serialize(self, c):
+        if hasattr(c, "model_dump"):          # Pydantic v2
+            return c.model_dump(mode="json")
+        elif hasattr(c, "dict"):              # Pydantic v1
+            return c.dict()
+        elif isinstance(c, dict):             # Already a dict
+            return c
+        else:                                 # Fallback — any object
+            return vars(c)
