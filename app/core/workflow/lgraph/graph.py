@@ -2,10 +2,9 @@ from ..schemas.provider_schema import ProviderSchema, QueryProviderSchema
 from .document_inject_graph import DocumentInjectGraph, DIGState
 from app.core.schemas.document_schema import DocumentGetSchema
 from .document_query_graph import DocumentQueryGraph, DQGState
-from app.core.schemas.query_schema import QueryType
+from app.core.schemas.query_schema import GQuery
 from app.utils.logger import logger
 from app.config.env import Env
-from typing import Optional
 import uuid
 
 
@@ -68,7 +67,7 @@ class Graph:
             logger.error({"message": "Failed to inject document", "error": str(e)})
             raise e
 
-    async def query_documents(self, providers: QueryProviderSchema, query: str, query_type: QueryType, document_id: Optional[uuid.UUID] = None, top_k: int = 10):
+    async def query_documents(self, providers: QueryProviderSchema, query: GQuery):
         try:
             print("Query:", query)
             print("Providers:", providers.model_dump(mode="json"))
@@ -85,10 +84,10 @@ class Graph:
                 "project_id": self.project_id,
                 "providers": providers,
                 "model_key": None,
-                "query": query,
-                "queries": [query],
-                "top_k": top_k,
-                "document_id": document_id,
+                "query": query.query,
+                "queries": [query.query],
+                "top_k": query.top_k,
+                "document_id": query.document_id,
                 "query_dense_embedding": None,
                 "query_sparse_embedding": None,
                 "answer": None

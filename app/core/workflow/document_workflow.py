@@ -10,10 +10,9 @@ from .helpers.service_helper import (
     DocumentServiceHelper
 )
 from .helpers.model_provider_helper import ModelProviderHelper
-from ..schemas.query_schema import QueryType
-from .lgraph.graph import Graph
-from typing import Optional
+from ..schemas.query_schema import GQuery
 from app.utils.logger import logger
+from .lgraph.graph import Graph
 import uuid
 
 
@@ -35,10 +34,10 @@ class DocumentWorkflow:
             await DocumentServiceHelper(self.org_id, self.project_id, document.id).update_document_status(document.id, DocumentStatus.FAILED)
             raise e
 
-    async def query(self, query: str, query_type: QueryType, document_id: Optional[uuid.UUID] = None, top_k: int = 10):
+    async def query(self, query: GQuery):
         try:
             providers = await self._get_query_providers()
-            return await self.graph.query_documents(providers, query, query_type, document_id, top_k)
+            return await self.graph.query_documents(providers, query)
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
             raise e

@@ -1,7 +1,7 @@
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND
 from app.utils.response_util import success_response, error_response
+from ..schemas.query_schema import QueryType, QueryDepth, GQuery
 from fastapi import HTTPException, APIRouter, Query, Body
-from ..schemas.query_schema import QueryType
 from ..handlers.query_handler import QueryHandler
 from app.utils.logger import logger
 from typing import Optional
@@ -26,11 +26,12 @@ async def query(org_id: str, project_id: uuid.UUID, query: str = Query(..., desc
         le=100,
         description="Number of results"
     ),
-    query_type: QueryType = Query(default=QueryType.SMART, description="Query type")
+    query_type: QueryType = Query(default=QueryType.SMART, description="Query type"),
+    query_depth: QueryDepth = Query(default=QueryDepth.MEDIUM, description="Query depth")
 ):
     try:
         handler = QueryHandler(org_id=org_id, project_id=project_id)
-        result = await handler.query(query=query, query_type=query_type, document_id=document_id, top_k=top_k)
+        result = await handler.query(GQuery(query=query, top_k=top_k, document_id=document_id, query_type=query_type, query_depth=query_depth))
         if not result:
             logger.error({"message": "Failed to query", "result": result})
             return error_response("Failed to query", HTTP_404_NOT_FOUND)
