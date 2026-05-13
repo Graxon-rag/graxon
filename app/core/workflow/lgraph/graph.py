@@ -72,6 +72,9 @@ class Graph:
             print("Query:", query)
             print("Providers:", providers.model_dump(mode="json"))
             request_id = str(uuid.uuid4())
+            embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
+            dimension = providers.embedding.dimension
+            ep_model_key = self._get_model_key(embedder_provider, dimension)
 
             graph = DocumentQueryGraph(org_id=self.org_id, project_id=self.project_id)
             workflow = graph.build_graph()
@@ -83,10 +86,12 @@ class Graph:
                 "org_id": self.org_id,
                 "project_id": self.project_id,
                 "providers": providers,
-                "model_key": None,
+                "model_key": ep_model_key,
                 "query": query.query,
                 "queries": [query.query],
                 "top_k": query.top_k,
+                "query_type": query.query_type,
+                "query_depth": query.query_depth,
                 "document_id": query.document_id,
                 "query_dense_embedding": None,
                 "query_sparse_embedding": None,

@@ -2,6 +2,7 @@ from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
 from ..schemas.provider_schema import QueryProviderSchema
 from app.core.qdrant.retrieval import QDrantRetrieval
 from langgraph.graph import StateGraph, START, END
+from app.core.schemas import query_schema as qs
 from typing import TypedDict, Annotated
 from fastembed import SparseEmbedding
 from app.utils.logger import logger
@@ -14,7 +15,9 @@ QUERY_EXPANSION_AGENT = "query_expansion_agent"
 EMBEDDING_AGENT = "embedding_agent"
 SPARSE_EMBEDDING_AGENT = "sparse_embedding_agent"
 VECTOR_DATABASE_AGENT = "vector_database_agent"
-GRAPH_DATABASE_AGENT = "graph_database_agent"
+QUICK_QUERY_AGENT = "quick_query_agent"
+SMART_QUERY_AGENT = "smart_query_agent"
+EXPERT_QUERY_AGENT = "expert_query_agent"
 RERANKER_AGENT = "reranker_agent"
 ANSWER_AGENT = "answer_agent"
 
@@ -28,12 +31,14 @@ class DQGState(TypedDict):
     org_id: str
     project_id: uuid.UUID
     providers: QueryProviderSchema
+    model_key: str
     query: str
     top_k: int
+    query_type: qs.QueryType
+    query_depth: qs.QueryDepth
 
     queries: list[str] | None
     document_id: uuid.UUID | None
-    model_key: Annotated[str | None, merge_optional]
     query_dense_embedding: Annotated[list[float] | None, merge_optional]
     query_sparse_embedding: Annotated[SparseEmbedding | None, merge_optional]
 
@@ -56,7 +61,10 @@ class DocumentQueryGraph():
             graph.add_node(EMBEDDING_AGENT, self._embedding)
             graph.add_node(SPARSE_EMBEDDING_AGENT, self._sparse_embedding)
             graph.add_node(VECTOR_DATABASE_AGENT, self._vector_database)
-            graph.add_node(GRAPH_DATABASE_AGENT, self._graph_database)
+            graph.add_node(QUICK_QUERY_AGENT, self._quick_query)
+            graph.add_node(SMART_QUERY_AGENT, self._smart_query)
+            graph.add_node(EXPERT_QUERY_AGENT, self._expert_query)
+
             graph.add_node(RERANKER_AGENT, self._reranker)
             graph.add_node(ANSWER_AGENT, self._answer)
 
@@ -75,8 +83,19 @@ class DocumentQueryGraph():
             graph.add_edge(EMBEDDING_AGENT, VECTOR_DATABASE_AGENT)
             graph.add_edge(SPARSE_EMBEDDING_AGENT, VECTOR_DATABASE_AGENT)
 
-            graph.add_edge(VECTOR_DATABASE_AGENT, GRAPH_DATABASE_AGENT)
-            graph.add_edge(GRAPH_DATABASE_AGENT, RERANKER_AGENT)
+            graph.add_conditional_edges(
+                VECTOR_DATABASE_AGENT,
+                self._routing_by_query_type,
+                {
+                    "quick": QUICK_QUERY_AGENT,
+                    "smart": SMART_QUERY_AGENT,
+                    "expert": EXPERT_QUERY_AGENT
+                }
+            )
+
+            graph.add_edge(QUICK_QUERY_AGENT, RERANKER_AGENT)
+            graph.add_edge(SMART_QUERY_AGENT, RERANKER_AGENT)
+            graph.add_edge(EXPERT_QUERY_AGENT, RERANKER_AGENT)
             graph.add_edge(RERANKER_AGENT, ANSWER_AGENT)
             graph.add_edge(ANSWER_AGENT, END)
 
@@ -96,6 +115,17 @@ class DocumentQueryGraph():
             Send(EMBEDDING_AGENT, state),
             Send(SPARSE_EMBEDDING_AGENT, state),
         ]
+
+    def _routing_by_query_type(self, state: DQGState):
+        query_type = state["query_type"]
+        if query_type is qs.QueryType.QUICK:
+            return "quick"
+        elif query_type is qs.QueryType.SMART:
+            return "smart"
+        elif query_type is qs.QueryType.EXPERT:
+            return "expert"
+        else:
+            raise Exception(f"Unknown query type: {query_type}")    
 
     async def _supervisor(self, state: DQGState):
         try:
@@ -141,8 +171,7 @@ class DocumentQueryGraph():
             embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
             embedding = await embedder.aembed(first_query)
 
-            model_key = self._get_model_key(embedder_provider.value, dimension)
-            return {"query_dense_embedding": embedding, "model_key": model_key}
+            return {"query_dense_embedding": embedding}
 
         except Exception as e:
             logger.error({"message": "Failed to embedding", "error": str(e)})
@@ -188,12 +217,23 @@ class DocumentQueryGraph():
             logger.error({"message": "Failed to vector database", "error": str(e)})
             raise e
 
-    async def _graph_database(self, state: DQGState):
+    async def _quick_query(self, state: DQGState):
         try:
-            pass
+            logger.info({"message": "Quick query"})
         except Exception as e:
-            logger.error({"message": "Failed to graph database", "error": str(e)})
-            raise e
+            logger.error({"message": "Failed in quick query", "error": str(e)})
+
+    async def _smart_query(self, state: DQGState):
+        try:
+            logger.info({"message": "Smart query"})
+        except Exception as e:
+            logger.error({"message": "Failed in smart query", "error": str(e)})
+
+    async def _expert_query(self, state: DQGState):
+        try:
+            logger.info({"message": "Expert query"})
+        except Exception as e:
+            logger.error({"message": "Failed in expert query", "error": str(e)})
 
     async def _reranker(self, state: DQGState):
         try:
@@ -208,6 +248,3 @@ class DocumentQueryGraph():
         except Exception as e:
             logger.error({"message": "Failed to answer", "error": str(e)})
             raise e
-
-    def _get_model_key(self, provider: str, dimension: int) -> str:
-        return f"{provider}_{dimension}"
