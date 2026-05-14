@@ -1,14 +1,14 @@
-from app.core.schemas.chunk_schema import ChunkQuerySchema, ChunkPrevNextVecSimilarity, ContextChunk, ChunkRole, ROLE_PRIORITY
+from app.core.schemas.chunk_schema import ChunkQuerySchema, ChunkPrevNextVecSimilarity, ContextChunk, ChunkRole, ROLE_PRIORITY, ChunkPrevNext, ChunkPrevNextSchema
 from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
 from qdrant_client.conversions.common_types import QueryResponse
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
+from typing import TypedDict, Annotated, List, cast, Tuple
 from app.core.qdrant.retrieval import QDrantRetrieval
 from ..provider import WorkflowReranker, WorkflowLLM
 from langgraph.graph import StateGraph, START, END
 from app.core.schemas import query_schema as qs
 from langchain_core.documents import Document
-from typing import TypedDict, Annotated, List
 from qdrant_client.models import ScoredPoint
 from app.core.neo4j.chunk import GN4jChunk
 from fastembed import SparseEmbedding
@@ -51,8 +51,8 @@ class DQGState(TypedDict):
     queries: list[str] | None
     document_id: uuid.UUID | None
     points: list[ScoredPoint] | None
-    chunks: list[ChunkQuerySchema | ContextChunk] | None
-    reranked_chunks: list[ChunkQuerySchema | ContextChunk] | None
+    chunks: list[ContextChunk] | list[ChunkPrevNextSchema] | None
+    reranked_chunks: list[ChunkPrevNextSchema] | list[ContextChunk] | None
     query_dense_embedding: Annotated[list[float] | None, merge_optional]
     query_sparse_embedding: Annotated[SparseEmbedding | None, merge_optional]
 
@@ -251,8 +251,13 @@ class DocumentQueryGraph():
             if points is None or len(points) == 0:
                 raise Exception("No points found")
 
-            chunks: list[ChunkQuerySchema] = []
+            chunk_ids: set[Tuple[str, float]] = set()
+
             for point in points:
+                score = point.score
+                if score < Env.GTE_QDRANT_POINT_SCORE_THRESHOLD:
+                    continue
+
                 payload = point.payload
                 if payload is None:
                     continue
@@ -262,7 +267,13 @@ class DocumentQueryGraph():
                 if text is None or chunk_id is None:
                     continue
 
-                chunks.append(ChunkQuerySchema(chunk_id=chunk_id, text=text, weight=point.score))
+                chunk_ids.add((chunk_id, score))
+
+            if len(chunk_ids) == 0:
+                raise Exception("No chunk ids found")
+            document_id = state["document_id"]
+
+            chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id)
 
             return {"chunks": chunks}
         except Exception as e:
@@ -297,13 +308,14 @@ class DocumentQueryGraph():
 
             chunk_ids = list(seed_map.keys())
 
-            prev_next_vs_chunks: List[ChunkPrevNextVecSimilarity] = (
-                await self._chunk_n4j.get_prev_next_vector_similar_chunks(
-                    chunk_ids=chunk_ids,
-                    gte__vector_score=Env.GTE_VECTOR_SIMILAR,
-                    document_id=document_id,
-                )
-            )
+            prev_next_vs_chunks: List[ChunkPrevNextVecSimilarity] = []
+            # prev_next_vs_chunks: List[ChunkPrevNextVecSimilarity] = (
+            #     await self._chunk_n4j.get_prev_next_vector_similar_chunks(
+            #         chunk_ids=chunk_ids,
+            #         gte__vector_score=Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD,
+            #         document_id=document_id,
+            #     )
+            # )
 
             # chunk_id -> ContextChunk, starts with seeds
             merged: dict[str, ContextChunk] = dict(seed_map)
@@ -375,13 +387,11 @@ class DocumentQueryGraph():
     async def _qq_reranker(self, state: DQGState):
         try:
             query = state["query"]
-            chunks = state["chunks"]
+            chunks: list[ChunkPrevNextSchema] = cast(list[ChunkPrevNextSchema], state["chunks"])
             top_k = state["top_k"]
 
             if chunks is None or len(chunks) == 0:
                 raise Exception("No chunks found")
-
-            plain_chunks: list[ChunkQuerySchema] = [c for c in chunks if isinstance(c, ChunkQuerySchema)]
 
             providers = state["providers"]
             reranker_provider = providers.reranker.provider
@@ -389,18 +399,25 @@ class DocumentQueryGraph():
 
             reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
 
+            # index chunks by chunk_id for O(1) lookup
+            chunk_map: dict[str, ChunkPrevNextSchema] = {chunk.chunk_id: chunk for chunk in chunks}
+
             docs: list[Document] = []
-            for chunk in plain_chunks:
-                docs.append(Document(page_content=chunk.text, metadata={"chunk_id": chunk.chunk_id, "weight": chunk.weight}))
+            for chunk in chunks:
+                docs.append(Document(
+                    page_content=chunk.text,
+                    metadata={"chunk_id": chunk.chunk_id}
+                ))
 
             rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
 
-            reranked_chunks: list[ChunkQuerySchema] = []
+            reranked_chunks: list[ChunkPrevNextSchema] = []
             for doc in rerank_docs:
-                reranked_chunks.append(ChunkQuerySchema(chunk_id=doc.metadata["chunk_id"], weight=doc.metadata["weight"] or 0.0, text=doc.page_content))
+                chunk = chunk_map[doc.metadata["chunk_id"]]
+                reranked_chunks.append(chunk)
 
-            # sort by weight
-            reranked_chunks = sorted(reranked_chunks, key=lambda x: x.weight, reverse=True)
+            # sort by weight descending
+            reranked_chunks = sorted(reranked_chunks, key=lambda x: x.point_score, reverse=True)
             return {"reranked_chunks": reranked_chunks}
         except Exception as e:
             logger.error({"message": "Failed to reranker", "error": str(e)})
@@ -408,23 +425,21 @@ class DocumentQueryGraph():
 
     async def _qq_answer(self, state: DQGState):
         try:
-            reranked_chunks = state["reranked_chunks"]
+            reranked_chunks: list[ChunkPrevNextSchema] = cast(list[ChunkPrevNextSchema], state["reranked_chunks"])
             if reranked_chunks is None or len(reranked_chunks) == 0:
                 raise Exception("No reranked chunks found")
 
-            plain_reranked_chunks: list[ChunkQuerySchema] = [c for c in reranked_chunks if isinstance(c, ChunkQuerySchema)]
             query = state["query"]
             providers = state["providers"]
             llm_provider = providers.llm
 
-            answer = await self._qq_llm_call(query=query, provider=llm_provider, reranked_chunks=plain_reranked_chunks)
-
+            answer = await self._qq_llm_call(query=query, provider=llm_provider, reranked_chunks=reranked_chunks)
             return {"answer": answer}
         except Exception as e:
             logger.error({"message": "Failed to answer", "error": str(e)})
             raise e
 
-    async def _qq_llm_call(self, query: str, provider: LLMProviderSchema, reranked_chunks: list[ChunkQuerySchema]) -> str:
+    async def _qq_llm_call(self, query: str, provider: LLMProviderSchema, reranked_chunks: list[ChunkPrevNextSchema]) -> str:
         try:
             llm_provider = provider.provider
             api_key = provider.api_key
@@ -440,11 +455,34 @@ class DocumentQueryGraph():
             logger.error({"message": "Failed to llm call", "error": str(e)})
             raise e
 
-    def _qq_format_chunks(self, chunks: list[ChunkQuerySchema]) -> str:
-        return "\n\n".join(
-            f"[Chunk {i + 1}]:\n{chunk.text}"
-            for i, chunk in enumerate(chunks)
-        )
+    def _qq_format_chunks(self, chunks: list[ChunkPrevNextSchema]) -> str:
+        total = len(chunks)
+        blocks = []
+        for i, chunk in enumerate(chunks):
+            block = self._qq_format_single_chunk(chunk, index=i + 1, total=total)
+            blocks.append(block)
+        return "\n\n".join(blocks)
+
+    def _qq_format_single_chunk(self, chunk: ChunkPrevNextSchema, index: int, total: int) -> str:
+        if chunk.weight >= 0.8:
+            relevance_label = "High Relevance"
+        elif chunk.weight >= 0.5:
+            relevance_label = "Medium Relevance"
+        else:
+            relevance_label = "Low Relevance"
+
+        lines = [f"[Chunk {index} of {total}] (Weight: {chunk.weight:.2f} — {relevance_label})"]
+
+        if chunk.prev_chunk:
+            lines.append(f"\n[Previous Context]:\n{chunk.prev_chunk.text}")
+
+        lines.append(f"\n[Main — {relevance_label}]:\n{chunk.text}")
+
+        if chunk.next_chunk:
+            lines.append(f"\n[Next Context]:\n{chunk.next_chunk.text}")
+
+        lines.append("\n" + "─" * 40)
+        return "\n".join(lines)
 
     async def _sq_reranker(self, state: DQGState):
         try:

@@ -120,9 +120,10 @@ class VectorSimilarity(BaseModel):
 
 
 class ChunkPrevNext(BaseModel):
-    chunk_id: str
     text: str
     weight: float
+    chunk_id: str
+    chunk_number: int
 
 
 class ChunkPrevNextVecSimilarity(BaseModel):
@@ -130,6 +131,16 @@ class ChunkPrevNextVecSimilarity(BaseModel):
     prev_chunk: Optional[ChunkPrevNext] = None
     next_chunk: Optional[ChunkPrevNext] = None
     vector_similar_chunks: Optional[List[VectorSimilarity]] = None
+
+
+class ChunkPrevNextSchema(BaseModel):
+    chunk_id: str
+    text: str
+    chunk_number: int
+    weight: float
+    point_score: float
+    prev_chunk: Optional[ChunkPrevNext] = None
+    next_chunk: Optional[ChunkPrevNext] = None
 
 
 class ChunkRole(str, Enum):

@@ -60,4 +60,5 @@ class Env:
     MAX_CHUNKS: int = int(os.getenv("MAX_CHUNKS", 10000))
 
     # Vector Similar
-    GTE_VECTOR_SIMILAR: float = float(os.getenv("GTE_VECTOR_SIMILAR", 0.80))
+    GTE_EDGE_VECTOR_SIMILAR_THRESHOLD: float = float(os.getenv("GTE_EDGE_VECTOR_SIMILAR_THRESHOLD", 0.80))
+    GTE_QDRANT_POINT_SCORE_THRESHOLD: float = float(os.getenv("GTE_QDRANT_POINT_SCORE_THRESHOLD", 0.45))
