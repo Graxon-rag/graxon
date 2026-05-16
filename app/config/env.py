@@ -62,3 +62,7 @@ class Env:
     # Vector Similar
     GTE_EDGE_VECTOR_SIMILAR_THRESHOLD: float = float(os.getenv("GTE_EDGE_VECTOR_SIMILAR_THRESHOLD", 0.80))
     GTE_QDRANT_POINT_SCORE_THRESHOLD: float = float(os.getenv("GTE_QDRANT_POINT_SCORE_THRESHOLD", 0.45))
+
+    # Expert Query
+    EQ_MAX_LANE_COUNT: int = int(os.getenv("EQ_MAX_LANE_COUNT", 3))
+    EQ_GTE_LANE_WEIGHT_THRESHOLD: float = float(os.getenv("EQ_GTE_LANE_WEIGHT_THRESHOLD", 0.70))

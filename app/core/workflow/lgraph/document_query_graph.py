@@ -3,6 +3,7 @@ from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
 from qdrant_client.conversions.common_types import QueryResponse
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
+from app.core.lexical_engine.query import LexicalEngineQuery
 from typing import TypedDict, Annotated, Dict, cast, Tuple
 from app.core.qdrant.retrieval import QDrantRetrieval
 from ..provider import WorkflowReranker, WorkflowLLM
@@ -65,6 +66,7 @@ class DocumentQueryGraph():
         self.org_id = org_id
         self.project_id = project_id
         self.q_retrieval = QDrantRetrieval(org_id=org_id, project_id=project_id)
+        self._lexical_engine = LexicalEngineQuery()
         self._chunk_n4j = GN4jChunk(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
@@ -347,6 +349,12 @@ class DocumentQueryGraph():
     async def _expert_query(self, state: DQGState):
         try:
             logger.info({"message": "Expert query"})
+            query = state["query"]
+            query_depth: qs.QueryDepth = state["query_depth"]
+            if query_depth == qs.QueryDepth.ADVANCED:
+                analysis = self._lexical_engine.analyze_query(query)
+                return {"answer": analysis.model_dump()}
+
         except Exception as e:
             logger.error({"message": "Failed in expert query", "error": str(e)})
 
