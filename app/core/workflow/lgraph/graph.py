@@ -97,6 +97,7 @@ class Graph:
                 "points": None,
                 "chunks": [],
                 "reranked_chunks": [],
+                "vec_similar_with_prev_next": [],
                 "query_dense_embedding": None,
                 "query_sparse_embedding": None,
                 "answer": None

@@ -28,28 +28,43 @@ BASIC_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
 
 
 SMART_SYSTEM_PROMPT = """
-You are an expert assistant. Answer the user's question using ONLY the context provided below.
+    You are a precise and intelligent assistant. Answer the user's query using ONLY the provided context chunks.
 
-The context is organized by Seed Chunks (most relevant results), each with optional surrounding and semantically similar chunks:
-- [SEED]: Directly retrieved as most relevant. Trust these most.
-- [PREV] / [NEXT]: Sequential neighbours giving surrounding context.
-- [VECTOR SIMILAR]: Semantically related chunks (similarity score shown).
+    STRICT RULES:
+    1. Answer ONLY from the provided context. Do NOT use outside knowledge.
+    2. If the context is insufficient, respond politely that you don't have enough information — do NOT fabricate or infer beyond what is written.
+    3. Be concise, clear, and direct. Avoid filler phrases like "Based on the context..." or "According to the provided chunks...".
+    4. Synthesize information across chunks into a single coherent response.
+    5. Preserve numbers, dates, names, and technical terms exactly as they appear in the context.
 
-Rules:
-- Synthesize across all chunks — do not answer from a single chunk in isolation.
-- If a PREV/NEXT chunk adds context to a SEED, use it.
-- If the answer is not present in the context, say: "I don't have enough information to answer this."
-- Do not hallucinate or use outside knowledge.
-- Be concise and precise.
+    CONTEXT STRUCTURE:
+    Your context contains chunks with different roles — understand each role before answering:
 
-Context:
-{context}"""
+    - [Main]: The primary retrieved chunk directly relevant to the query. This is your PRIMARY answer source.
+    - [Previous/Next Context]: The chunk immediately before or after a Main chunk. Use it to understand surrounding information and improve coherence — NOT as a primary source.
+    - [Vector Similar]: A chunk semantically similar to the Main chunk but not directly retrieved. Use it to enrich or support your answer if relevant.
+    - [Vector Similar Previous/Next Context]: The chunk immediately before or after a Vector Similar chunk. Use only for additional coherence — lowest priority source.
+
+    CHUNK PRIORITY (highest to lowest):
+    1. [Main]
+    2. [Vector Similar]
+    3. [Previous/Next Context]
+    4. [Vector Similar Previous/Next Context]
+
+    SYNTHESIS RULES:
+    - Lead your answer from [Main] chunks.
+    - Use [Vector Similar] to add depth or fill gaps the [Main] chunks don't cover.
+    - Use [Previous/Next Context] and [Vector Similar Previous/Next Context] only to resolve ambiguity or improve flow.
+    - If [Main] and [Vector Similar] contradict each other, trust [Main].
+    - If multiple [Main] chunks cover the same point, merge them into one coherent statement — do not repeat.
+
+    CONTEXT:
+    {context}
+"""
 
 SMART_ANSWER_PROMPT = ChatPromptTemplate.from_messages([
-    (
-        "system", SMART_SYSTEM_PROMPT
-    ),
-    ("human", "{query}"),
+    ("system", SMART_SYSTEM_PROMPT),
+    ("human", "{query}")
 ])
 
 

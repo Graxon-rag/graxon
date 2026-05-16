@@ -53,6 +53,7 @@ class DQGState(TypedDict):
     points: list[ScoredPoint] | None
     chunks: list[ChunkPrevNextVecSimilaritySchema] | list[ChunkPrevNextSchema] | None
     reranked_chunks: list[ChunkPrevNextSchema] | list[ChunkPrevNextVecSimilaritySchema] | None
+    vec_similar_with_prev_next: list[ChunkPrevNextSchema] | None
     query_dense_embedding: Annotated[list[float] | None, merge_optional]
     query_sparse_embedding: Annotated[SparseEmbedding | None, merge_optional]
 
@@ -237,6 +238,10 @@ class DocumentQueryGraph():
                 raise Exception("Query dense embedding is None")
 
             result: QueryResponse = await self.q_retrieval.retrieve(model_key=model_key, query_sparse_embedding=query_sparse_embedding, query_dense_embedding=query_dense_embedding, top_k=top_k, document_id=document_id)
+
+            print("Total points:", len(result.points))
+            print("Points:", result.points)
+
             return {"points": result.points}
 
         except Exception as e:
@@ -311,7 +316,9 @@ class DocumentQueryGraph():
 
             prev_next_chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id)
 
-            vec_similar_chunks: Dict[str, ChunkVecSimilarity] = await self._chunk_n4j.get_vector_similar_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id)
+            vec_similar_chunks: Dict[str, ChunkVecSimilarity] = await self._chunk_n4j.get_vector_similar_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id, gte__vector_score=Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD)
+
+            print("\n\n [Smart]: Vector Similar Chunks:\n", vec_similar_chunks)
 
             chunks: list[ChunkPrevNextVecSimilaritySchema] = []
 
@@ -392,7 +399,7 @@ class DocumentQueryGraph():
             # sort by weight descending
             deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
 
-            print("\n\n Final reranked chunks: ", deduped)
+            print("\n\n [Quick] Final reranked chunks: ", deduped)
 
             return {"reranked_chunks": deduped}
         except Exception as e:
@@ -422,7 +429,7 @@ class DocumentQueryGraph():
             model = provider.model
             chunks_str = self._qq_format_chunks(reranked_chunks)
 
-            print("\n\n Final chunks string for LLM :\n", chunks_str)
+            print("\n\n [Quick] Final chunks string for LLM :\n", chunks_str)
 
             prompt = BASIC_ANSWER_PROMPT.format(context=chunks_str, query=query)
             llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
@@ -481,24 +488,90 @@ class DocumentQueryGraph():
 
             reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
 
+            # index chunks by chunk_id for O(1) lookup
+            chunk_map: dict[str, ChunkPrevNextVecSimilaritySchema] = {chunk.chunk_id: chunk for chunk in chunks}
+
+            docs: list[Document] = []
+            for chunk in chunks:
+                docs.append(Document(
+                    page_content=chunk.text,
+                    metadata={"chunk_id": chunk.chunk_id}
+                ))
+
+            rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
+
+            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = []
+            for doc in rerank_docs:
+                chunk = chunk_map[doc.metadata["chunk_id"]]
+                reranked_chunks.append(chunk)
+
+            query_depth: qs.QueryDepth = state["query_depth"]
+            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = []
+
+            if query_depth is qs.QueryDepth.ADVANCED:
+                try:
+                    chunk_id_scores: list[tuple[str, float]] = []
+                    for chunk in reranked_chunks:
+                        if chunk.vector_similar_chunks:
+                            for vc in chunk.vector_similar_chunks:
+                                chunk_id_scores.append((vc.chunk_id, vc.weight))
+
+                    if chunk_id_scores:
+                        res = await self._chunk_n4j.get_prev_next_chunks(
+                            chunk_id_scores=chunk_id_scores,
+                            document_id=state["document_id"]
+                        )
+                        vec_similar_with_prev_next.extend(res)
+                except Exception as e:
+                    logger.error({"message": "Failed to get prev/next for vector similar chunks", "error": str(e)})
+
+            seen_ids: set[str] = set()
+            deduped: list[ChunkPrevNextVecSimilaritySchema] = []
+
+            # So we can't select the chunk if it has been selected before as a prev/next chunk
+            for chunk in reranked_chunks:
+                if chunk.chunk_id in seen_ids:
+                    continue
+                deduped.append(chunk)
+                seen_ids.add(chunk.chunk_id)
+                if chunk.prev_chunk:
+                    seen_ids.add(chunk.prev_chunk.chunk_id)
+                if chunk.next_chunk:
+                    seen_ids.add(chunk.next_chunk.chunk_id)
+
+            # sort by weight descending
+            deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
+
+            print("\n\n [Smart] Final reranked chunks: ", deduped)
+
+            return {"reranked_chunks": deduped, "vec_similar_with_prev_next": vec_similar_with_prev_next}
+
         except Exception as e:
             logger.error({"message": "Failed to sq_reranker", "error": str(e)})
             raise e
 
     async def _sq_answer(self, state: DQGState):
         try:
-            reranked_chunks = state["reranked_chunks"]
-            if reranked_chunks is None or len(reranked_chunks) == 0:
+            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = cast(
+                list[ChunkPrevNextVecSimilaritySchema], state["reranked_chunks"]
+            )
+            if not reranked_chunks:
                 raise Exception("No reranked chunks found")
 
-            smart_reranked_chunks: list[ContextChunk] = [c for c in reranked_chunks if isinstance(c, ContextChunk)]
             query = state["query"]
+            query_depth: qs.QueryDepth = state["query_depth"]
+            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = state["vec_similar_with_prev_next"] or []
             providers = state["providers"]
-            llm_provider = providers.llm
 
-            answer = await self._sq_llm_call(query=query, provider=llm_provider, reranked_chunks=smart_reranked_chunks)
-
+            answer = await self._sq_llm_call(
+                query=query,
+                provider=providers.llm,
+                reranked_chunks=reranked_chunks,
+                query_depth=query_depth,
+                vec_similar_with_prev_next=vec_similar_with_prev_next,
+            )
             return {"answer": answer}
+
         except Exception as e:
             logger.error({"message": "Failed to sq_answer", "error": str(e)})
             raise e
@@ -507,82 +580,89 @@ class DocumentQueryGraph():
         self,
         query: str,
         provider: LLMProviderSchema,
-        reranked_chunks: list[ContextChunk],
+        reranked_chunks: list[ChunkPrevNextVecSimilaritySchema],
+        query_depth: qs.QueryDepth,
+        vec_similar_with_prev_next: list[ChunkPrevNextSchema],
     ) -> str:
         try:
-            llm_provider = provider.provider
-            api_key = provider.api_key
-            model = provider.model
+            llm = WorkflowLLM.llm(provider=provider.provider, api_key=provider.api_key, model=provider.model)
+            chunks_str = self._sq_format_chunks(
+                chunks=reranked_chunks,
+                query_depth=query_depth,
+                vec_similar_with_prev_next=vec_similar_with_prev_next,
+            )
+            prompt = SMART_ANSWER_PROMPT.format(context=chunks_str, query=query)
 
-            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
-
-            context = self._sq_format_chunks(reranked_chunks)
-            prompt = SMART_ANSWER_PROMPT.format(context=context, query=query)
+            print("\n\n [Smart] Final chunks string for LLM :\n", chunks_str)
 
             response = await llm.ainvoke(prompt=prompt)
             return response.content
 
         except Exception as e:
-            logger.error({"message": "Failed to llm call", "error": str(e)})
+            logger.error({"message": "Failed to sq_llm_call", "error": str(e)})
             raise e
 
-    def _sq_format_chunks(self, chunks: list[ChunkPrevNextVecSimilaritySchema]) -> str:
-        """
-        Groups chunks by their seed and renders a tree per seed.
-        Chunks that are seeds themselves are shown as roots.
-        PREV/NEXT/VECTOR_SIMILAR are shown underneath their seed(s).
-        """
-        # # Collect seeds in order (preserve Qdrant ranking)
-        # seed_ids: list[str] = [c.chunk_id for c in chunks if c.role == ChunkRole.SEED]
+    def _sq_format_chunks(
+        self,
+        chunks: list[ChunkPrevNextVecSimilaritySchema],
+        query_depth: qs.QueryDepth,
+        vec_similar_with_prev_next: list[ChunkPrevNextSchema],
+    ) -> str:
+        # build a map of advanced vec similar chunks by chunk_id for O(1) lookup
+        adv_map: dict[str, ChunkPrevNextSchema] = {c.chunk_id: c for c in vec_similar_with_prev_next}
 
-        # # Map seed_id -> list of attached context chunks
-        # context_map: dict[str, list[ContextChunk]] = {sid: [] for sid in seed_ids}
-        # orphans: list[ContextChunk] = []  # non-seed chunks whose seed wasn't in top results
+        # collect all chunk_numbers and texts into a single number -> (text, label) map
+        number_to_entry: dict[int, tuple[str, str]] = {}
 
-        # for chunk in chunks:
-        #     if chunk.role == ChunkRole.SEED:
-        #         continue
-        #     attached = False
-        #     for sid in chunk.seed_chunk_ids:
-        #         if sid in context_map:
-        #             context_map[sid].append(chunk)
-        #             attached = True
-        #             break
-        #     if not attached:
-        #         orphans.append(chunk)
+        for chunk in chunks:
+            # main chunk
+            number_to_entry.setdefault(chunk.chunk_number, (chunk.text, "[Main]"))
 
-        # seed_map: dict[str, ContextChunk] = {c.chunk_id: c for c in chunks if c.role == ChunkRole.SEED}
+            # prev/next of main
+            if chunk.prev_chunk:
+                number_to_entry.setdefault(chunk.prev_chunk.chunk_number, (chunk.prev_chunk.text, "[Previous Context]"))
+            if chunk.next_chunk:
+                number_to_entry.setdefault(chunk.next_chunk.chunk_number, (chunk.next_chunk.text, "[Next Context]"))
 
-        # lines: list[str] = []
+            # vector similar chunks
+            if chunk.vector_similar_chunks:
+                for vc in chunk.vector_similar_chunks:
+                    if vc.chunk_number not in number_to_entry:
+                        if query_depth == qs.QueryDepth.ADVANCED and vc.chunk_id in adv_map:
+                            # advanced: use the full chunk with its prev/next
+                            full = adv_map[vc.chunk_id]
+                            number_to_entry.setdefault(full.chunk_number, (full.text, "[Vector Similar]"))
+                            if full.prev_chunk:
+                                number_to_entry.setdefault(full.prev_chunk.chunk_number, (full.prev_chunk.text, "[Vector Similar Previous Context]"))
+                            if full.next_chunk:
+                                number_to_entry.setdefault(full.next_chunk.chunk_number, (full.next_chunk.text, "[Vector Similar Next Context]"))
+                        else:
+                            # standard: just the vector similar text
+                            number_to_entry.setdefault(vc.chunk_number, (vc.text, "[Vector Similar]"))
 
-        # for i, sid in enumerate(seed_ids):
-        #     seed = seed_map[sid]
-        #     score_str = f"  (Qdrant score: {seed.vector_score:.4f})" if seed.vector_score is not None else ""
-        #     lines.append(f"[Seed {i + 1}]{score_str}")
-        #     lines.append(seed.text)
+        # merge contiguous chunk_numbers into sequences
+        sorted_numbers = sorted(number_to_entry.keys())
+        sequences: list[list[int]] = []
+        current: list[int] = [sorted_numbers[0]]
 
-        #     for ctx in context_map[sid]:
-        #         if ctx.role == ChunkRole.PREV:
-        #             lines.append(f"\n  ↑ [PREV]  (position weight: {ctx.position_weight})")
-        #             lines.append(f"  {ctx.text}")
-        #         elif ctx.role == ChunkRole.NEXT:
-        #             lines.append(f"\n  ↓ [NEXT]  (position weight: {ctx.position_weight})")
-        #             lines.append(f"  {ctx.text}")
-        #         elif ctx.role == ChunkRole.VECTOR_SIMILAR:
-        #             lines.append(f"\n  ~ [VECTOR SIMILAR]  (similarity: {ctx.vector_score:.4f})")
-        #             lines.append(f"  {ctx.text}")
+        for num in sorted_numbers[1:]:
+            if num == current[-1] + 1:
+                current.append(num)
+            else:
+                sequences.append(current)
+                current = [num]
+        sequences.append(current)
 
-        #     lines.append("")  # blank line between seeds
+        # render each sequence as one block
+        blocks = []
+        for seq in sequences:
+            lines = []
+            for num in seq:
+                text, label = number_to_entry[num]
+                lines.append(f"{label}:\n{text}")
+            blocks.append("\n\n".join(lines) + "\n" + "─" * 40)
 
-        # if orphans:
-        #     lines.append("[Additional Context]")
-        #     for chunk in orphans:
-        #         lines.append(chunk.text)
-        #         lines.append("")
-
-        # print(lines)
-        # return "\n".join(lines)
-        return ""
+        return "\n\n".join(blocks)
 
     async def _eq_reranker(self, state: DQGState):
         try:
