@@ -6,6 +6,7 @@ from typing import cast, LiteralString, Tuple, Dict
 from ..databases.neo4j.client import GNeo4jClient
 from app.utils.logger import logger
 from .interfaces import common
+from app.config.env import Env
 from itertools import groupby
 import hashlib
 import uuid
@@ -303,10 +304,11 @@ class GN4jChunk:
     async def get_vector_similar_chunks(
         self,
         chunk_id_scores: list[Tuple[str, float]],
-        gte__vector_score: float = 0.80,
+        gte__vector_score: float = Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD,
         document_id: uuid.UUID | None = None
     ) -> Dict[str, ChunkVecSimilarity]:
         try:
+            logger.info({"message": "Getting vector similar chunks", "gte__vector_score": gte__vector_score, "document_id": document_id, "project_id": str(self.project_id)})
             # Extract ids and preserve scores
             chunk_ids = [chunk_id for chunk_id, _ in chunk_id_scores]
             score_map = {chunk_id: score for chunk_id, score in chunk_id_scores}
@@ -328,11 +330,12 @@ class GN4jChunk:
                     chunk.id  AS chunk_id,
                     chunk.text AS chunk_text,
                     chunk.chunk_number AS chunk_number,
-                    collect({{
+                    [item IN collect({{
                         chunk_id: vs_chunk.id,
                         text:     vs_chunk.text,
-                        score:    vs_rel.weight
-                    }}) AS vector_similar_chunks
+                        chunk_number: vs_chunk.chunk_number,
+                        weight:    vs_rel.weight
+                    }}) WHERE item.chunk_id IS NOT NULL] AS vector_similar_chunks
             """
 
             params = {
