@@ -126,10 +126,12 @@ class ChunkPrevNext(BaseModel):
     chunk_number: int
 
 
-class ChunkPrevNextVecSimilarity(BaseModel):
+class ChunkVecSimilarity(BaseModel):
     chunk_id: str
-    prev_chunk: Optional[ChunkPrevNext] = None
-    next_chunk: Optional[ChunkPrevNext] = None
+    text: str
+    chunk_number: int
+    weight: float
+    point_score: float
     vector_similar_chunks: Optional[List[VectorSimilarity]] = None
 
 
