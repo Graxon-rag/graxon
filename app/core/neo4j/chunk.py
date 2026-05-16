@@ -2,7 +2,7 @@ from ..schemas.chunk_schema import Chunk, N4jChunkEdge, ChunkVecSimilarity, Chun
 from .interfaces.chunk_interface import N4jChunkInterface
 from ..schemas.neo4j_schema import LexicalSemanticResult
 from app.constants.neo4j import GN4jNodes, GNeo4jEdges
-from typing import cast, LiteralString, Tuple, List
+from typing import cast, LiteralString, Tuple, Dict
 from ..databases.neo4j.client import GNeo4jClient
 from app.utils.logger import logger
 from .interfaces import common
@@ -305,7 +305,7 @@ class GN4jChunk:
         chunk_id_scores: list[Tuple[str, float]],
         gte__vector_score: float = 0.80,
         document_id: uuid.UUID | None = None
-    ) -> List[ChunkVecSimilarity]:
+    ) -> Dict[str, ChunkVecSimilarity]:
         try:
             # Extract ids and preserve scores
             chunk_ids = [chunk_id for chunk_id, _ in chunk_id_scores]
@@ -346,13 +346,16 @@ class GN4jChunk:
             results = await self.graph.execute_query(query, params)
 
             if not results:
-                return []
+                return {}
 
             keys = results.keys
             rows = [dict(zip(keys, r)) for r in results.records]
 
-            return [
-                ChunkVecSimilarity(
+            result: Dict[str, ChunkVecSimilarity] = {}
+
+            for row in rows:
+                chunk_id = row["chunk_id"]
+                result[chunk_id] = ChunkVecSimilarity(
                     chunk_id=row["chunk_id"],
                     text=row["chunk_text"],
                     chunk_number=row["chunk_number"],
@@ -360,8 +363,9 @@ class GN4jChunk:
                     point_score=score_map[row["chunk_id"]],
                     vector_similar_chunks=row["vector_similar_chunks"],
                 )
-                for row in rows
-            ]
+
+            return result
+
         except Exception as e:
             logger.error({"message": "Failed to get prev next vector similar chunks", "error": str(e)})
             raise e

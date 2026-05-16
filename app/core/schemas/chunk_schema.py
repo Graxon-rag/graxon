@@ -145,25 +145,27 @@ class ChunkPrevNextSchema(BaseModel):
     next_chunk: Optional[ChunkPrevNext] = None
 
 
-class ChunkRole(str, Enum):
-    SEED = "seed"
-    PREV = "prev"
-    NEXT = "next"
-    VECTOR_SIMILAR = "vector_similar"
+# class ChunkRole(str, Enum):
+#     SEED = "seed"
+#     PREV = "prev"
+#     NEXT = "next"
+#     VECTOR_SIMILAR = "vector_similar"
 
 
-ROLE_PRIORITY = {
-    ChunkRole.SEED: 0,
-    ChunkRole.VECTOR_SIMILAR: 1,
-    ChunkRole.PREV: 2,
-    ChunkRole.NEXT: 3,
-}
+# ROLE_PRIORITY = {
+#     ChunkRole.SEED: 0,
+#     ChunkRole.VECTOR_SIMILAR: 1,
+#     ChunkRole.PREV: 2,
+#     ChunkRole.NEXT: 3,
+# }
 
 
-class ContextChunk(BaseModel):
+class ChunkPrevNextVecSimilaritySchema(BaseModel):
     chunk_id: str
     text: str
-    role: ChunkRole
-    vector_score: Optional[float] = None      # RRF score (SEED) or vs weight (VECTOR_SIMILAR)
-    position_weight: Optional[float] = None   # edge weight (PREV / NEXT)
-    seed_chunk_ids: list[str] = []            # all seeds this chunk is attached to
+    chunk_number: int
+    weight: float
+    point_score: float
+    prev_chunk: Optional[ChunkPrevNext] = None
+    next_chunk: Optional[ChunkPrevNext] = None
+    vector_similar_chunks: Optional[List[VectorSimilarity]] = None    
