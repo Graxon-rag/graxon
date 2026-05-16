@@ -117,6 +117,7 @@ class VectorSimilarity(BaseModel):
     chunk_id: str
     text: str
     weight: float
+    chunk_number: int
 
 
 class ChunkPrevNext(BaseModel):
