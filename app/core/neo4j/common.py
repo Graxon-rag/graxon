@@ -365,12 +365,27 @@ class GN4jMappingClient:
             }
             node_label = edge_to_node[edge_type]
 
+            exists_query = """
+                CALL db.relationshipTypes() YIELD relationshipType
+                WHERE relationshipType = $rel_type
+                RETURN count(*) AS count
+            """
+            exists_result = await self.graph.execute_query(
+                exists_query,
+                parameters_={"rel_type": edge_type},
+            )
+            exists_rows = [dict(zip(exists_result.keys, r)) for r in exists_result.records]
+            if not exists_rows or exists_rows[0].get("count", 0) == 0:
+                logger.debug(f"Relationship type {edge_type!r} does not exist in graph, skipping.")
+                return []
+
             query = f"""
                 MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
                 -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
                 -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
                 -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
                 -[edge:{edge_type}]->(node:{node_label})
+                WHERE edge IS NOT NULL
                 RETURN
                     node.id        AS id,
                     node.type      AS type,
