@@ -382,7 +382,7 @@ class GN4jChunkEdgeClient:
 
     async def get_chunk_ids_by_tag(self, tag_id: str) -> list[str]:
         try:
-            query: LiteralString = f"""
+            query = f"""
             MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
             -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
             -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
@@ -391,7 +391,7 @@ class GN4jChunkEdgeClient:
             RETURN chunk.id AS chunk_id
             """
             result = await self.graph.execute_query(
-                query,
+                cast(LiteralString, query),
                 {"org_id": self.org_id, "project_id": str(self.project_id), "tag_id": tag_id},
             )
             return [record["chunk_id"] for record in result[0]]
@@ -401,7 +401,7 @@ class GN4jChunkEdgeClient:
 
     async def get_chunk_ids_by_entity(self, entity: str) -> list[str]:
         try:
-            query: LiteralString = f"""
+            query = f"""
             MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
             -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
             -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
@@ -410,7 +410,7 @@ class GN4jChunkEdgeClient:
             RETURN chunk.id AS chunk_id
             """
             result = await self.graph.execute_query(
-                query,
+                cast(LiteralString, query),
                 {"org_id": self.org_id, "project_id": str(self.project_id), "entity": entity},
             )
             return [record["chunk_id"] for record in result[0]]
@@ -420,7 +420,7 @@ class GN4jChunkEdgeClient:
 
     async def get_chunk_ids_by_keyword(self, keyword: str) -> list[str]:
         try:
-            query: LiteralString = f"""
+            query = f"""
             MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
             -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
             -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
@@ -429,7 +429,7 @@ class GN4jChunkEdgeClient:
             RETURN chunk.id AS chunk_id
             """
             result = await self.graph.execute_query(
-                query,
+                cast(LiteralString, query),
                 {"org_id": self.org_id, "project_id": str(self.project_id), "keyword": keyword},
             )
             return [record["chunk_id"] for record in result[0]]
@@ -439,7 +439,7 @@ class GN4jChunkEdgeClient:
 
     async def get_chunk_ids_by_concept(self, concept: str) -> list[str]:
         try:
-            query: LiteralString = f"""
+            query = f"""
             MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
             -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
             -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
@@ -448,7 +448,7 @@ class GN4jChunkEdgeClient:
             RETURN chunk.id AS chunk_id
             """
             result = await self.graph.execute_query(
-                query,
+                cast(LiteralString, query),
                 {"org_id": self.org_id, "project_id": str(self.project_id), "concept": concept},
             )
             return [record["chunk_id"] for record in result[0]]
@@ -458,7 +458,7 @@ class GN4jChunkEdgeClient:
 
     async def get_chunk_ids_by_phrase(self, phrase: str) -> list[str]:
         try:
-            query: LiteralString = f"""
+            query = f"""
             MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
             -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
             -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
@@ -467,7 +467,7 @@ class GN4jChunkEdgeClient:
             RETURN chunk.id AS chunk_id
             """
             result = await self.graph.execute_query(
-                query,
+                cast(LiteralString, query),
                 {"org_id": self.org_id, "project_id": str(self.project_id), "phrase": phrase},
             )
             return [record["chunk_id"] for record in result[0]]

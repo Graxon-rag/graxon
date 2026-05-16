@@ -2,15 +2,18 @@ from app.core.schemas.chunk_schema import ChunkPrevNextVecSimilaritySchema, Chun
 from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
 from app.core.lexical_engine.query import LexicalEngineQuery, QueryAnalysis
-from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional
+from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional, List
+from app.core.schemas.graph_schema import N4jCommonEdgeChunksSchema
 from qdrant_client.conversions.common_types import QueryResponse
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
 from app.core.qdrant.retrieval import QDrantRetrieval
 from ..provider import WorkflowReranker, WorkflowLLM
+from app.core.neo4j.common import GN4jMappingClient
 from langgraph.graph import StateGraph, START, END
 from app.core.schemas import query_schema as qs
 from langchain_core.documents import Document
 from qdrant_client.models import ScoredPoint
+from app.constants.neo4j import GNeo4jEdges
 from app.core.neo4j.chunk import GN4jChunk
 from fastembed import SparseEmbedding
 from app.utils.logger import logger
@@ -56,6 +59,7 @@ class DQGState(TypedDict):
     reranked_chunks: list[ChunkPrevNextSchema] | list[ChunkPrevNextVecSimilaritySchema] | None
     vec_similar_with_prev_next: list[ChunkPrevNextSchema] | None
     eq_analysis: Optional[QueryAnalysis] | None
+    eq_lexical_engine_chunk_ids: set[Tuple[str, float]] | None
     query_dense_embedding: Annotated[list[float] | None, merge_optional]
     query_sparse_embedding: Annotated[SparseEmbedding | None, merge_optional]
 
@@ -69,6 +73,7 @@ class DocumentQueryGraph():
         self.q_retrieval = QDrantRetrieval(org_id=org_id, project_id=project_id)
         self._lexical_engine = LexicalEngineQuery()
         self._chunk_n4j = GN4jChunk(org_id=org_id, project_id=project_id)
+        self._n4j_mapping_client = GN4jMappingClient(org_id=org_id, project_id=project_id)
 
     def build_graph(self):
         try:
@@ -352,10 +357,86 @@ class DocumentQueryGraph():
             logger.info({"message": "Expert query"})
             query = state["query"]
             query_depth: qs.QueryDepth = state["query_depth"]
+            analysis: Optional[QueryAnalysis] = None
+
             if query_depth == qs.QueryDepth.ADVANCED:
                 analysis = self._lexical_engine.analyze_query(query)
-                return {"answer": "avvv", "eq_analysis": analysis.model_dump(mode="json")}
 
+            points = state["points"]
+
+            if points is None or len(points) == 0:
+                raise Exception("No points found")
+
+            chunk_ids: dict[str, float] = {}
+
+            for point in points:
+                score = point.score
+                if score < Env.GTE_QDRANT_POINT_SCORE_THRESHOLD:
+                    continue
+
+                payload = point.payload
+                if payload is None:
+                    continue
+
+                text = payload.get("text")
+                chunk_id = payload.get("chunk_id")
+                if text is None or chunk_id is None:
+                    continue
+
+                # keep highest score
+                prev_score = chunk_ids.get(chunk_id)
+                if prev_score is None or score > prev_score:
+                    chunk_ids[chunk_id] = score
+
+            if len(chunk_ids) == 0:
+                raise Exception("No chunk ids found")
+            # document_id = state["document_id"]
+
+            providers = state["providers"]
+            sparse_provider = providers.sparse_model.provider
+            sparse_model = providers.sparse_model.model
+
+            lane_edges = await self._eq_get_chunk_ids_by_lanes()
+
+            eq_lexical_engine_chunk_ids = await self._eq_get_chunk_id_scores_by_spare_embedding_compare(query, lane_edges, sparse_model, sparse_provider)
+
+            print("\n\n [Expert]: Chunk IDs from Lexical Engine:\n", eq_lexical_engine_chunk_ids)
+
+            for chunk_id, score in eq_lexical_engine_chunk_ids:
+                prev_score = chunk_ids.get(chunk_id)
+                if prev_score is None or score > prev_score:
+                    chunk_ids[chunk_id] = score
+
+            chunk_id_scores = list(chunk_ids.items())
+
+            document_id = state["document_id"]
+
+            prev_next_chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_id_scores], document_id=document_id)
+
+            vec_similar_chunks: Dict[str, ChunkVecSimilarity] = await self._chunk_n4j.get_vector_similar_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_id_scores], document_id=document_id, gte__vector_score=Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD)
+
+            print("\n\n [Expert]: Vector Similar Chunks:\n", vec_similar_chunks)
+
+            chunks: list[ChunkPrevNextVecSimilaritySchema] = []
+
+            for chunk in prev_next_chunks:
+                c = ChunkPrevNextVecSimilaritySchema(
+                    chunk_id=chunk.chunk_id,
+                    text=chunk.text,
+                    chunk_number=chunk.chunk_number,
+                    weight=chunk.weight,
+                    point_score=chunk.point_score,
+                    prev_chunk=chunk.prev_chunk,
+                    next_chunk=chunk.next_chunk,
+                )
+
+                vector_similar = vec_similar_chunks[chunk.chunk_id]
+                if vector_similar is not None:
+                    c.vector_similar_chunks = vector_similar.vector_similar_chunks
+
+                chunks.append(c)
+
+            return {"chunks": chunks, "eq_lexical_engine_chunk_ids": eq_lexical_engine_chunk_ids, "eq_analysis": analysis, "answer": "dummy"}
         except Exception as e:
             logger.error({"message": "Failed in expert query", "error": str(e)})
 
@@ -572,7 +653,7 @@ class DocumentQueryGraph():
             vec_similar_with_prev_next: list[ChunkPrevNextSchema] = state["vec_similar_with_prev_next"] or []
             providers = state["providers"]
 
-            answer = await self._sq_llm_call(
+            answer = await self._sq_eq_llm_call(
                 query=query,
                 provider=providers.llm,
                 reranked_chunks=reranked_chunks,
@@ -585,7 +666,7 @@ class DocumentQueryGraph():
             logger.error({"message": "Failed to sq_answer", "error": str(e)})
             raise e
 
-    async def _sq_llm_call(
+    async def _sq_eq_llm_call(
         self,
         query: str,
         provider: LLMProviderSchema,
@@ -595,14 +676,14 @@ class DocumentQueryGraph():
     ) -> str:
         try:
             llm = WorkflowLLM.llm(provider=provider.provider, api_key=provider.api_key, model=provider.model)
-            chunks_str = self._sq_format_chunks(
+            chunks_str = self._sq_eq_format_chunks(
                 chunks=reranked_chunks,
                 query_depth=query_depth,
                 vec_similar_with_prev_next=vec_similar_with_prev_next,
             )
             prompt = SMART_ANSWER_PROMPT.format(context=chunks_str, query=query)
 
-            print("\n\n [Smart] Final chunks string for LLM :\n", chunks_str)
+            print("\n\n [Smart/Expert] Final chunks string for LLM :\n", chunks_str)
 
             response = await llm.ainvoke(prompt=prompt)
             return response.content
@@ -611,7 +692,7 @@ class DocumentQueryGraph():
             logger.error({"message": "Failed to sq_llm_call", "error": str(e)})
             raise e
 
-    def _sq_format_chunks(
+    def _sq_eq_format_chunks(
         self,
         chunks: list[ChunkPrevNextVecSimilaritySchema],
         query_depth: qs.QueryDepth,
@@ -675,7 +756,79 @@ class DocumentQueryGraph():
 
     async def _eq_reranker(self, state: DQGState):
         try:
-            pass
+            query = state["query"]
+            chunks: list[ChunkPrevNextVecSimilaritySchema] = cast(list[ChunkPrevNextVecSimilaritySchema], state["chunks"])
+            if chunks is None or len(chunks) == 0:
+                raise Exception("No chunks found")
+
+            top_k = state["top_k"]
+
+            if not chunks:
+                raise Exception("No chunks found")
+
+            providers = state["providers"]
+            reranker_provider = providers.reranker.provider
+            reranker_model = providers.reranker.model
+
+            reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
+
+            # index chunks by chunk_id for O(1) lookup
+            chunk_map: dict[str, ChunkPrevNextVecSimilaritySchema] = {chunk.chunk_id: chunk for chunk in chunks}
+
+            docs: list[Document] = []
+            for chunk in chunks:
+                docs.append(Document(
+                    page_content=chunk.text,
+                    metadata={"chunk_id": chunk.chunk_id}
+                ))
+
+            rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
+
+            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = []
+            for doc in rerank_docs:
+                chunk = chunk_map[doc.metadata["chunk_id"]]
+                reranked_chunks.append(chunk)
+
+            query_depth: qs.QueryDepth = state["query_depth"]
+            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = []
+
+            if query_depth is qs.QueryDepth.ADVANCED:
+                try:
+                    chunk_id_scores: list[tuple[str, float]] = []
+                    for chunk in reranked_chunks:
+                        if chunk.vector_similar_chunks:
+                            for vc in chunk.vector_similar_chunks:
+                                chunk_id_scores.append((vc.chunk_id, vc.weight))
+
+                    if chunk_id_scores:
+                        res = await self._chunk_n4j.get_prev_next_chunks(
+                            chunk_id_scores=chunk_id_scores,
+                            document_id=state["document_id"]
+                        )
+                        vec_similar_with_prev_next.extend(res)
+                except Exception as e:
+                    logger.error({"message": "Failed to get prev/next for vector similar chunks", "error": str(e)})
+
+            seen_ids: set[str] = set()
+            deduped: list[ChunkPrevNextVecSimilaritySchema] = []
+
+            # So we can't select the chunk if it has been selected before as a prev/next chunk
+            for chunk in reranked_chunks:
+                if chunk.chunk_id in seen_ids:
+                    continue
+                deduped.append(chunk)
+                seen_ids.add(chunk.chunk_id)
+                if chunk.prev_chunk:
+                    seen_ids.add(chunk.prev_chunk.chunk_id)
+                if chunk.next_chunk:
+                    seen_ids.add(chunk.next_chunk.chunk_id)
+
+            # sort by weight descending
+            deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
+
+            print("\n\n [Expert] Final reranked chunks: ", deduped)
+
+            return {"reranked_chunks": deduped, "vec_similar_with_prev_next": vec_similar_with_prev_next}
         except Exception as e:
             logger.error({"message": "Failed to eq_reranker", "error": str(e)})
             raise e
@@ -686,6 +839,143 @@ class DocumentQueryGraph():
         except Exception as e:
             logger.error({"message": "Failed to eq_answer", "error": str(e)})
             raise e
+
+    async def _eq_get_chunk_ids_by_lanes(self) -> dict[str, List[N4jCommonEdgeChunksSchema]]:
+        try:
+            gte_lane_weight_threshold = Env.EQ_GTE_LANE_WEIGHT_THRESHOLD
+
+            lanes = [
+                GNeo4jEdges.HAS_TAG,
+                GNeo4jEdges.HAS_KEYWORD,
+                GNeo4jEdges.HAS_PHRASE,
+                GNeo4jEdges.HAS_ENTITY,
+                GNeo4jEdges.HAS_CONCEPT,
+                # GNeo4jEdges.HAS_ACRONYM,
+            ]
+
+            # lane → top N nodes (already weight-filtered)
+            lane_edges: dict[str, List[N4jCommonEdgeChunksSchema]] = {}
+
+            for lane in lanes:
+                try:
+                    res = await self._n4j_mapping_client.get_mapping_for_org_project(
+                        edge_type=lane,
+                        is_all=True,
+                    )
+
+                    # For each node, keep only chunks that clear the weight threshold
+                    filtered: List[N4jCommonEdgeChunksSchema] = []
+                    for node in res:
+                        if not node.chunks_ids:
+                            continue
+
+                        valid_chunks = [
+                            chunk for chunk in node.chunks_ids
+                            if chunk.weight >= gte_lane_weight_threshold
+                        ]
+
+                        if not valid_chunks:
+                            continue
+
+                        filtered.append(
+                            N4jCommonEdgeChunksSchema(
+                                id=node.id,
+                                type=node.type,
+                                value=node.value,
+                                frequency=node.frequency,
+                                chunks_ids=valid_chunks,
+                            )
+                        )
+
+                    lane_edges[lane] = filtered
+
+                except Exception as e:
+                    logger.error({"message": "Failed to get chunk ids for lane", "lane": lane, "error": str(e)})
+                    lane_edges[lane] = []
+
+            return lane_edges
+
+        except Exception as e:
+            logger.error({"message": "Failed to eq_get_chunk_ids_score_by_query_embedding", "error": str(e)})
+            raise e
+
+    async def _eq_get_chunk_id_scores_by_spare_embedding_compare(
+        self,
+        query: str,
+        lanes: dict[str, List[N4jCommonEdgeChunksSchema]],
+        sparse_model: str,
+        sparse_provider: str | None = None,
+    ) -> set[Tuple[str, float]]:
+        try:
+            max_chunk_count = Env.EQ_MAX_LANE_CHUNKS_COUNT
+            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
+
+            # chunk_id → best score seen across all lanes
+            chunk_scores: dict[str, float] = {}
+
+            for lane, nodes in lanes.items():
+                if not nodes:
+                    continue
+
+                # Normalize query for this lane
+                normalized_query = self._lexical_engine.normalize_query_for_lane(
+                    query=query,
+                    edge_type=lane,
+                )
+
+                # Normalize all node values for this lane
+                normalized_node_values: List[str] = [
+                    self._lexical_engine.normalize_node_value(value=node.value, edge_type=lane)
+                    for node in nodes
+                ]
+
+                # Embed query + all node values in one batch
+                all_texts = [normalized_query] + normalized_node_values
+                embeddings: list[SparseEmbedding] = sparse_embedder.embed_batch(all_texts)
+
+                query_embedding = embeddings[0]
+                node_embeddings = embeddings[1:]
+
+                # Compare query vs each node
+                for node, node_embedding in zip(nodes, node_embeddings):
+                    similarity = self._sparse_dot_score(query_embedding, node_embedding)
+
+                    if similarity <= 0:
+                        continue
+
+                    # Collect chunk_ids from this node, weighted by similarity
+                    if not node.chunks_ids:
+                        continue
+
+                    for chunk in node.chunks_ids:
+                        # combined score: embedding similarity * edge weight
+                        combined_score = similarity * chunk.weight
+
+                        # keep the best score if chunk appears in multiple lanes
+                        if chunk.chunk_id not in chunk_scores or combined_score > chunk_scores[chunk.chunk_id]:
+                            chunk_scores[chunk.chunk_id] = combined_score
+
+            # Sort by score, return top max_chunk_count
+            ranked = sorted(chunk_scores.items(), key=lambda x: x[1], reverse=True)
+            return set(ranked[:max_chunk_count])
+
+        except Exception as e:
+            logger.error({"message": "Failed to eq_get_chunk_id_scores_by_spare_embedding_compare", "error": str(e)})
+            raise e
+
+    def _sparse_dot_score(self, a: SparseEmbedding, b: SparseEmbedding) -> float:
+        """
+        Dot product between two sparse embeddings.
+        SparseEmbedding has .indices (List[int]) and .values (List[float]).
+        Only overlapping indices contribute — O(min(len(a), len(b))).
+        """
+        b_map = dict(zip(b.indices, b.values))
+        score = sum(
+            a_val * b_map[idx]
+            for idx, a_val in zip(a.indices, a.values)
+            if idx in b_map
+        )
+        return float(score)
 
     def _effective_top_k(self, chunks: list[ChunkPrevNextSchema], desired_results: int) -> int:
         has_prev = sum(1 for c in chunks if c.prev_chunk)

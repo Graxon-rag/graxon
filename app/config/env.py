@@ -66,3 +66,6 @@ class Env:
     # Expert Query
     EQ_MAX_LANE_COUNT: int = int(os.getenv("EQ_MAX_LANE_COUNT", 3))
     EQ_GTE_LANE_WEIGHT_THRESHOLD: float = float(os.getenv("EQ_GTE_LANE_WEIGHT_THRESHOLD", 0.70))
+    EQ_MAX_LANE_ENTITY_COUNT: int = int(os.getenv("EQ_MAX_LANE_ENTITY_COUNT", 3))
+    EQ_MAX_LANE_CHUNKS_COUNT: int = int(os.getenv("EQ_MAX_LANE_CHUNKS_COUNT", 5))
+    EQ_MAX_CHUNKS_COUNT: int = int(os.getenv("EQ_MAX_CHUNKS_COUNT", 5))
