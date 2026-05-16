@@ -416,9 +416,26 @@ class DocumentQueryGraph():
                 chunk = chunk_map[doc.metadata["chunk_id"]]
                 reranked_chunks.append(chunk)
 
+            seen_ids: set[str] = set()
+            deduped: list[ChunkPrevNextSchema] = []
+
+            # So we can't select the chunk if it has been selected before as a prev/next chunk
+            for chunk in reranked_chunks:
+                if chunk.chunk_id in seen_ids:
+                    continue
+                deduped.append(chunk)
+                seen_ids.add(chunk.chunk_id)
+                if chunk.prev_chunk:
+                    seen_ids.add(chunk.prev_chunk.chunk_id)
+                if chunk.next_chunk:
+                    seen_ids.add(chunk.next_chunk.chunk_id)
+
             # sort by weight descending
-            reranked_chunks = sorted(reranked_chunks, key=lambda x: x.point_score, reverse=True)
-            return {"reranked_chunks": reranked_chunks}
+            deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
+
+            print("\n\n Final reranked chunks: ", deduped)
+
+            return {"reranked_chunks": deduped}
         except Exception as e:
             logger.error({"message": "Failed to reranker", "error": str(e)})
             raise e
@@ -446,6 +463,8 @@ class DocumentQueryGraph():
             model = provider.model
             chunks_str = self._qq_format_chunks(reranked_chunks)
 
+            print("\n\n Final chunks string for LLM :\n", chunks_str)
+
             prompt = BASIC_ANSWER_PROMPT.format(context=chunks_str, query=query)
             llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
             response = await llm.ainvoke(prompt=prompt)
@@ -456,14 +475,15 @@ class DocumentQueryGraph():
             raise e
 
     def _qq_format_chunks(self, chunks: list[ChunkPrevNextSchema]) -> str:
+        main_chunk_ids = {chunk.chunk_id for chunk in chunks}
         total = len(chunks)
         blocks = []
         for i, chunk in enumerate(chunks):
-            block = self._qq_format_single_chunk(chunk, index=i + 1, total=total)
+            block = self._qq_format_single_chunk(chunk, index=i + 1, total=total, skip_ids=main_chunk_ids)
             blocks.append(block)
         return "\n\n".join(blocks)
 
-    def _qq_format_single_chunk(self, chunk: ChunkPrevNextSchema, index: int, total: int) -> str:
+    def _qq_format_single_chunk(self, chunk: ChunkPrevNextSchema, index: int, total: int, skip_ids: set[str]) -> str:
         if chunk.weight >= 0.8:
             relevance_label = "High Relevance"
         elif chunk.weight >= 0.5:
@@ -473,12 +493,12 @@ class DocumentQueryGraph():
 
         lines = [f"[Chunk {index} of {total}] (Weight: {chunk.weight:.2f} — {relevance_label})"]
 
-        if chunk.prev_chunk:
+        if chunk.prev_chunk and chunk.prev_chunk.chunk_id not in skip_ids:
             lines.append(f"\n[Previous Context]:\n{chunk.prev_chunk.text}")
 
         lines.append(f"\n[Main — {relevance_label}]:\n{chunk.text}")
 
-        if chunk.next_chunk:
+        if chunk.next_chunk and chunk.next_chunk.chunk_id not in skip_ids:
             lines.append(f"\n[Next Context]:\n{chunk.next_chunk.text}")
 
         lines.append("\n" + "─" * 40)
@@ -648,3 +668,10 @@ class DocumentQueryGraph():
         except Exception as e:
             logger.error({"message": "Failed to eq_answer", "error": str(e)})
             raise e
+
+    def _effective_top_k(self, chunks: list[ChunkPrevNextSchema], desired_results: int) -> int:
+        has_prev = sum(1 for c in chunks if c.prev_chunk)
+        has_next = sum(1 for c in chunks if c.next_chunk)
+        avg_neighbors = (has_prev + has_next) / len(chunks)
+        # avg_neighbors ~2 means each chunk brings ~3x content
+        return max(1, round(desired_results / (1 + avg_neighbors)))
