@@ -27,7 +27,7 @@ async def query(org_id: str, project_id: uuid.UUID, query: str = Query(..., desc
         description="Number of results"
     ),
     query_type: QueryType = Query(default=QueryType.SMART, description="Query type"),
-    query_depth: QueryDepth = Query(default=QueryDepth.MEDIUM, description="Query depth")
+    query_depth: QueryDepth = Query(default=QueryDepth.STANDARD, description="Query depth")
 ):
     try:
         handler = QueryHandler(org_id=org_id, project_id=project_id)
@@ -35,6 +35,10 @@ async def query(org_id: str, project_id: uuid.UUID, query: str = Query(..., desc
         if not result:
             logger.error({"message": "Failed to query", "result": result})
             return error_response("Failed to query", HTTP_404_NOT_FOUND)
+
+        if isinstance(result, str):
+            return success_response(data={"answer": result})
+
         return success_response(data=result)
     except Exception as e:
         logger.error({"message": "Failed to query", "error": str(e)})
