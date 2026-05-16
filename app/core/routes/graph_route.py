@@ -1,10 +1,11 @@
 from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
 from app.utils.response_util import success_response, error_response
 from fastapi import HTTPException, APIRouter, Query
-from ..neo4j import common
 from ..neo4j.chunk import GN4jChunkEdgeClient
+from app.constants.neo4j import GNeo4jEdges
+from typing import Optional, Literal
 from app.utils.logger import logger
-from typing import Optional
+from ..neo4j import common
 import uuid
 
 router = APIRouter(
@@ -120,4 +121,30 @@ async def get_chunks_by_concept(org_id: str, project_id: uuid.UUID, concept_id: 
         return await client.get_chunk_ids_by_concept(concept_id)
     except Exception as e:
         logger.error({"message": "Failed to get chunks by concept", "error": str(e)})
+        raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+
+
+@router.get("/orgs/{org_id}/projects/{project_id}/mappings")
+async def get_mappings(org_id: str, project_id: uuid.UUID,
+    mapping_type: Literal[
+        GNeo4jEdges.HAS_TAG,      # type: ignore
+        GNeo4jEdges.HAS_ENTITY,   # type: ignore
+        GNeo4jEdges.HAS_CONCEPT,  # type: ignore
+        GNeo4jEdges.HAS_KEYWORD,  # type: ignore
+        GNeo4jEdges.HAS_PHRASE,   # type: ignore
+        GNeo4jEdges.HAS_ACRONYM,  # type: ignore
+        ],
+    get_all: bool = Query(default=False, description="Get all mappings"),
+    limit: int = Query(default=10, ge=1, le=100, description="Number of results"),
+    offset: int = Query(default=0, ge=0, description="Offset"),
+):
+    try:
+        client = common.GN4jMappingClient(org_id=org_id, project_id=project_id)
+        result = await client.get_mapping_for_org_project(edge_type=mapping_type, is_all=get_all, limit=limit, offset=offset)
+        if result is None:
+            raise HTTPException(status_code=HTTP_404_NOT_FOUND, detail="No mappings found")
+        data_dict = [r.model_dump(mode="json") for r in result]
+        return success_response(data={"data": data_dict})
+    except Exception as e:
+        logger.error({"message": "Failed to get mappings", "error": str(e)})
         raise HTTPException(status_code=HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))

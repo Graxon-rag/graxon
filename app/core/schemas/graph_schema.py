@@ -46,6 +46,21 @@ class N4jPhraseSchema(BaseModel):
     frequency: int
 
 
+class N4jChunkEdgeCommonSchema(BaseModel):
+    chunk_id: str
+    type: str
+    frequency: int
+    weight: float
+
+
+class N4jCommonEdgeChunksSchema(BaseModel):
+    id: str
+    type: str
+    value: str
+    frequency: int
+    chunks_ids: Optional[list[N4jChunkEdgeCommonSchema]] = None
+
+
 class N4jChunkSchema(BaseModel):
     org_id: Optional[str] = None
     project_id: Optional[str] = None

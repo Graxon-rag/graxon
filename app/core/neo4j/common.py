@@ -1,11 +1,12 @@
 from .interfaces.chunk_interface import N4jChunkInterface
+from app.constants.neo4j import GN4jNodes, GNeo4jEdges
 from ..databases.neo4j.client import GNeo4jClient
-from app.constants.neo4j import GN4jNodes
+from typing import cast, LiteralString, Literal
 from ..schemas import graph_schema as gs
-from typing import cast, LiteralString
 from app.utils.logger import logger
+from typing import Optional, List
 from .interfaces import common
-from typing import Optional
+import uuid
 import math
 
 
@@ -325,4 +326,96 @@ class GN4jChunkClient:
             )
         except Exception as e:
             logger.error({"message": "Failed to get chunks", "error": str(e)})
+            raise e
+
+
+class GN4jMappingClient:
+    def __init__(self, org_id: str, project_id: uuid.UUID,):
+        self.org_id = org_id
+        self.project_id = project_id
+        self.graph = GNeo4jClient.get_driver()
+
+    async def get_mapping_for_org_project(
+        self,
+        edge_type: Literal[
+            GNeo4jEdges.HAS_TAG,      # type: ignore
+            GNeo4jEdges.HAS_ENTITY,   # type: ignore
+            GNeo4jEdges.HAS_CONCEPT,  # type: ignore
+            GNeo4jEdges.HAS_KEYWORD,  # type: ignore
+            GNeo4jEdges.HAS_PHRASE,   # type: ignore
+            GNeo4jEdges.HAS_ACRONYM,  # type: ignore
+        ],
+        is_all: bool = False,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> List[gs.N4jCommonEdgeChunksSchema]:
+        try:
+            skip = 0
+            if offset > 0:
+                skip = (offset - 1) * limit
+
+            # Map each edge type to its target node label
+            edge_to_node: dict = {
+                GNeo4jEdges.HAS_TAG: GN4jNodes.TAG,
+                GNeo4jEdges.HAS_ENTITY: GN4jNodes.ENTITY,
+                GNeo4jEdges.HAS_CONCEPT: GN4jNodes.CONCEPT,
+                GNeo4jEdges.HAS_KEYWORD: GN4jNodes.KEYWORD,
+                GNeo4jEdges.HAS_PHRASE: GN4jNodes.PHRASE,
+                GNeo4jEdges.HAS_ACRONYM: GN4jNodes.ACRONYM,
+            }
+            node_label = edge_to_node[edge_type]
+
+            query = f"""
+                MATCH (:{GN4jNodes.ORGANIZATION} {{id: $org_id}})
+                -[:{GNeo4jEdges.HAS_PROJECT}]->(:{GN4jNodes.PROJECT} {{id: $project_id}})
+                -[:{GNeo4jEdges.HAS_DOCUMENT}]->(:{GN4jNodes.DOCUMENT})
+                -[:{GNeo4jEdges.HAS_CHUNK}]->(chunk:{GN4jNodes.CHUNK})
+                -[edge:{edge_type}]->(node:{node_label})
+                RETURN
+                    node.id        AS id,
+                    node.type      AS type,
+                    node.value     AS value,
+                    SUM(edge.frequency) AS frequency,
+                    COLLECT({{
+                        chunk_id  : chunk.id,
+                        type      : type(edge),
+                        frequency : edge.frequency,
+                        weight    : edge.weight
+                    }}) AS chunks_ids
+                ORDER BY frequency DESC
+            """
+
+            if not is_all:
+                query += " SKIP $skip LIMIT $limit"
+
+            params = {
+                "org_id": self.org_id,
+                "project_id": str(self.project_id),
+                "skip": skip,
+                "limit": limit,
+            }
+
+            results = await self.graph.execute_query(cast(LiteralString, query), parameters_=params)
+            if not results:
+                return []
+
+            keys = results.keys
+            rows = [dict(zip(keys, r)) for r in results.records]
+
+            return [
+                gs.N4jCommonEdgeChunksSchema(
+                    id=row["id"],
+                    type=row["type"],
+                    value=row["value"],
+                    frequency=row["frequency"],
+                    chunks_ids=[
+                        gs.N4jChunkEdgeCommonSchema(**chunk)
+                        for chunk in row["chunks_ids"]
+                    ],
+                )
+                for row in rows
+            ]
+
+        except Exception as e:
+            logger.error(f"Failed to get {edge_type} mapping, error: {e}")
             raise e
