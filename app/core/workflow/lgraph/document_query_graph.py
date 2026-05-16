@@ -1,10 +1,10 @@
 from app.core.schemas.chunk_schema import ChunkPrevNextVecSimilaritySchema, ChunkPrevNextSchema, ChunkVecSimilarity
 from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
+from app.core.lexical_engine.query import LexicalEngineQuery, QueryAnalysis
+from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional
 from qdrant_client.conversions.common_types import QueryResponse
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
-from app.core.lexical_engine.query import LexicalEngineQuery
-from typing import TypedDict, Annotated, Dict, cast, Tuple
 from app.core.qdrant.retrieval import QDrantRetrieval
 from ..provider import WorkflowReranker, WorkflowLLM
 from langgraph.graph import StateGraph, START, END
@@ -55,6 +55,7 @@ class DQGState(TypedDict):
     chunks: list[ChunkPrevNextVecSimilaritySchema] | list[ChunkPrevNextSchema] | None
     reranked_chunks: list[ChunkPrevNextSchema] | list[ChunkPrevNextVecSimilaritySchema] | None
     vec_similar_with_prev_next: list[ChunkPrevNextSchema] | None
+    eq_analysis: Optional[QueryAnalysis] | None
     query_dense_embedding: Annotated[list[float] | None, merge_optional]
     query_sparse_embedding: Annotated[SparseEmbedding | None, merge_optional]
 
@@ -353,7 +354,7 @@ class DocumentQueryGraph():
             query_depth: qs.QueryDepth = state["query_depth"]
             if query_depth == qs.QueryDepth.ADVANCED:
                 analysis = self._lexical_engine.analyze_query(query)
-                return {"answer": analysis.model_dump()}
+                return {"answer": "avvv", "eq_analysis": analysis.model_dump(mode="json")}
 
         except Exception as e:
             logger.error({"message": "Failed in expert query", "error": str(e)})

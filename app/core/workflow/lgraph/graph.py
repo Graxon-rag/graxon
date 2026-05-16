@@ -3,6 +3,7 @@ from .document_inject_graph import DocumentInjectGraph, DIGState
 from app.core.schemas.document_schema import DocumentGetSchema
 from .document_query_graph import DocumentQueryGraph, DQGState
 from .prompts.answer_prompt import DEFAULT_ANSWER_RESPONSE
+from app.core.schemas.query_schema import QueryDepth
 from app.core.schemas.query_schema import GQuery
 from app.utils.logger import logger
 from app.config.env import Env
@@ -98,6 +99,7 @@ class Graph:
                 "chunks": [],
                 "reranked_chunks": [],
                 "vec_similar_with_prev_next": [],
+                "eq_analysis": None,
                 "query_dense_embedding": None,
                 "query_sparse_embedding": None,
                 "answer": None
@@ -106,7 +108,10 @@ class Graph:
             answer = result.get("answer") or DEFAULT_ANSWER_RESPONSE
             reranked_chunks = result.get("reranked_chunks")
             metadata = [self._safe_serialize(c) for c in reranked_chunks or []]
-            return {"answer": answer, "query": query.query, "metadata": metadata}
+            response = {"answer": answer, "query": query.query, "metadata": metadata}
+            if query.query_depth == QueryDepth.ADVANCED:
+                response["lexical_engine_analysis"] = result.get("eq_analysis")
+            return response
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
             return DEFAULT_ANSWER_RESPONSE
