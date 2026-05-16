@@ -112,7 +112,7 @@ class Graph:
 
             response = {"answer": answer, "query": query.query, "metadata": metadata}
 
-            if query.query_depth == QueryDepth.ADVANCED:
+            if query.query_type == QueryType.EXPERT and query.query_depth == QueryDepth.ADVANCED:
                 response["lexical_engine_analysis"] = self._safe_serialize(result.get("eq_analysis"))
 
             if query.query_type == QueryType.EXPERT:

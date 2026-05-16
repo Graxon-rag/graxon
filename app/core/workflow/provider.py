@@ -1,5 +1,7 @@
 from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider
 from app.providers.sparse_embedder.fast_embed import FastEmbedSparseEmbedder
+from app.providers.fast_embedder.fast_embedder import FastEmbedEmbedder
+from app.providers.fast_embedder.base import BaseFastEmbedEmbedder
 from app.providers.sparse_embedder.base import BaseSparseEmbedder
 from app.providers.reranker.fast_embed import FastEmbedReranker
 from app.providers.embedder.openai import OpenaiEmbedder
@@ -60,3 +62,10 @@ class WorkflowSparseEmbedder:
     @staticmethod
     def sparse_embedder(model: str, provider: Optional[str], **kwargs) -> BaseSparseEmbedder:
         return FastEmbedSparseEmbedder(embed_model=model, **kwargs)
+
+
+class WorkflowFastEmbedder:
+
+    @staticmethod
+    def fast_embedder(model: str = "nomic-ai/nomic-embed-text-v1", provider: Optional[str] = None, **kwargs) -> BaseFastEmbedEmbedder:
+        return FastEmbedEmbedder(model="nomic-ai/nomic-embed-text-v1", **kwargs)
