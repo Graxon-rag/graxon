@@ -9,7 +9,7 @@ class FastEmbedSparseEmbedder(BaseSparseEmbedder):
     def __init__(self, model: str = "Qdrant/bm42-all-minilm-l6-v2-attentions", **kwargs):
         print("Loading FastEmbed models........")
 
-        self._embedder = SparseTextEmbedding(model_name=model, **kwargs)
+        self._embedder = SparseTextEmbedding(model_name=model, cache_dir=".fastembed_cache", **kwargs)
 
         print("FastEmbed models loaded")
 

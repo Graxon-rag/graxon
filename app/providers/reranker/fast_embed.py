@@ -8,7 +8,7 @@ class FastEmbedReranker(BaseReranker):
     def __init__(self, rerank_model: str = "jinaai/jina-reranker-v1-turbo-en", **kwargs):
         print("Loading FastEmbed models........")
 
-        self._reranker = TextCrossEncoder(rerank_model, **kwargs)
+        self._reranker = TextCrossEncoder(rerank_model, cache_dir=".fastembed_cache", **kwargs)
 
         print("FastEmbed models loaded")
 
