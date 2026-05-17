@@ -92,6 +92,15 @@ Run the images from `docker-hub`
    docker compose -f docker-compose-prod.yaml logs -f
    ```
 
+### Stopping Containers
+
+If you are running either of the Docker variations, you can spin down the environments using:
+
+- #### For Development:
+  docker compose -f docker-compose-dev.yaml down
+- #### For Production:
+  docker compose -f docker-compose-prod.yaml down
+
 ---
 
 ## Adding New Migrations

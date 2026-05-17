@@ -20,9 +20,6 @@ services:
     env_file:
       - .env.docker
 
-    volumes:
-      - graxon_fastembed:/graxon/graxon/.fastembed_cache
-
     depends_on:
       neo4j:
         condition: service_healthy
@@ -162,4 +159,3 @@ volumes:
   redis_data:
   minio_data:
   postgres_data:
-  graxon_fastembed:

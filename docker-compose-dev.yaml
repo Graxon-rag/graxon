@@ -29,7 +29,6 @@ services:
 
     volumes:
       - .:/graxon/graxon
-      - graxon_fastembed:/graxon/graxon/.fastembed_cache
 
     command: sh -c "alembic upgrade head && uvicorn app.core.main:app"
 
@@ -172,4 +171,3 @@ volumes:
   redis_data:
   minio_data:
   postgres_data:
-  graxon_fastembed:
