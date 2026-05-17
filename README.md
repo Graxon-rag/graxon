@@ -1,78 +1,96 @@
 # Graxon
 
-## Prerequisites
-
-Make sure the following are running before proceeding:
-
-- PostgreSQL
-- PgBouncer
-- Neo4j
-
----
-
-## First Time Setup
-
-### 1. Clone the repository and install dependencies
+## Clone the repository
 
 ```bash
 git clone https://github.com/Graxon-rag/graxon.git
 cd graxon
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
 ```
 
-### 2. Configure environment variables
+## Execution Choices
 
-Copy the example env file and fill in your values:
+### 1. Local Development (Native)
 
-```bash
-cp .env.example .env
-```
+Best if you prefer to run the app directly on your host machine without containerization.
 
-Required variables:
+1. Create a `.env` from `.env.example`
+   ```bash
+   cp .env.example .env
+   ```
+2. Create a `Virtual Env` and `enable` it
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate
+   ```
+3. Install all dependencies
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. Up all the engines/ databases/ store
+   ```bash
+   docker compose up -d
+   ```
+5. Run the migration
+   ```bash
+   alembic upgrade head
+   ```
+6. Run the server
+   ```bash
+    chmod +x dev.sh
+    ./dev.sh
+   ```
 
-| Variable              | Description                               |
-| --------------------- | ----------------------------------------- |
-| `POSTGRESQL_HOST`     | Direct PostgreSQL host (e.g. `localhost`) |
-| `POSTGRESQL_PORT`     | Direct PostgreSQL port (e.g. `5432`)      |
-| `PGBOUNCER_HOST`      | PgBouncer host (e.g. `localhost`)         |
-| `PGBOUNCER_PORT`      | PgBouncer port (e.g. `5433`)              |
-| `POSTGRESQL_USERNAME` | PostgreSQL username                       |
-| `POSTGRESQL_PASSWORD` | PostgreSQL password                       |
+### 2. Docker Development (With Container HMR)
 
-### 3. Run Alembic migrations
+Best for keeping your host machine clean while maintaining instant hot-reloading (Hot Module Replacement) as you change your code.
 
-> **Important:** Migrations must be run manually before starting the server.
-> The application does **not** run migrations automatically on startup.
+1. Create a `.env.docker` from `.env.docker.example`
 
-```bash
-cd graxon
-alembic upgrade head
-```
+   ```bash
+   cp .env.docker.example .env.docker
+   ```
 
-You should see output like:
+2. Build the image
+   ```bash
+   docker compose -f docker-compose-dev.yaml build
+   ```
+3. Run Container
 
-```
-INFO  [alembic.runtime.migration] Running upgrade  -> 37dc4a863ca1, init_schema
-INFO  [alembic.runtime.migration] Running upgrade 37dc4a863ca1 -> c2dd6dc1f8dc, sparse_text_model
-...
-INFO  [alembic.runtime.migration] Running upgrade 74b2e9477c08 -> 0f85cfaf0f05, document
-```
+   ```bash
+   docker compose -f docker-compose-dev.yaml up -d
+   ```
 
-### 4. Start the server
+   The server will be accessible at http://localhost:8888
 
-```bash
-chmod +x dev.sh
-```
+   #### To view live container logs:
 
-Run
+   ```bash
+   docker compose -f docker-compose-dev.yaml logs -f
+   ```
 
-```bash
-./dev.sh
-```
+### 3. Docker Production
 
-On first startup, the application will automatically seed default data into PostgreSQL and Neo4j — this happens only once.
+Run the images from `docker-hub`
+
+1. Create a `.env.docker` from `.env.docker.example`
+
+   ```bash
+   cp .env.docker.example .env.docker
+   ```
+
+2. Run Container
+
+   ```bash
+   docker compose -f docker-compose-prod.yaml up -d
+   ```
+
+   The server will be accessible at http://localhost:8888
+
+   #### To view live container logs:
+
+   ```bash
+   docker compose -f docker-compose-prod.yaml logs -f
+   ```
 
 ---
 
