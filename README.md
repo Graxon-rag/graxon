@@ -9,7 +9,8 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 ## Table of Contents
 
 - [Overview](#overview)
-- [Graxon Images](#graxon-images)
+- [Images](#images)
+- [Videos](#videos)
 - [Architecture](#architecture)
 - [Infrastructure](#infrastructure)
 - [Data Model](#data-model)
@@ -36,7 +37,7 @@ Traditional RAG systems rely purely on vector similarity, which can retrieve pla
 
 ---
 
-## Graxon Images
+## Images
 
 !["graxon.png"](./img/graxon.png)
 
