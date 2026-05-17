@@ -1,6 +1,327 @@
 # Graxon
 
-## Clone the repository
+> **First Open-Source Hybrid RAG to eliminate hallucinations through a persistent Knowledge Graph layer.**
+
+Graxon combines dense vector search, sparse retrieval, and a structured Knowledge Graph to deliver accurate, traceable, and context-aware answers — at scale, across multiple organizations, projects, and documents.
+
+---
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Graxon Images](#graxon-images)
+- [Architecture](#architecture)
+- [Infrastructure](#infrastructure)
+- [Data Model](#data-model)
+- [Ingestion Pipeline](#ingestion-pipeline)
+- [Lexical Engine](#lexical-engine)
+- [Query Pipeline](#query-pipeline)
+- [Getting Started](#getting-started)
+- [Execution Choices](#execution-choices)
+
+---
+
+## Overview
+
+Traditional RAG systems rely purely on vector similarity, which can retrieve plausible but semantically incorrect chunks. Graxon solves this by layering a **persistent Knowledge Graph** on top of hybrid vector retrieval — connecting chunks through typed, weighted edges that capture real semantic relationships.
+
+**Key properties:**
+
+- **Multi-Tenant** — isolated workspaces per organization
+- **Multi-Project** — scoped retrieval within projects
+- **Multi-Document** — fine-grained document management
+- **Hybrid Retrieval** — dense vectors + sparse BM25 + graph traversal
+- **Hallucination Reduction** — graph-grounded answers anchored to structured knowledge
+
+---
+
+## Graxon Images
+
+!["graxon.png"](./img/graxon.png)
+
+<br/>
+<br/>
+
+!["graxon1.png"](./img/graxon1.png)
+
+<br/>
+<br/>
+
+!["graxon2.png"](./img/graxon2.png)
+
+<br/>
+
+## Architecture
+
+```
+Orgs
+ └── Projects
+      └── Documents
+           └── Chunks
+```
+
+Each document is chunked, processed through a multi-agent pipeline, stored in a vector database and a knowledge graph, and wired with semantic edges for retrieval.
+
+---
+
+## Infrastructure
+
+| Component      | Role                                             |
+| -------------- | ------------------------------------------------ |
+| **Qdrant**     | Vector database — dense + sparse embeddings      |
+| **Neo4j**      | Graph database — chunk nodes, semantic edges     |
+| **PostgreSQL** | Primary relational database                      |
+| **PgBouncer**  | PostgreSQL connection pooler                     |
+| **MinIO**      | Object storage — raw document files              |
+| **RabbitMQ**   | Message broker — async pipeline orchestration    |
+| **Redis**      | In-memory cache — sessions, queues, fast lookups |
+
+---
+
+## Data Model
+
+### Hierarchy
+
+```
+Organization
+  └── Project
+        └── Document
+              └── Chunk
+```
+
+### Graph Node: `Chunk`
+
+Each chunk is stored as a node in Neo4j and a vector in Qdrant. Nodes are connected by typed, weighted edges:
+
+| Edge Type        | Description                                     |
+| ---------------- | ----------------------------------------------- |
+| `PREV` / `NEXT`  | Sequential order within the document            |
+| `HAS_TAG`        | LLM-extracted semantic tags                     |
+| `HAS_KEYWORD`    | TF-IDF significant keywords                     |
+| `HAS_PHRASE`     | Shared n-gram phrases                           |
+| `HAS_ENTITY`     | Named entities (NER)                            |
+| `HAS_CONCEPT`    | Extracted noun phrases / concepts               |
+| `HAS_ACRONYM`    | Acronym-to-definition links                     |
+| `VECTOR_SIMILAR` | High cosine similarity between chunk embeddings |
+
+All edges carry a **weight** for ranked graph traversal during retrieval.
+
+### Images
+
+!["graph.png"](./img/graph.png)
+
+<br/>
+<br/>
+
+!["graph1.png"](./img/graph1.png)
+
+---
+
+## Ingestion Pipeline
+
+Graxon uses **LangGraph** to orchestrate a parallel multi-agent pipeline at ingestion time.
+
+```
+Document
+   │
+   ▼
+Chunking
+   │
+   ▼
+LangGraph Pipeline
+   ├── LLM Agent          → tags, inter-chunk relations
+   ├── Embedding Agent    → dense vectors (OpenAI / Gemini / Voyage)
+   ├── Sparse Agent       → sparse vectors via FastEmbed (BM25 / Qdrant sparse)
+   └── Lexical Engine     → entities, concepts, keywords, phrases, acronyms
+   │
+   ├── Vector Store Agent
+   │     └── Qdrant ← dense + sparse embeddings
+   │
+   ├── Graph DB Agent
+   │     └── Neo4j ← chunk nodes
+   │                 ├── PREV / NEXT edges
+   │                 ├── HAS_TAG, HAS_KEYWORD, HAS_PHRASE ...
+   │                 └── (all with weights)
+   │
+   └── Vector Similarity Sync
+         └── Top-K similar chunks from Qdrant
+               └── Neo4j ← VECTOR_SIMILAR edges (with cosine weight)
+```
+
+### Images
+
+!["ingestion.png"](./img/ingestion.png)
+
+---
+
+### Agents
+
+**LLM Agent**
+Sends chunks to an LLM to extract semantic tags and inter-chunk relationships. Results become typed edges in the knowledge graph.
+
+**Embedding Agent**
+Generates dense vector embeddings using pluggable providers — OpenAI, Google Gemini, or Voyage AI. Stored in Qdrant for ANN search.
+
+**Sparse Embedding Agent**
+Generates sparse vectors via **FastEmbed** for BM25-style retrieval and Qdrant's sparse vector support. Enables lexical precision alongside semantic recall.
+
+**Lexical Engine**
+SpaCy-powered linguistic analysis that extracts structured signals from each chunk. See [Lexical Engine](#lexical-engine) below.
+
+### Vector Similarity Sync
+
+After all chunks are stored in Qdrant, Graxon runs a post-ingestion pass: for each chunk, it fetches the top-K most similar chunks by embedding cosine similarity and writes `VECTOR_SIMILAR` edges into Neo4j with the similarity score as the edge weight. This bridges the vector and graph layers.
+
+---
+
+## Lexical Engine
+
+Graxon uses **SpaCy** as its lexical engine to extract structured linguistic signals from chunks, which are then converted into graph edges.
+
+### Entity Extraction (NER)
+
+Detects shared named entities — people, organizations, products, and technologies — across chunks. Creates strong semantic links between chunks discussing the same real-world subject, improving graph-based retrieval accuracy.
+
+### Concept Extraction (Noun Phrases)
+
+Extracts meaningful noun phrases and technical concepts shared between chunks. Connects semantically related ideas even when exact keywords differ, improving topic grouping and contextual understanding.
+
+### TF-IDF Keyword Linking
+
+Uses TF-IDF scoring to detect rare but informative keywords appearing across multiple chunks, while filtering common noise words. Highlights statistically important terms that strengthen semantic relationships.
+
+### Phrase Bridge Detection
+
+Detects exact shared n-gram phrases between chunks to capture repeated terminology and strong lexical overlap. Especially useful for technical, scientific, and domain-specific documents where repeated phrases carry important meaning.
+
+### Acronym Resolution
+
+Detects acronym definitions and links them to later acronym usage throughout the document. Improves long-document comprehension by connecting abbreviated references back to their original meaning.
+
+### Edge Construction
+
+Converts all detected lexical relationships — entities, concepts, keywords, phrases, and acronyms — into typed, weighted graph edges connecting related chunks in Neo4j.
+
+### Edge Deduplication
+
+Removes duplicate or weaker relationships while preserving the strongest semantic connections. Keeps the graph cleaner and more efficient to traverse during retrieval and ranking.
+
+---
+
+## Query Pipeline
+
+Graxon uses a **LangGraph-orchestrated query pipeline** with 3 query types and 2 depth levels, giving fine-grained control over retrieval quality vs. speed.
+
+---
+
+### Flow Overview
+
+```
+__start__
+    │
+    ▼
+supervisor_agent
+    │
+    ▼
+query_expansion_agent
+    ├── embedding_agent          (dense embedding of expanded query)
+    └── sparse_embedding_agent   (sparse / BM25 embedding)
+    │
+    ▼
+vector_database_agent            (hybrid retrieval from Qdrant)
+    │
+    ├── [expert] ──► expert_query_agent ──► expert_query_reranker_agent ──► expert_query_answer_agent
+    ├── [quick]  ──► quick_query_agent  ──► quick_query_reranker_agent  ──► quick_query_answer_agent
+    └── [smart]  ──► smart_query_agent  ──► smart_query_reranker_agent  ──► smart_query_answer_agent
+    │
+    ▼
+__end__  (answer + metadata / sources)
+```
+
+Every query — regardless of mode or depth — begins with:
+
+1. **Query expansion** via LLM
+2. **Dense + sparse embedding** of the expanded query
+3. **Hybrid retrieval** from Qdrant (dense + BM25 vectors)
+
+<br/>
+<br/>
+
+!["query.png"](./img/query.png)
+
+---
+
+### Query Types & Depth
+
+#### Quick
+
+Lightweight retrieval with immediate document context.
+
+| Depth        | Retrieval                                               |
+| ------------ | ------------------------------------------------------- |
+| **Standard** | Vector DB chunks + `PREV` / `NEXT` neighbors from Neo4j |
+| **Advanced** | Same as Standard                                        |
+
+---
+
+#### Smart
+
+Adds graph-based semantic expansion on top of Quick.
+
+| Depth        | Retrieval                                                                      |
+| ------------ | ------------------------------------------------------------------------------ |
+| **Standard** | Quick (Standard) + `VECTOR_SIMILAR` chunks from Neo4j for each retrieved chunk |
+| **Advanced** | Smart (Standard) + `PREV` / `NEXT` neighbors for each `VECTOR_SIMILAR` chunk   |
+
+---
+
+#### Expert
+
+Full hybrid retrieval combining vector, graph, and lexical signals with a unified chunk scoring system.
+
+| Depth        | Retrieval                                                                                                                                                 |
+| ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Standard** | Smart (Advanced) + embedding comparison of query against Tags, Keywords, Concepts, Entities, Phrases, Acronyms filtered by `EQ_GTE_LANE_WEIGHT_THRESHOLD` |
+| **Advanced** | Expert (Standard) + Lexical Engine picks best lanes and top `EQ_MAX_LANE_ENTITY` matches per lane                                                         |
+
+##### Expert Chunk Scoring
+
+Every `chunk_id` accumulates a score across all retrieval signals:
+
+| Signal                                                   | Score |
+| -------------------------------------------------------- | ----- |
+| Present in Vector DB results                             | `++`  |
+| Present as `PREV` / `NEXT` or `VECTOR_SIMILAR` neighbor  | `++`  |
+| Matched via query–tag / keyword / concept embedding      | `++`  |
+| Matched via Lexical Engine lane _(Expert Advanced only)_ | `++`  |
+
+Top `EQ_MAX_CHUNKS` chunks by final score are forwarded to the answer agent.
+
+---
+
+### Reranking & Answer Generation
+
+After retrieval, every mode runs:
+
+1. **Reranker agent** — reranks the retrieved chunk set, selects Top-K
+2. **Answer agent** — passes expanded query + context window to LLM
+3. **Response** — returns the answer with full **metadata and sources**
+
+---
+
+### Configuration
+
+| Variable                       | Description                                                               |
+| ------------------------------ | ------------------------------------------------------------------------- |
+| `EQ_GTE_LANE_WEIGHT_THRESHOLD` | Minimum similarity score for tag / keyword / concept lane matching        |
+| `EQ_MAX_CHUNKS`                | Maximum chunks selected after expert scoring                              |
+| `EQ_MAX_LANE_ENTITY`           | Top entities picked per lane by the Lexical Engine (Expert Advanced only) |
+
+---
+
+## Getting Started
+
+### Clone the repository
 
 ```bash
 git clone https://github.com/Graxon-rag/graxon.git
@@ -173,21 +494,3 @@ Then restart the server.
 ```py
 spacy download en_core_web_sm
 ```
-
-## Lexical Engine
-
-Entity Extraction (NER) — Detects shared named entities like people, organizations, products, and technologies across chunks to build high-confidence semantic relationships.
-Concept Extraction (Noun Phrases) — Extracts meaningful noun phrases and technical concepts shared between chunks to connect semantically related ideas.
-TF-IDF Keyword Linking — Uses TF-IDF scoring to identify rare but important keywords that appear across multiple chunks while filtering common noise words.
-Phrase Bridge Detection — Generates exact n-gram phrase matches between chunks to capture strong lexical overlap and repeated terminology.
-Acronym Resolution — Detects acronym definitions and links them to later acronym usage across the document for better contextual understanding.
-Edge Construction — Converts shared entities, concepts, keywords, phrases, and acronyms into graph edges connecting related chunks.
-Edge Deduplication — Removes duplicate or weaker edges to keep the graph cleaner, more meaningful, and efficient for traversal.
-
-Entity Extraction (NER) — Identifies shared named entities such as people, organizations, technologies, and products across chunks. This helps create strong semantic links between chunks discussing the same real-world subject and improves graph-based retrieval accuracy.
-Concept Extraction (Noun Phrases) — Extracts meaningful noun phrases and technical concepts shared between chunks. It helps connect semantically related ideas even when exact keywords differ, improving topic grouping and contextual understanding.
-TF-IDF Keyword Linking — Uses TF-IDF scoring to detect rare but informative keywords that appear across multiple chunks while filtering common noise words. This highlights statistically important terms that help strengthen semantic relationships.
-Phrase Bridge Detection — Detects exact shared n-gram phrases between chunks to capture repeated terminology and strong lexical overlap. This is especially useful for technical, scientific, and domain-specific documents where repeated phrases carry important meaning.
-Acronym Resolution — Detects acronym definitions and links them to later acronym usage throughout the document. This improves long-document comprehension by connecting abbreviated references back to their original meaning.
-Edge Construction — Converts all detected lexical relationships into graph edges connecting related chunks. These edges form the foundation of the semantic document graph used for retrieval, traversal, and contextual reasoning.
-Edge Deduplication — Removes duplicate or weaker relationships while preserving the strongest semantic connections. This keeps the graph cleaner, more efficient, and easier to traverse during retrieval and ranking operations.
