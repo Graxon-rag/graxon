@@ -1,0 +1,149 @@
+# =========================
+# Python
+# =========================
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.python-version
+
+# Virtual environments
+venv/
+.venv/
+env/
+ENV/
+
+# Pip / Poetry / UV
+pip-wheel-metadata/
+.poetry/
+poetry.lock
+uv.lock
+
+# =========================
+# Build / Distribution
+# =========================
+build/
+dist/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# =========================
+# FastAPI / Uvicorn
+# =========================
+*.log
+logs/
+uvicorn.log
+
+# =========================
+# Pytest / Coverage
+# =========================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+
+# =========================
+# MyPy / Ruff / Pyright
+# =========================
+.mypy_cache/
+.dmypy.json
+.pyre/
+.ruff_cache/
+.pytype/
+.pyright/
+
+# =========================
+# Jupyter
+# =========================
+.ipynb_checkpoints/
+
+# =========================
+# Environment
+# =========================
+.env
+.env.*
+!.env.example
+!.env.docker.example
+
+# =========================
+# Alembic
+# =========================
+alembic/versions/__pycache__/
+*.sqlite3
+*.db
+
+# =========================
+# Docker
+# =========================
+docker-compose.yml
+docker-compose-dev.yml
+
+# =========================
+# Git
+# =========================
+.git/
+.gitignore
+
+# =========================
+# IDE / Editor
+# =========================
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# =========================
+# OS
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Temporary
+# =========================
+tmp/
+temp/
+*.tmp
+
+# =========================
+# Cache
+# =========================
+.cache/
+
+# =========================
+# Node (if frontend exists)
+# =========================
+node_modules/
+dist/
+
+# =========================
+# Docs / Misc
+# =========================
+README.md
+
+# =========================
+# Fast Embed
+# =========================
+.fastembed_cache/
+fastembed_cache/
+
+
+# avvk
+avvk/
