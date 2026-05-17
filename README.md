@@ -18,6 +18,7 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Query Pipeline](#query-pipeline)
 - [Getting Started](#getting-started)
 - [Execution Choices](#execution-choices)
+- [Swagger](#swagger)
 
 ---
 
@@ -48,6 +49,18 @@ Traditional RAG systems rely purely on vector similarity, which can retrieve pla
 <br/>
 
 !["graxon2.png"](./img/graxon2.png)
+
+## Videos
+
+### UI
+
+https://drive.google.com/file/d/1Luv6NVNh1e1VJPmGp_eXtB1fy4n7NVey/view?usp=drive_link
+
+### Graph DB
+
+https://drive.google.com/file/d/1fi_lNDTBxRy3jGuS0spnw0dNXraPAbwf/view?usp=sharing
+
+---
 
 <br/>
 
@@ -423,6 +436,19 @@ If you are running either of the Docker variations, you can spin down the enviro
   docker compose -f docker-compose-prod.yaml down
 
 ---
+
+## Swagger
+
+After running the Server you can read the `swagger`
+
+http://localhost:8888/docs
+
+- **Username**: admin
+- **Password**: admin
+
+---
+
+<br/>
 
 ## Adding New Migrations
 
