@@ -52,10 +52,10 @@ class IDLibs:
     @staticmethod
     def generate_chunk_id(document_id: str, chunk_number: int) -> str:
         """
-        Format: <document_id>_chunk_<chunk_number>_<4-char-random>
-        Example: ecommercep_x4k2_doc_m9p3_chunk_1_r7w1
+        Format: <document_id>_chunk_<chunk_number>
+        Example: ecommercep_x4k2_doc_m9p3_chunk_1
         """
-        return f"{document_id}_chunk_{chunk_number}_{IDLibs.short_id(4)}"
+        return f"{document_id}_chunk_{chunk_number}"
 
     # --- Validators ---
 
