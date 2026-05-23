@@ -34,5 +34,5 @@ class GRedisKeys:
     SPARSE_EMBEDDINGS_KEY = f"{GRedisConstant.GRAXON_PREFIX}:{GRedisConstant.SPARSE_EMBEDDING_PREFIX}"
 
     @staticmethod
-    def get_dig_node_status_key(dig_node: str):
-        return f"{GRedisConstant.GRAXON_PREFIX}:{GRedisConstant.DIG_NODE_STATUS}:{dig_node}"
+    def get_dig_node_status_prefix():
+        return f"{GRedisConstant.GRAXON_PREFIX}:{GRedisConstant.DIG_NODE_STATUS}"
