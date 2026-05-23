@@ -16,6 +16,7 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Data Model](#data-model)
 - [Ingestion Pipeline](#ingestion-pipeline)
 - [Lexical Engine](#lexical-engine)
+- [Resilient Ingestion & Checkpointing](#resilient-ingestion--checkpointing)
 - [Query Pipeline](#query-pipeline)
 - [Getting Started](#getting-started)
 - [Execution Choices](#execution-choices)
@@ -219,6 +220,58 @@ Converts all detected lexical relationships — entities, concepts, keywords, ph
 ### Edge Deduplication
 
 Removes duplicate or weaker relationships while preserving the strongest semantic connections. Keeps the graph cleaner and more efficient to traverse during retrieval and ranking.
+
+---
+
+## Resilient Ingestion & Checkpointing
+
+Most RAG pipelines work great in a notebook. At enterprise scale, they fall apart.
+
+Rate limits spike. Workers crash. If your ingestion fails at page 800 of a 1,000-page document, an all-or-nothing architecture forces a full restart — burning engineering time and duplicate LLM tokens.
+
+Graxon is built with an **infrastructure-first mindset** to make ingestion deterministic, fault-tolerant, and resumable by design.
+
+---
+
+### Zero-Loss Macro & Micro Checkpointing
+
+Graxon treats ingestion like a **transaction log**, decoupling graph state and persisting checkpoints across two layers:
+
+| Layer                 | Store      | Role                                     |
+| --------------------- | ---------- | ---------------------------------------- |
+| **Micro checkpoints** | Redis      | Hot in-memory state tracking per chunk   |
+| **Macro checkpoints** | MinIO (S3) | Cold artifact backups per document/batch |
+
+If an API provider or worker node crashes mid-ingestion, Graxon **hot-boots and resumes from the exact chunk it left off** — no full restart, no wasted tokens.
+
+---
+
+### Ironclad Idempotency & Atomicity
+
+Resuming a failed pipeline usually introduces duplicate vectors or corrupted graph linkages. Graxon guarantees a **zero-duplicate footprint** by design:
+
+**Qdrant**
+
+- Deterministic `uuid5` hashing seeded by structured `chunk_id`s
+- Ensures every vector upsert is fully idempotent — re-ingesting a chunk overwrites cleanly, never duplicates
+
+**Neo4j**
+
+- Single-transaction bulk uploads via optimized Cypher `UNWIND` clauses
+- Strict `ON CREATE` / `ON MATCH` state isolation preserves temporal metadata and guarantees ACID consistency
+
+---
+
+### Multi-Engine Parallel Fan-Out
+
+Rather than sequential processing, Graxon uses LangGraph to run a parallelized scatter-gather pipeline across all storage layers simultaneously:
+
+- **Dense vectors** → Qdrant (deep semantic similarity)
+- **Sparse vectors** → FastEmbed / BM25 → Qdrant (lexical exact matching)
+- **Knowledge Graph** → Neo4j (chunk nodes, entity tags, structural edges)
+- **Lexical Analysis** → SpaCy (natural textual topology)
+
+All four engines process each chunk concurrently — maximizing throughput and minimizing ingestion latency at scale.
 
 ---
 
