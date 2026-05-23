@@ -276,10 +276,50 @@ class DocumentInjectGraph:
             llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
             structured_llm = llm.with_structured_output(TagResponse)
 
-            global_tags: List[str] = []
-            chunk_tag_results: List[ChunkTagResult] = []   # in-memory store
+            # Fetch already-processed chunks from Redis
+            existing_redis_data = await self._tag_redis.get_all_temporary_tags(
+                document_id=self.document_id
+            )
+            already_processed = set(existing_redis_data.keys())  # set of chunk_numbers
 
-            for chunk in chunks:
+            if already_processed:
+                logger.info({
+                    "message": "Resuming from checkpoint",
+                    "already_processed_count": len(already_processed),
+                    "document_id": self.document_id,
+                })
+
+            # Create an O(1) lookup map for chunk_id
+            chunk_id_map = {c.chunk_number: c.chunk_id for c in chunks}
+
+            # Rebuild global_tags pool from already-processed chunks
+            # So the LLM still gets correct context for the remaining chunks            
+            global_tags: List[str] = []
+            chunk_tag_results: List[ChunkTagResult] = []
+
+            for chunk_number in sorted(already_processed):
+                for tag_response in existing_redis_data[chunk_number]:
+                    for tag in tag_response.new_tags:
+                        if tag not in global_tags:
+                            global_tags.append(tag)
+                    chunk_tag_results.append(ChunkTagResult(
+                        chunk_id=chunk_id_map[chunk_number],
+                        chunk_number=chunk_number,
+                        tag_response=tag_response,
+                    ))
+
+            # Only process chunks not yet in Redis
+            pending_chunks = [c for c in chunks if c.chunk_number not in already_processed]
+
+            logger.info({
+                "message": "Chunks to process",
+                "total": len(chunks),
+                "already_done": len(already_processed),
+                "pending": len(pending_chunks),
+                "document_id": self.document_id,
+            })
+
+            for chunk in pending_chunks:
                 try:
                     logger.info({"message": "LLM chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                     existing_tags_str = ", ".join(global_tags) if global_tags else "None yet — this is the first chunk."
@@ -308,6 +348,10 @@ class DocumentInjectGraph:
 
                 except Exception as e:
                     logger.error({"message": "Failed to run LLM agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+                    raise e
+
+            # Sort results by chunk_number before upload
+            chunk_tag_results.sort(key=lambda x: x.chunk_number)
 
             # Upload LLM results
             chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_tag_results]
@@ -359,8 +403,44 @@ class DocumentInjectGraph:
 
             embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
 
+            # Fetch already-processed embeddings from Redis
+            existing_redis_data = await self._embedding_redis.get_all_temporary_embeddings(
+                document_id=self.document_id
+            )
+            already_processed = set(existing_redis_data.keys())  # set of chunk_numbers
+
+            if already_processed:
+                logger.info({
+                    "message": "Resuming embedding from checkpoint",
+                    "already_processed_count": len(already_processed),
+                    "document_id": self.document_id,
+                })
+
+            chunk_id_map = {c.chunk_number: c.chunk_id for c in chunks}
+
+            # chs_embeddings from already-processed chunks
             chs_embeddings: List[ChunkEmbedding] = []
-            for chunk in chunks:
+
+            for chunk_number in sorted(already_processed):
+                embedding: List[float] = existing_redis_data[chunk_number]  # List[float]
+                chs_embeddings.append(ChunkEmbedding(
+                    chunk_id=chunk_id_map[chunk_number],
+                    chunk_number=chunk_number,
+                    embedding=embedding,
+                ))
+
+            # Only process chunks not yet in Redis
+            pending_chunks = [c for c in chunks if c.chunk_number not in already_processed]
+
+            logger.info({
+                "message": "Embedding chunks to process",
+                "total": len(chunks),
+                "already_done": len(already_processed),
+                "pending": len(pending_chunks),
+                "document_id": self.document_id,
+            })
+
+            for chunk in pending_chunks:
                 try:
                     logger.info({"message": "Embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                     em_vector: list[float] = await embedder.aembed(chunk.text)
@@ -370,6 +450,10 @@ class DocumentInjectGraph:
                     chs_embeddings.append(ChunkEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run embedding agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+                    raise e
+
+            # Sort final results by chunk_number before upload
+            chs_embeddings.sort(key=lambda x: x.chunk_number)
 
             # save embeddings
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_embeddings]}
@@ -438,7 +522,44 @@ class DocumentInjectGraph:
             chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
             loop = asyncio.get_running_loop()
 
-            for chunk in chunks:
+            # Fetch already-processed chunks from Redis
+            existing_redis_data = await self._sparse_embedding_redis.get_all_temporary_sparse_embeddings(
+                document_id=self.document_id
+            )
+            already_processed = set(existing_redis_data.keys())
+
+            if already_processed:
+                logger.info({
+                    "message": "Resuming sparse embedding from checkpoint",
+                    "already_processed_count": len(already_processed),
+                    "document_id": self.document_id,
+                })
+
+            chunk_id_map = {c.chunk_number: c.chunk_id for c in chunks}
+
+            # Rebuild from already-processed chunks
+            chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
+
+            for chunk_number in sorted(already_processed):
+                sparse_embedding: SparseEmbedding = existing_redis_data[chunk_number]
+                chs_sparse_embeddings.append(ChunkSparseEmbedding(
+                    chunk_id=chunk_id_map[chunk_number],
+                    chunk_number=chunk_number,
+                    embedding=sparse_embedding,
+                ))
+
+            # Only process chunks not yet in Redis
+            pending_chunks = [c for c in chunks if c.chunk_number not in already_processed]
+
+            logger.info({
+                "message": "Sparse embedding chunks to process",
+                "total": len(chunks),
+                "already_done": len(already_processed),
+                "pending": len(pending_chunks),
+                "document_id": self.document_id,
+            })
+
+            for chunk in pending_chunks:
                 try:
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                     em_vector: SparseEmbedding = await loop.run_in_executor(None, sparse_embedder.embed, chunk.text)
@@ -450,6 +571,9 @@ class DocumentInjectGraph:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
                     # Raise the error so it doesn't silently upload an empty list
                     raise e
+
+            # Sort and upload
+            chs_sparse_embeddings.sort(key=lambda x: x.chunk_number)
 
             # Upload sparse embeddings
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_sparse_embeddings]}
