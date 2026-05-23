@@ -29,14 +29,20 @@ class GN4jChunk:
                 UNWIND $chunks_list AS chunk_item
 
                 MERGE (ch:{GN4jNodes.CHUNK} {{id: chunk_item.chunk_id}})
-                SET
+
+                ON CREATE SET
+                    ch.{N4jChunkInterface.created_at} = datetime(),
+                    ch.{N4jChunkInterface.updated_at} = datetime(),
                     ch.{N4jChunkInterface.org_id} = $org_id,
                     ch.{N4jChunkInterface.project_id} = $project_id,
                     ch.{N4jChunkInterface.document_id} = $document_id,
                     ch.{N4jChunkInterface.document_readable_id} = $document_readable_id,
-                    ch.{N4jChunkInterface.created_at} = datetime(),
-                    ch.{N4jChunkInterface.updated_at} = datetime(),
-                    ch.{N4jChunkInterface.type} = $type,
+                    ch.{N4jChunkInterface.type} = $type
+
+                ON MATCH SET
+                    ch.{N4jChunkInterface.updated_at} = datetime()
+
+                SET
                     ch.{N4jChunkInterface.text} = chunk_item.text,
                     ch.{N4jChunkInterface.page_number} = chunk_item.page_number,
                     ch.{N4jChunkInterface.title} = chunk_item.title,

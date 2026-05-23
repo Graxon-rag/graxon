@@ -34,8 +34,12 @@ class QdrantInjector:
                     logger.warning(f"Missing embedding for chunk_id={chunk_id}, skipping.")
                     continue
 
+                # GENERATE A DETERMINISTIC UUID BASED ON CHUNK_ID
+                # NAMESPACE_DNS is a safe standard default to seed the hash
+                deterministic_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk_id))
+
                 points.append(PointStruct(
-                    id=uuid.uuid4(),
+                    id=deterministic_id,
                     vector={
                         dense_vector_name: dense_embedding,
                         "sparse": models.SparseVector(
