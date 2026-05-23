@@ -11,10 +11,12 @@ from app.core.qdrant.similarity import QdrantSimilarity
 from app.constants.neo4j import GNeo4jEdges, GN4jNodes
 from app.core.helpers.minio_helper import MinioHelper
 from ..schemas.provider_schema import ProviderSchema
+from app.core.redis.dig_redis import DIGRedisClient
 from langgraph.graph import StateGraph, START, END
 from typing import Dict, List, Optional, Annotated
 from app.core.qdrant.inject import QdrantInjector
 from app.core.redis.tags import GRedisTagsClient
+from app.constants.redis import GRedisConstant
 from .prompts.tag_prompt import Tagging_Prompt
 from app.constants.minio import MinioConstant
 from langchain_core.documents import Document
@@ -72,13 +74,14 @@ class DocumentInjectGraph:
         self.project_id = project_id
         self.document_id = document_id
         self.document_readable_id = document_readable_id
+        self.n4j_chunk_db = GN4jChunk(org_id=org_id, project_id=project_id)
         self.injector = QdrantInjector(org_id=org_id, project_id=project_id)
         self.minio_helper = MinioHelper(org_id=org_id, project_id=project_id)
-        self.n4j_chunk_db = GN4jChunk(org_id=org_id, project_id=project_id)
-        self.qdrant_similarity = QdrantSimilarity(org_id=org_id, project_id=project_id)
         self._tag_redis = GRedisTagsClient(org_id=org_id, project_id=project_id)
+        self.qdrant_similarity = QdrantSimilarity(org_id=org_id, project_id=project_id)
         self._embedding_redis = GRedisEmbeddingsClient(org_id=org_id, project_id=project_id)
         self._sparse_embedding_redis = GRedisSparseEmbeddingClient(org_id=org_id, project_id=project_id)
+        self._dig_redis = DIGRedisClient(org_id=org_id, project_id=project_id, document_id=self.document_id)
 
     def build_graph(self):
         try:
@@ -153,6 +156,7 @@ class DocumentInjectGraph:
 
             logger.info({"message": "Document downloaded successfully", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "path": download_path})
 
+            await self._dig_redis.update_status(dig_node=GRedisConstant.SUPERVISOR_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"file_path": file_path, "temp_path": download_path}
 
         except Exception as e:
@@ -193,6 +197,7 @@ class DocumentInjectGraph:
                 )
                 chunks.append(c)
 
+            await self._dig_redis.update_status(dig_node=GRedisConstant.CHUNK_PARSER_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"chunks": chunks}
 
         except Exception as e:
@@ -252,6 +257,7 @@ class DocumentInjectGraph:
             chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_tag_results]
             await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_OUTPUT_FILE, json_data={"data": chunk_result_json}, document_name_id=self.document_readable_id)
 
+            await self._dig_redis.update_status(dig_node=GRedisConstant.LLM_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"chunk_tag_results": chunk_tag_results}
         except Exception as e:
             logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
@@ -288,6 +294,7 @@ class DocumentInjectGraph:
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_embeddings]}
             minio_file_name = MinioConstant.EMBEDDING_OUTPUT_FILE
             await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+            await self._dig_redis.update_status(dig_node=GRedisConstant.EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_embeddings": chs_embeddings}
 
@@ -324,6 +331,7 @@ class DocumentInjectGraph:
             minio_file_name = MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE
 
             await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+            await self._dig_redis.update_status(dig_node=GRedisConstant.SPARSE_EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_sparse_embeddings": chs_sparse_embeddings}
         except Exception as e:
@@ -347,6 +355,8 @@ class DocumentInjectGraph:
             await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
 
             lexical_engine_data = result
+            await self._dig_redis.update_status(dig_node=GRedisConstant.LEXICAL_ENGINE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
+
             return {"lexical_engine_data": lexical_engine_data}
         except Exception as e:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -371,7 +381,7 @@ class DocumentInjectGraph:
             ep_model_key = state["ep_model_key"]
 
             await self.injector.inject(model_key=ep_model_key, document_id=self.document_id, chunks=chunks, chunk_embeddings=chunks_embeddings, chunk_sparse_embeddings=chunks_sparse_embeddings)
-
+            await self._dig_redis.update_status(dig_node=GRedisConstant.VECTOR_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
         except Exception as e:
             logger.error({"message": "Failed to run chunks processor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
@@ -400,7 +410,7 @@ class DocumentInjectGraph:
                 # Upload LLM tags
                 tags_json = [tag.model_dump_json() for tag in tags]
                 await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_name_id=self.document_readable_id)
-
+                await self._dig_redis.update_status(dig_node=GRedisConstant.GRAPH_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
         except Exception as e:
             logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
@@ -425,7 +435,7 @@ class DocumentInjectGraph:
 
             logger.info({"message": "Creating vector similarity edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
             await self.n4j_chunk_db.create_edges(self.document_id, n4j_similarity_edges)
-
+            await self._dig_redis.update_status(dig_node=GRedisConstant.SIMILARITY_SYNC_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
         except Exception as e:
             logger.error({"message": "Failed to run similarity sync agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
