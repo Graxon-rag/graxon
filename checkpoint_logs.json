@@ -1,0 +1,666 @@
+[
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 130,
+    "function": "build_graph",
+    "message": "{'message': 'Graph built successfully'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 155,
+    "function": "_supervisor_agent",
+    "message": "{'message': 'Downloading document', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754'), 'path': '/tmp/graxon/8c49bb70-09c3-4523-85d8-05c71f328842'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 159,
+    "function": "_supervisor_agent",
+    "message": "{'message': 'Document downloaded successfully', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754'), 'path': '/tmp/graxon/8c49bb70-09c3-4523-85d8-05c71f328842'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'chunk_parser', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 175,
+    "function": "_chunks_parser_agent",
+    "message": "{'message': 'Bypassing Chunks Parser Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/chunks_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 190,
+    "function": "_chunks_parser_agent",
+    "message": "{'message': 'Successfully hydrated chunks from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'chunk_count': 18}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 286,
+    "function": "_llm_agent",
+    "message": "{'message': 'Resuming from checkpoint', 'already_processed_count': 2, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 314,
+    "function": "_llm_agent",
+    "message": "{'message': 'Chunks to process', 'total': 18, 'already_done': 2, 'pending': 16, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 2, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'lexical_engine', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 596,
+    "function": "_lexical_engine_agent",
+    "message": "{'message': 'Bypassing Lexical Engine Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/lexical_engine_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'sparse_embedding', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 475,
+    "function": "_sparse_agent",
+    "message": "{'message': 'Bypassing Sparse Embedding Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/sparse_embedding_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 413,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Resuming embedding from checkpoint', 'already_processed_count': 8, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 435,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunks to process', 'total': 18, 'already_done': 8, 'pending': 10, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 8, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 612,
+    "function": "_lexical_engine_agent",
+    "message": "{'message': 'Successfully hydrated lexical engine from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:42",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 505,
+    "function": "_sparse_agent",
+    "message": "{'message': 'Successfully hydrated chunks sparse embeddings from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'chunks_sparse_embeddings_count': 18}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:43",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 9, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:43",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 10, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:44",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 11, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:44",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 3, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:44",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 12, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:45",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 13, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:45",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 14, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:46",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 15, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:46",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 4, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:46",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 16, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:46",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 445,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Embedding chunk', 'chunk_number': 17, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:47",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 5, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:48",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 6, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:50",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 7, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:52",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 8, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:53",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 9, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:55",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 10, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:56",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 11, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:58",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 12, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:15:59",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 13, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:01",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 14, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:02",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 15, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:04",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 16, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:05",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 324,
+    "function": "_llm_agent",
+    "message": "{'message': 'LLM chunk', 'chunk_number': 17, 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "inject.py",
+    "lineno": 68,
+    "function": "inject",
+    "message": "Injected 18 points into 'graxon_gemini' using 'gemini_1536' (attempt 1)."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 687,
+    "function": "_graph_database_agent",
+    "message": "{'message': 'Creating graph database', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 63,
+    "function": "create_multiple",
+    "message": "Successfully bulk inserted 18 chunks."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 693,
+    "function": "_graph_database_agent",
+    "message": "{'message': 'Creating graph database edges', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 171,
+    "function": "create_semantic_nodes_and_edges",
+    "message": "Merged 29 [HAS_ENTITY] nodes for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 171,
+    "function": "create_semantic_nodes_and_edges",
+    "message": "Merged 10 [HAS_CONCEPT] nodes for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 171,
+    "function": "create_semantic_nodes_and_edges",
+    "message": "Merged 64 [HAS_KEYWORD] nodes for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 126,
+    "function": "create_edges_by_lexical_engine_data",
+    "message": "Lexical graph write complete for document checkpoint_c76v_doc_wnb9."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:08",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 699,
+    "function": "_graph_database_agent",
+    "message": "{'message': 'Creating graph database edges', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 171,
+    "function": "create_semantic_nodes_and_edges",
+    "message": "Merged 49 [HAS_TAG] nodes for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 207,
+    "function": "create_edges",
+    "message": "Merged 17 [NEXT] edges for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 207,
+    "function": "create_edges",
+    "message": "Merged 17 [PREV] edges for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 209,
+    "function": "create_edges",
+    "message": "Total edges merged: 34 for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 207,
+    "function": "create_edges",
+    "message": "Merged 1 [REFERENCES] edges for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 209,
+    "function": "create_edges",
+    "message": "Total edges merged: 1 for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_0 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_1 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_2 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_3 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_4 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_5 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_6 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_7 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_8 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_9 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_10 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_11 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_12 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_13 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_14 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_15 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_16 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "similarity.py",
+    "lineno": 124,
+    "function": "get_similar_chunks",
+    "message": "chunk_id=checkpoint_c76v_doc_wnb9_chunk_17 \u2192 top 3 neighbors found."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 738,
+    "function": "_similarity_sync_agent",
+    "message": "{'message': 'Creating vector similarity edges', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754')}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 207,
+    "function": "create_edges",
+    "message": "Merged 54 [VECTOR_SIMILARITY] edges for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "chunk.py",
+    "lineno": 209,
+    "function": "create_edges",
+    "message": "Total edges merged: 54 for document 80f5f30a-9caf-4bdf-ba8a-d44c90e219bd."
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "graph.py",
+    "lineno": 66,
+    "function": "inject_document",
+    "message": "{'message': 'Deleted temp folder', 'path': '/tmp/graxon/8c49bb70-09c3-4523-85d8-05c71f328842'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:16:09",
+    "level": "INFO",
+    "filename": "document_repo.py",
+    "lineno": 158,
+    "function": "change_document_status",
+    "message": "{'message': 'Changing document status', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'status': <DocumentStatus.PROCESSED: 'PROCESSED'>}"
+  }
+]

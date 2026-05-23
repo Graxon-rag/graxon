@@ -113,6 +113,7 @@ class DocumentRepo:
                         MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT,
                         MinioConstant.N4J_EDGES_TAG_OUTPUT,
                         MinioConstant.N4J_EDGES_REFERENCE_OUTPUT,
+                        MinioConstant.CHUNKS_OUTPUT_FILE,
                     ]
 
                     for file_name in files_to_delete:
