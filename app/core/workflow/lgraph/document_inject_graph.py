@@ -27,10 +27,12 @@ from app.utils.logger import logger
 from collections import defaultdict
 from typing import TypedDict, Tuple
 from langgraph.types import Send
+import numpy as np
 import traceback
 import operator
 import asyncio
 import uuid
+import json
 import os
 
 
@@ -398,11 +400,26 @@ class DocumentInjectGraph:
                     document_name_id=self.document_readable_id
                 )
 
-                # Safely deserialize back to Pydantic ChunkSparseEmbedding objects
-                chunks_sparse_embeddings = [ChunkSparseEmbedding.model_validate_json(c_str) for c_str in minio_data["data"]]
+                # Manually parse lists back into Numpy arrays to satisfy Pydantic
+                chunks_sparse_embeddings: List[ChunkSparseEmbedding] = []
+                for c_str in minio_data["data"]:
+                    data_dict = json.loads(c_str)
+
+                    indices_array = np.array(data_dict["embedding"]["indices"])
+                    values_array = np.array(data_dict["embedding"]["values"])
+
+                    sparse_emb = SparseEmbedding(indices=indices_array, values=values_array)
+
+                    chunks_sparse_embeddings.append(
+                        ChunkSparseEmbedding(
+                            chunk_id=data_dict["chunk_id"],
+                            chunk_number=data_dict["chunk_number"],
+                            embedding=sparse_emb
+                        )
+                    )
 
                 logger.info({
-                    "message": "Successfully hydrated chunks embeddings from Minio cache",
+                    "message": "Successfully hydrated chunks sparse embeddings from Minio cache",
                     "document_id": str(self.document_id),
                     "chunks_sparse_embeddings_count": len(chunks_sparse_embeddings)
                 })
@@ -411,7 +428,8 @@ class DocumentInjectGraph:
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                raise
+                raise ValueError("Chunks array cannot be None")
+
             providers = state["providers"]
             sparse_provider = providers.sparse_model.provider
             sparse_model = providers.sparse_model.model
@@ -419,6 +437,7 @@ class DocumentInjectGraph:
             sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
             chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
             loop = asyncio.get_running_loop()
+
             for chunk in chunks:
                 try:
                     logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -429,6 +448,8 @@ class DocumentInjectGraph:
                     chs_sparse_embeddings.append(ChunkSparseEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
                 except Exception as e:
                     logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+                    # Raise the error so it doesn't silently upload an empty list
+                    raise e
 
             # Upload sparse embeddings
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_sparse_embeddings]}
@@ -438,6 +459,7 @@ class DocumentInjectGraph:
             await self._dig_redis.update_status(dig_node=GRedisConstant.SPARSE_EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_sparse_embeddings": chs_sparse_embeddings}
+
         except Exception as e:
             logger.error({"message": "Failed to run sparse agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
             raise e
