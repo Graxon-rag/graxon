@@ -229,3 +229,48 @@ class MinioHelper:
                 "error": str(e)
             })
             raise e
+
+    async def download_json(self, json_file_name: str, document_name_id: str) -> dict[str, Any]:
+        try:
+            # Recreate the exact same deterministic key used during upload
+            document_key = (
+                f"{self.project_id}/{document_name_id}/{json_file_name}.json"
+            )
+
+            logger.info({
+                "message": "Downloading JSON from Minio",
+                "bucket": self.bucket,
+                "key": document_key
+            })
+
+            async with self.minio_session.client(  # type: ignore[attr-defined]
+                "s3",
+                endpoint_url=self.minio_endpoint,
+                aws_access_key_id=Env.MINIO_ROOT_USER,
+                aws_secret_access_key=Env.MINIO_ROOT_PASSWORD,
+                region_name=Env.MINIO_REGION,
+            ) as _s3_client:
+
+                s3_client = cast(S3Client, _s3_client)
+
+                # Fetch the object from Minio
+                response = await s3_client.get_object(
+                    Bucket=self.bucket,
+                    Key=document_key
+                )
+
+                # StreamingBody must be read asynchronously 
+                async with response["Body"] as stream:
+                    json_bytes = await stream.read()
+
+                # Parse the UTF-8 bytes back to a dictionary
+                json_data = json.loads(json_bytes.decode("utf-8"))
+                return json_data
+
+        except Exception as e:
+            logger.error({
+                "message": "Failed to download JSON file from Minio",
+                "key": f"{self.project_id}/{document_name_id}/{json_file_name}.json",
+                "error": str(e)
+            })
+            raise e

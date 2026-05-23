@@ -165,6 +165,33 @@ class DocumentInjectGraph:
 
     async def _chunks_parser_agent(self, state: DIGState):
         try:
+
+            # Check if chunks parser is already completed
+            status = await self._dig_redis.get_status(GRedisConstant.CHUNK_PARSER_NODE)
+
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Chunks Parser Agent (Already Completed). Hydrating from Minio.",
+                    "document_id": str(self.document_id),
+                    "document_readable_id": self.document_readable_id
+                })
+
+                # Download raw data from Minio
+                minio_data = await self.minio_helper.download_json(
+                    json_file_name=MinioConstant.CHUNKS_OUTPUT_FILE,
+                    document_name_id=self.document_readable_id
+                )
+
+                # Safely deserialize back to Pydantic Chunk objects
+                chunks = [Chunk.model_validate_json(c_str) for c_str in minio_data["data"]]
+
+                logger.info({
+                    "message": "Successfully hydrated chunks from Minio cache",
+                    "document_id": str(self.document_id),
+                    "chunk_count": len(chunks)
+                })
+                return {"chunks": chunks}
+
             temp_path = state["temp_path"]
             if temp_path is None:
                 logger.error({"message": "Temp path is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -197,15 +224,42 @@ class DocumentInjectGraph:
                 )
                 chunks.append(c)
 
+            chunks_json = [c.model_dump_json() for c in chunks]
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.CHUNKS_OUTPUT_FILE, json_data={"data": chunks_json}, document_name_id=self.document_readable_id)
             await self._dig_redis.update_status(dig_node=GRedisConstant.CHUNK_PARSER_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"chunks": chunks}
 
         except Exception as e:
             logger.error({"message": "Failed to run chunks parser agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-            pass
+            raise e
 
     async def _llm_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.LLM_NODE)
+
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing LLM Agent (Already Completed). Hydrating from Minio.",
+                    "document_id": str(self.document_id),
+                    "document_readable_id": self.document_readable_id
+                })
+
+                # Download raw data from Minio
+                minio_data = await self.minio_helper.download_json(
+                    json_file_name=MinioConstant.LLM_OUTPUT_FILE,
+                    document_name_id=self.document_readable_id
+                )
+
+                # Safely deserialize back to Pydantic Chunk objects
+                chunk_tag_results = [ChunkTagResult.model_validate_json(c_str) for c_str in minio_data["data"]]
+
+                logger.info({
+                    "message": "Successfully hydrated chunks tags from Minio cache",
+                    "document_id": str(self.document_id),
+                    "chunk_count": len(chunk_tag_results)
+                })
+                return {"chunk_tag_results": chunk_tag_results}
+
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -265,6 +319,31 @@ class DocumentInjectGraph:
 
     async def _embedding_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.EMBEDDING_NODE)
+
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Embedding Agent (Already Completed). Hydrating from Minio.",
+                    "document_id": str(self.document_id),
+                    "document_readable_id": self.document_readable_id
+                })
+
+                # Download raw data from Minio
+                minio_data = await self.minio_helper.download_json(
+                    json_file_name=MinioConstant.EMBEDDING_OUTPUT_FILE,
+                    document_name_id=self.document_readable_id
+                )
+
+                # Safely deserialize back to Pydantic ChunkEmbedding objects
+                chunks_embeddings = [ChunkEmbedding.model_validate_json(c_str) for c_str in minio_data["data"]]
+
+                logger.info({
+                    "message": "Successfully hydrated chunks embeddings from Minio cache",
+                    "document_id": str(self.document_id),
+                    "chunks_embeddings_count": len(chunks_embeddings)
+                })
+                return {"chunks_embeddings": chunks_embeddings}
+
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -293,7 +372,7 @@ class DocumentInjectGraph:
             # save embeddings
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_embeddings]}
             minio_file_name = MinioConstant.EMBEDDING_OUTPUT_FILE
-            await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
             await self._dig_redis.update_status(dig_node=GRedisConstant.EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_embeddings": chs_embeddings}
@@ -304,6 +383,31 @@ class DocumentInjectGraph:
 
     async def _sparse_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.SPARSE_EMBEDDING_NODE)
+
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Sparse Embedding Agent (Already Completed). Hydrating from Minio.",
+                    "document_id": str(self.document_id),
+                    "document_readable_id": self.document_readable_id
+                })
+
+                # Download raw data from Minio
+                minio_data = await self.minio_helper.download_json(
+                    json_file_name=MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE,
+                    document_name_id=self.document_readable_id
+                )
+
+                # Safely deserialize back to Pydantic ChunkSparseEmbedding objects
+                chunks_sparse_embeddings = [ChunkSparseEmbedding.model_validate_json(c_str) for c_str in minio_data["data"]]
+
+                logger.info({
+                    "message": "Successfully hydrated chunks embeddings from Minio cache",
+                    "document_id": str(self.document_id),
+                    "chunks_sparse_embeddings_count": len(chunks_sparse_embeddings)
+                })
+                return {"chunks_sparse_embeddings": chunks_sparse_embeddings}
+
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -340,6 +444,31 @@ class DocumentInjectGraph:
 
     async def _lexical_engine_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.LEXICAL_ENGINE_NODE)
+
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Lexical Engine Agent (Already Completed). Hydrating from Minio.",
+                    "document_id": str(self.document_id),
+                    "document_readable_id": self.document_readable_id
+                })
+
+                # Download raw data dict from Minio
+                minio_data = await self.minio_helper.download_json(
+                    json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE,
+                    document_name_id=self.document_readable_id
+                )
+
+                # Safely deserialize back to the LexicalResult Pydantic object
+                # Note: download_json returns a dict, so we use model_validate, not model_validate_json
+                lexical_engine_data = LexicalResult.model_validate(minio_data)
+
+                logger.info({
+                    "message": "Successfully hydrated lexical engine from Minio cache",
+                    "document_id": str(self.document_id)
+                })
+                return {"lexical_engine_data": lexical_engine_data}
+
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -352,7 +481,7 @@ class DocumentInjectGraph:
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(None, lexical_engine.run_lexical_engine, le_chunks)
 
-            await MinioHelper(org_id=self.org_id, project_id=self.project_id).upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
 
             lexical_engine_data = result
             await self._dig_redis.update_status(dig_node=GRedisConstant.LEXICAL_ENGINE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
@@ -364,6 +493,14 @@ class DocumentInjectGraph:
 
     async def _vector_database_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.VECTOR_DATABASE_NODE)
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Vector Database Agent (Already Completed). No state hydration needed.",
+                    "document_id": str(self.document_id)
+                })
+                return {}
+
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -382,12 +519,21 @@ class DocumentInjectGraph:
 
             await self.injector.inject(model_key=ep_model_key, document_id=self.document_id, chunks=chunks, chunk_embeddings=chunks_embeddings, chunk_sparse_embeddings=chunks_sparse_embeddings)
             await self._dig_redis.update_status(dig_node=GRedisConstant.VECTOR_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
+            return {}
         except Exception as e:
             logger.error({"message": "Failed to run chunks processor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
 
     async def _graph_database_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.GRAPH_DATABASE_NODE)
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Graph Database Agent (Already Completed). No state hydration needed.",
+                    "document_id": str(self.document_id)
+                })
+                return {}
+
             chunks = state["chunks"]
             if chunks is None:
                 logger.error({"message": "Chunks is None", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
@@ -411,12 +557,22 @@ class DocumentInjectGraph:
                 tags_json = [tag.model_dump_json() for tag in tags]
                 await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_name_id=self.document_readable_id)
                 await self._dig_redis.update_status(dig_node=GRedisConstant.GRAPH_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
+
+            return {}
         except Exception as e:
             logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
 
     async def _similarity_sync_agent(self, state: DIGState):
         try:
+            status = await self._dig_redis.get_status(GRedisConstant.SIMILARITY_SYNC_NODE)
+            if status == GRedisConstant.DIG_NODE_STATUS_COMPLETED:
+                logger.info({
+                    "message": "Bypassing Similarity Sync Agent (Already Completed). Pipeline ingestion finished.",
+                    "document_id": str(self.document_id)
+                })
+                return {}
+
             ep_model_key = state["ep_model_key"]
             chunks = state["chunks"]
             if chunks is None:
@@ -436,6 +592,7 @@ class DocumentInjectGraph:
             logger.info({"message": "Creating vector similarity edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
             await self.n4j_chunk_db.create_edges(self.document_id, n4j_similarity_edges)
             await self._dig_redis.update_status(dig_node=GRedisConstant.SIMILARITY_SYNC_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
+            return {}
         except Exception as e:
             logger.error({"message": "Failed to run similarity sync agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e

@@ -18,10 +18,11 @@ class DIGRedisClient:
 
     async def update_status(self, dig_node: str, status: Literal[
             redis.GRedisConstant.DIG_NODE_STATUS_COMPLETED,  # type: ignore
-            redis.GRedisConstant.DIG_NODE_STATUS_PENDING]  # type: ignore
+            redis.GRedisConstant.DIG_NODE_STATUS_PENDING],   # type: ignore
+            ttl: int = 604800,  # 7 days
     ) -> bool:
         try:
-            await self.client.set(self._get_dig_key(dig_node), status)
+            await self.client.set(self._get_dig_key(dig_node), status, ex=ttl)
             return True
         except Exception as e:
             logger.error({"message": "Failed to update status", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -32,8 +33,13 @@ class DIGRedisClient:
             status = await self.client.get(self._get_dig_key(dig_node))
             if status is None:
                 return None
-            logger.info({"message": "Getting status", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "dig_node": dig_node, "status": status})
+
+            # Explicit decoding safeguard if decode_responses=True isn't guaranteed
+            if isinstance(status, bytes):
+                status = status.decode('utf-8')
+
+            logger.info({"message": "Getting status", "document_id": str(self.document_id), "dig_node": dig_node, "status": status})
             return status
         except Exception as e:
-            logger.error({"message": "Failed to get status", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+            logger.error({"message": "Failed to get status", "error": str(e)})
             return None
