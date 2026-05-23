@@ -1,0 +1,250 @@
+[
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 130,
+    "function": "build_graph",
+    "message": "{'message': 'Graph built successfully'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 155,
+    "function": "_supervisor_agent",
+    "message": "{'message': 'Downloading document', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754'), 'path': '/tmp/graxon/f5ff9b82-0fbe-4697-9a80-510d25f81b76'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 159,
+    "function": "_supervisor_agent",
+    "message": "{'message': 'Document downloaded successfully', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'org_id': 'dev', 'project_id': UUID('791097b6-6af0-417a-93d1-e381938ac754'), 'path': '/tmp/graxon/f5ff9b82-0fbe-4697-9a80-510d25f81b76'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'chunk_parser', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 175,
+    "function": "_chunks_parser_agent",
+    "message": "{'message': 'Bypassing Chunks Parser Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/chunks_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 190,
+    "function": "_chunks_parser_agent",
+    "message": "{'message': 'Successfully hydrated chunks from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'chunk_count': 18}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'llm', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 243,
+    "function": "_llm_agent",
+    "message": "{'message': 'Bypassing LLM Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/llm_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'embedding', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 371,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Bypassing Embedding Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/embedding_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'sparse_embedding', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 475,
+    "function": "_sparse_agent",
+    "message": "{'message': 'Bypassing Sparse Embedding Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/sparse_embedding_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'lexical_engine', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 596,
+    "function": "_lexical_engine_agent",
+    "message": "{'message': 'Bypassing Lexical Engine Agent (Already Completed). Hydrating from Minio.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'document_readable_id': 'checkpoint_c76v_doc_wnb9'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "minio_helper.py",
+    "lineno": 240,
+    "function": "download_json",
+    "message": "{'message': 'Downloading JSON from Minio', 'bucket': 'dev', 'key': '791097b6-6af0-417a-93d1-e381938ac754/checkpoint_c76v_doc_wnb9/lexical_engine_output.json'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 258,
+    "function": "_llm_agent",
+    "message": "{'message': 'Successfully hydrated chunks tags from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'chunk_count': 18}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 505,
+    "function": "_sparse_agent",
+    "message": "{'message': 'Successfully hydrated chunks sparse embeddings from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'chunks_sparse_embeddings_count': 18}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 612,
+    "function": "_lexical_engine_agent",
+    "message": "{'message': 'Successfully hydrated lexical engine from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 386,
+    "function": "_embedding_agent",
+    "message": "{'message': 'Successfully hydrated chunks embeddings from Minio cache', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'chunks_embeddings_count': 18}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'vector_database', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 644,
+    "function": "_vector_database_agent",
+    "message": "{'message': 'Bypassing Vector Database Agent (Already Completed). No state hydration needed.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'graph_database', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 677,
+    "function": "_graph_database_agent",
+    "message": "{'message': 'Bypassing Graph Database Agent (Already Completed). No state hydration needed.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "dig_redis.py",
+    "lineno": 41,
+    "function": "get_status",
+    "message": "{'message': 'Getting status', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd', 'dig_node': 'similarity_sync', 'status': 'COMPLETED'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_inject_graph.py",
+    "lineno": 716,
+    "function": "_similarity_sync_agent",
+    "message": "{'message': 'Bypassing Similarity Sync Agent (Already Completed). Pipeline ingestion finished.', 'document_id': '80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "graph.py",
+    "lineno": 66,
+    "function": "inject_document",
+    "message": "{'message': 'Deleted temp folder', 'path': '/tmp/graxon/f5ff9b82-0fbe-4697-9a80-510d25f81b76'}"
+  },
+  {
+    "timestamp": "2026-05-23 13:28:35",
+    "level": "INFO",
+    "filename": "document_repo.py",
+    "lineno": 158,
+    "function": "change_document_status",
+    "message": "{'message': 'Changing document status', 'document_id': UUID('80f5f30a-9caf-4bdf-ba8a-d44c90e219bd'), 'status': <DocumentStatus.PROCESSED: 'PROCESSED'>}"
+  }
+]
