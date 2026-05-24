@@ -85,11 +85,12 @@ class DocumentService:
 
             document_name_id = IDLibs.generate_document_id(project_name)
 
-            (key, signed_url) = await self.minio_helper.upload_file(file, document.type, document.name, document_name_id)
+            (key, signed_url) = await self.minio_helper.upload_file(file, document.type, document.name, document.id)
 
             doc_create_schema = DocumentCreateSchema(
                 org_id=self.org_id,
                 project_id=project_id,
+                id=document.id,
                 readable_id=document_name_id,
                 name=document.name,
                 type=document.type,
@@ -103,6 +104,7 @@ class DocumentService:
             result = DocumentUploadResponseSchema(
                 org_id=self.org_id,
                 project_id=project_id,
+                id=document.id,
                 bucket=self.org_id,
                 key=key,
                 signed_url=signed_url

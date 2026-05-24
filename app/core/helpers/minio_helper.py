@@ -19,10 +19,15 @@ class MinioHelper:
         self.minio_endpoint = f"http://{Env.MINIO_HOST}:{Env.MINIO_PORT}"
         self.bucket = self.org_id
 
-    async def upload_file(self, file: UploadFile, file_type: str, file_name: str, document_name_id: str) -> Tuple[str, str]:
+    def _get_key(self, document_id: uuid.UUID, filename: str):
+        return f"pro_{self.project_id}/doc_{document_id}/{filename}"
+
+    async def upload_file(self, file: UploadFile, file_type: str, file_name: str, document_id: uuid.UUID) -> Tuple[str, str]:
         try:
 
-            document_key = f"{self.project_id}/{document_name_id}/{file.filename}"
+            if file.filename is None:
+                raise Exception("File name is required")
+            document_key = self._get_key(document_id, file.filename)
 
             async with self.minio_session.client(  # type: ignore[attr-defined]
                 "s3",
@@ -166,12 +171,10 @@ class MinioHelper:
             logger.error({"message": "Failed to download file", "error": str(e)})
         raise
 
-    async def upload_json(self, json_file_name: str, json_data: dict[str, Any], document_name_id: str,) -> Tuple[str, str]:
+    async def upload_json(self, json_file_name: str, json_data: dict[str, Any], document_id: uuid.UUID) -> Tuple[str, str]:
         try:
             # Create object key
-            document_key = (
-                f"{self.project_id}/{document_name_id}/{json_file_name}.json"
-            )
+            document_key = self._get_key(document_id, f"{json_file_name}.json")
 
             # Convert JSON → bytes
             json_bytes = json.dumps(
@@ -230,12 +233,10 @@ class MinioHelper:
             })
             raise e
 
-    async def download_json(self, json_file_name: str, document_name_id: str) -> dict[str, Any]:
+    async def download_json(self, json_file_name: str, document_id: uuid.UUID) -> dict[str, Any]:
         try:
             # Recreate the exact same deterministic key used during upload
-            document_key = (
-                f"{self.project_id}/{document_name_id}/{json_file_name}.json"
-            )
+            document_key = self._get_key(document_id, f"{json_file_name}.json")
 
             logger.info({
                 "message": "Downloading JSON from Minio",
@@ -270,7 +271,7 @@ class MinioHelper:
         except Exception as e:
             logger.error({
                 "message": "Failed to download JSON file from Minio",
-                "key": f"{self.project_id}/{document_name_id}/{json_file_name}.json",
+                "key": self._get_key(document_id, f"{json_file_name}.json"),
                 "error": str(e)
             })
             raise e

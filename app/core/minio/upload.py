@@ -18,7 +18,7 @@ class MinioUploadClient:
         self.bucket = self.org_id
 
     def _get_multipart_key(self, document_id: uuid.UUID, filename: str):
-        return f"{self.project_id}/multipart/{document_id}/{filename}"
+        return f"pro_{self.project_id}/doc_{document_id}/{filename}"
 
     async def multipart_upload_init(self, document_id: uuid.UUID, filename: str) -> dict:
         try:

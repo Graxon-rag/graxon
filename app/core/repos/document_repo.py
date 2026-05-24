@@ -26,7 +26,7 @@ class DocumentRepo:
         try:
             async with self.db.get_session() as session:
                 new_doc = Document(
-                    id=uuid.uuid4(),
+                    id=doc.id,
                     org_id=self.org_id,
                     project_id=self.project_id,
                     readable_id=doc.readable_id,

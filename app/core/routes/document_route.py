@@ -13,8 +13,8 @@ router = APIRouter(
 )
 
 
-@router.post("/{org_id}/projects/{project_id}/upload")
-async def upload_document(org_id: str, project_id: uuid.UUID, file: UploadFile = File(...)):
+@router.post("/{org_id}/projects/{project_id}/upload/{document_id}")
+async def upload_document(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, file: UploadFile = File(...)):
     try:
         filename = file.filename
         if not filename:
@@ -33,6 +33,7 @@ async def upload_document(org_id: str, project_id: uuid.UUID, file: UploadFile =
         doc = DocumentUploadSchema(
             org_id=org_id,
             project_id=project_id,
+            id=document_id,
             name=filename,
             type=file_type
         )

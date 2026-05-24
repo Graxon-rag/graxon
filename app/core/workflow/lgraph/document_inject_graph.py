@@ -181,7 +181,7 @@ class DocumentInjectGraph:
                 # Download raw data from Minio
                 minio_data = await self.minio_helper.download_json(
                     json_file_name=MinioConstant.CHUNKS_OUTPUT_FILE,
-                    document_name_id=self.document_readable_id
+                    document_id=self.document_id
                 )
 
                 # Safely deserialize back to Pydantic Chunk objects
@@ -227,7 +227,7 @@ class DocumentInjectGraph:
                 chunks.append(c)
 
             chunks_json = [c.model_dump_json() for c in chunks]
-            await self.minio_helper.upload_json(json_file_name=MinioConstant.CHUNKS_OUTPUT_FILE, json_data={"data": chunks_json}, document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.CHUNKS_OUTPUT_FILE, json_data={"data": chunks_json}, document_id=self.document_id)
             await self._dig_redis.update_status(dig_node=GRedisConstant.CHUNK_PARSER_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"chunks": chunks}
 
@@ -249,7 +249,7 @@ class DocumentInjectGraph:
                 # Download raw data from Minio
                 minio_data = await self.minio_helper.download_json(
                     json_file_name=MinioConstant.LLM_OUTPUT_FILE,
-                    document_name_id=self.document_readable_id
+                    document_id=self.document_id
                 )
 
                 # Safely deserialize back to Pydantic Chunk objects
@@ -355,7 +355,7 @@ class DocumentInjectGraph:
 
             # Upload LLM results
             chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_tag_results]
-            await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_OUTPUT_FILE, json_data={"data": chunk_result_json}, document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_OUTPUT_FILE, json_data={"data": chunk_result_json}, document_id=self.document_id)
 
             await self._dig_redis.update_status(dig_node=GRedisConstant.LLM_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"chunk_tag_results": chunk_tag_results}
@@ -377,7 +377,7 @@ class DocumentInjectGraph:
                 # Download raw data from Minio
                 minio_data = await self.minio_helper.download_json(
                     json_file_name=MinioConstant.EMBEDDING_OUTPUT_FILE,
-                    document_name_id=self.document_readable_id
+                    document_id=self.document_id
                 )
 
                 # Safely deserialize back to Pydantic ChunkEmbedding objects
@@ -458,7 +458,7 @@ class DocumentInjectGraph:
             # save embeddings
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_embeddings]}
             minio_file_name = MinioConstant.EMBEDDING_OUTPUT_FILE
-            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_id=self.document_id)
             await self._dig_redis.update_status(dig_node=GRedisConstant.EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_embeddings": chs_embeddings}
@@ -481,7 +481,7 @@ class DocumentInjectGraph:
                 # Download raw data from Minio
                 minio_data = await self.minio_helper.download_json(
                     json_file_name=MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE,
-                    document_name_id=self.document_readable_id
+                    document_id=self.document_id
                 )
 
                 # Manually parse lists back into Numpy arrays to satisfy Pydantic
@@ -579,7 +579,7 @@ class DocumentInjectGraph:
             data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_sparse_embeddings]}
             minio_file_name = MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE
 
-            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_id=self.document_id)
             await self._dig_redis.update_status(dig_node=GRedisConstant.SPARSE_EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_sparse_embeddings": chs_sparse_embeddings}
@@ -602,7 +602,7 @@ class DocumentInjectGraph:
                 # Download raw data dict from Minio
                 minio_data = await self.minio_helper.download_json(
                     json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE,
-                    document_name_id=self.document_readable_id
+                    document_id=self.document_id
                 )
 
                 # Safely deserialize back to the LexicalResult Pydantic object
@@ -627,7 +627,7 @@ class DocumentInjectGraph:
             loop = asyncio.get_running_loop()
             result = await loop.run_in_executor(None, lexical_engine.run_lexical_engine, le_chunks)
 
-            await self.minio_helper.upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_name_id=self.document_readable_id)
+            await self.minio_helper.upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_id=self.document_id)
 
             lexical_engine_data = result
             await self._dig_redis.update_status(dig_node=GRedisConstant.LEXICAL_ENGINE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
@@ -701,7 +701,7 @@ class DocumentInjectGraph:
 
                 # Upload LLM tags
                 tags_json = [tag.model_dump_json() for tag in tags]
-                await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_name_id=self.document_readable_id)
+                await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_id=self.document_id)
                 await self._dig_redis.update_status(dig_node=GRedisConstant.GRAPH_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {}
@@ -883,9 +883,9 @@ class DocumentInjectGraph:
         n4j_reference_edges_json = [edge.model_dump_json() for edge in n4j_reference_edges]
 
         # UPLOAD TO MINIO
-        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_TAG_OUTPUT, json_data=tag_data, document_name_id=self.document_readable_id)
-        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT, json_data={"data": n4j_nex_prev_edges_json}, document_name_id=self.document_readable_id)
-        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_REFERENCE_OUTPUT, json_data={"data": n4j_reference_edges_json}, document_name_id=self.document_readable_id)
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_TAG_OUTPUT, json_data=tag_data, document_id=self.document_id)
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT, json_data={"data": n4j_nex_prev_edges_json}, document_id=self.document_id)
+        await self.minio_helper.upload_json(json_file_name=MinioConstant.N4J_EDGES_REFERENCE_OUTPUT, json_data={"data": n4j_reference_edges_json}, document_id=self.document_id)
 
         # Merge TO NEO4J
         await self.n4j_chunk_db.create_semantic_nodes_and_edges(

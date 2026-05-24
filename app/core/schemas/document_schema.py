@@ -11,6 +11,9 @@ class DocumentUploadSchema(BaseModel):
     project_id: uuid.UUID = Field(
         description="The project id of the document",
     )
+    id: uuid.UUID = Field(
+        description="The id of the document",
+    )
     name: str = Field(
         description="The file name of the document",
     )
@@ -25,6 +28,9 @@ class DocumentUploadResponseSchema(BaseModel):
     )
     project_id: uuid.UUID = Field(
         description="The project id of the document",
+    )
+    id: uuid.UUID = Field(
+        description="The id of the document",
     )
     bucket: str = Field(
         description="The bucket of the document",
@@ -59,6 +65,9 @@ class DocumentCreateSchema(BaseModel):
     )
     project_id: uuid.UUID = Field(
         description="The project id of the document",
+    )
+    id: uuid.UUID = Field(
+        description="The id of the document",
     )
     readable_id: str = Field(
         description="The readable id of the document",
