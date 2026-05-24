@@ -18,6 +18,7 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Lexical Engine](#lexical-engine)
 - [Resilient Ingestion & Checkpointing](#resilient-ingestion--checkpointing)
 - [Query Pipeline](#query-pipeline)
+- [Multipart Upload & Resume](#multipart-upload--resume)
 - [Getting Started](#getting-started)
 - [Execution Choices](#execution-choices)
 - [Swagger](#swagger)
@@ -383,6 +384,85 @@ After retrieval, every mode runs:
 | `EQ_GTE_LANE_WEIGHT_THRESHOLD` | Minimum similarity score for tag / keyword / concept lane matching        |
 | `EQ_MAX_CHUNKS`                | Maximum chunks selected after expert scoring                              |
 | `EQ_MAX_LANE_ENTITY`           | Top entities picked per lane by the Lexical Engine (Expert Advanced only) |
+
+---
+
+## Multipart Upload & Resume
+
+Graxon's zero-loss checkpointing extends all the way to the browser.
+
+Most upload implementations are fire-and-forget — if the connection drops at 95%, you start over. Graxon's upload system is session-aware and part-level resumable on both the frontend and backend, mirroring the same checkpoint philosophy as the ingestion pipeline.
+
+- bucket: {org_id}
+- key: pro*{project_id}/doc*{document_id}/{filename}
+
+Each organization gets its own bucket. Each document gets its own isolated path within the project scope.
+
+---
+
+### Upload Flow
+
+```
+Browser
+│
+├── 1. Check local session (documentId, uploadId, key, completedParts)
+│
+├── 2. POST /multipart/init  (if no session)
+│         └── Backend: auto-creates org bucket if missing
+│                       creates S3 multipart upload
+│                       returns uploadId + key
+│                       session persisted on frontend
+│
+├── 3. For each part:
+│         ├── Skip if already in completedParts  ──► advance progress
+│         ├── GET presigned URL from backend (1hr expiry)
+│         └── PUT chunk directly to MinIO  (no data through app server)
+│
+├── 4. POST /multipart/complete
+│         └── Backend: sorts parts by PartNumber (S3 requirement)
+│                       calls S3 complete_multipart_upload
+│                       registers document via DocumentService
+│                       triggers ingestion pipeline
+│
+└── 5. Session deleted on success  /  preserved on failure for retry
+```
+
+---
+
+### Backend: `MinioUploadClient`
+
+**`multipart_upload_init`**
+Ensures the org bucket exists (creates it if not), registers a new multipart upload with MinIO, and returns the `upload_id` and `key` to the frontend.
+
+**`get_multipart_presigned_url`**
+Generates a presigned `upload_part` URL per part with a 1-hour expiry. The browser uploads directly to MinIO — no file data passes through the application server.
+
+**`complete_multipart_upload`**
+Sorts completed parts by `PartNumber` (required by S3/MinIO), finalizes the multipart upload.
+
+---
+
+### Frontend: Session-Aware Resume
+
+**Session Persistence**
+Before every upload, the frontend checks for an existing session — `documentId`, `uploadId`, `key`, and all `completedParts`. If a previous attempt was interrupted, the session is still there.
+
+**Part-Level Resume**
+The file is split into fixed-size chunks. For each part, the frontend checks whether it was already uploaded. If so, it skips it and advances the progress bar. Only missing parts are re-uploaded.
+
+**Local Part Tracking**
+Completed parts are tracked in a local array during the session to avoid stale store reads. Parts are also persisted to the store for cross-session recovery.
+
+---
+
+### Failure & Retry Behavior
+
+| Scenario                      | Behavior                                                            |
+| ----------------------------- | ------------------------------------------------------------------- |
+| Connection drops mid-upload   | Session preserved, retry resumes from last completed part           |
+| Browser tab closed            | Session persisted, upload resumes on next open                      |
+| Part upload fails             | Error surfaced, session intact, retry skips completed parts         |
+| Upload completes successfully | Session deleted, document handed to `DocumentService` for ingestion |
 
 ---
 
