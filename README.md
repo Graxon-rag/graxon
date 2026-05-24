@@ -22,6 +22,7 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Getting Started](#getting-started)
 - [Execution Choices](#execution-choices)
 - [Swagger](#swagger)
+- [Docker Hub](#docker-hub)
 
 ---
 
@@ -579,6 +580,12 @@ http://localhost:8888/docs
 
 - **Username**: admin
 - **Password**: admin
+
+---
+
+## Docker Hub
+
+https://hub.docker.com/u/graxon
 
 ---
 
