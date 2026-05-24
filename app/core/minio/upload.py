@@ -76,7 +76,7 @@ class MinioUploadClient:
             logger.error({"message": "Failed to get multipart presigned url", "error": str(e)})
             raise e
 
-    async def complete_multipart_upload(self, document_id: uuid.UUID, upload_id: str, key: str, file_name: str, parts: list[DocumentMultipartUploadPartSchema]):
+    async def complete_multipart_upload(self, document_id: uuid.UUID, upload_id: str, key: str, file_name: str, size: int | None, parts: list[DocumentMultipartUploadPartSchema]):
         try:
             m_parts: list[CompletedPartTypeDef] = []
 
@@ -112,7 +112,9 @@ class MinioUploadClient:
                     project_id=self.project_id,
                     id=document_id,
                     name=file_name,
-                    type=file_type),
+                    type=file_type,
+                    size=size
+                    ),
                     key=key
                 )
                 return {"document_id": str(document_id)}

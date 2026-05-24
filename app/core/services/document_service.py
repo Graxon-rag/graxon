@@ -96,6 +96,7 @@ class DocumentService:
                 type=document.type,
                 bucket=self.org_id,
                 key=key,
+                size=file.size,
                 status=DocumentStatus.PENDING
             )
 
@@ -107,6 +108,7 @@ class DocumentService:
                 id=document.id,
                 bucket=self.org_id,
                 key=key,
+                size=file.size,
                 signed_url=signed_url
             )
 
@@ -139,6 +141,7 @@ class DocumentService:
                 type=document.type,
                 bucket=self.org_id,
                 key=key,
+                size=document.size,
                 status=DocumentStatus.PENDING
             )
 

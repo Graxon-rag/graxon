@@ -20,6 +20,10 @@ class DocumentUploadSchema(BaseModel):
     type: str = Field(
         description="The file type of the document",
     )
+    size: int | None = Field(
+        default=None,
+        description="The file size of the document",
+    )
 
 
 class DocumentUploadResponseSchema(BaseModel):
@@ -37,6 +41,10 @@ class DocumentUploadResponseSchema(BaseModel):
     )
     key: str = Field(
         description="The key of the document",
+    )
+    size: int | None = Field(
+        default=None,
+        description="The file size of the document",
     )
 
     signed_url: str = Field(
@@ -84,6 +92,10 @@ class DocumentCreateSchema(BaseModel):
     key: str = Field(
         description="The key of the document",
     )
+    size: int | None = Field(
+        default=None,
+        description="The file size of the document",
+    )
 
     status: DocumentStatus = Field(
         description="The status of the document",
@@ -114,6 +126,10 @@ class DocumentGetSchema(BaseModel):
     )
     key: str = Field(
         description="The key of the document",
+    )
+    size: int | None = Field(
+        default=None,
+        description="The file size of the document",
     )
 
     status: DocumentStatus = Field(
@@ -162,4 +178,5 @@ class CompleteMultipartUploadSchema(BaseModel):
     upload_id: str
     key: str
     file_name: str
+    size: int | None = None
     parts: list[DocumentMultipartUploadPartSchema]

@@ -64,6 +64,7 @@ async def multipart_upload_complete(org_id: str, project_id: uuid.UUID, document
             upload_id=body.upload_id,
             key=body.key,
             file_name=body.file_name,
+            size=body.size,
             parts=body.parts
         )
         if not result:
@@ -96,12 +97,18 @@ async def upload_document(org_id: str, project_id: uuid.UUID, document_id: uuid.
         if not file_type:
             return error_response("File type is required", HTTP_400_BAD_REQUEST)
 
+        file_size_in_bytes = file.size
+
+        if file_size_in_bytes is None:
+            return error_response("File size should not be empty", HTTP_400_BAD_REQUEST)
+
         doc = DocumentUploadSchema(
             org_id=org_id,
             project_id=project_id,
             id=document_id,
             name=filename,
-            type=file_type
+            type=file_type,
+            size=file_size_in_bytes
         )
 
         handler = DocumentHandler(org_id=org_id, project_id=project_id)

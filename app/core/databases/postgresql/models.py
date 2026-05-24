@@ -98,6 +98,7 @@ class Document(Base):
     bucket: Mapped[str] = mapped_column(String(255), nullable=False)
     key: Mapped[str] = mapped_column(String(255), nullable=False)
     status: Mapped[str] = mapped_column(String(255), CheckConstraint(status_constraint_string), nullable=False)
+    size: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
 
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -122,6 +123,7 @@ class Document(Base):
             "bucket": self.bucket,
             "key": self.key,
             "status": self.status,
+            "size": self.size or None,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }

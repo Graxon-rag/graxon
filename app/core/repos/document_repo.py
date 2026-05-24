@@ -34,7 +34,8 @@ class DocumentRepo:
                     type=doc.type,
                     bucket=doc.bucket,
                     key=doc.key,
-                    status=doc.status
+                    status=doc.status,
+                    size=doc.size
                 )
                 session.add(new_doc)
                 await self.neo4j_document.create(new_doc.id, new_doc.readable_id)
