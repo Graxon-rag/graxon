@@ -141,3 +141,25 @@ class DocumentStatusMQSchema(BaseModel):
     status: DocumentStatus = Field(
         description="The status of the document",
     )
+
+
+class DocumentMultipartUploadPartSchema(BaseModel):
+    etag: str = Field(
+        description="The etag of the document",
+    )
+    part_number: int = Field(
+        description="The part number of the document",
+    )
+
+
+class PresignedUrlRequestSchema(BaseModel):
+    upload_id: str
+    key: str
+    part_number: int
+
+
+class CompleteMultipartUploadSchema(BaseModel):
+    upload_id: str
+    key: str
+    file_name: str
+    parts: list[DocumentMultipartUploadPartSchema]

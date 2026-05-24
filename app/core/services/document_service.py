@@ -115,3 +115,46 @@ class DocumentService:
         except Exception as e:
             logger.error({"message": "Failed to upload document", "error": str(e)})
             raise e
+
+    async def handle_multipart_document_upload(self, document: DocumentUploadSchema, key: str) -> DocumentUploadResponseSchema:
+        try:
+            project_id = document.project_id
+
+            project = await self._project_service.get(project_id)
+            if not project:
+                raise Exception(f"Project with id {project_id} not found")
+
+            project_name = project.readable_id
+
+            document_name_id = IDLibs.generate_document_id(project_name)
+
+            signed_url = await self.minio_helper.get_signed_url(DocumentGetSignedUrlSchema(org_id=self.org_id, project_id=project_id, bucket=self.org_id, key=key))
+
+            doc_create_schema = DocumentCreateSchema(
+                org_id=self.org_id,
+                project_id=project_id,
+                id=document.id,
+                readable_id=document_name_id,
+                name=document.name,
+                type=document.type,
+                bucket=self.org_id,
+                key=key,
+                status=DocumentStatus.PENDING
+            )
+
+            await self._repo.create(doc_create_schema)
+
+            result = DocumentUploadResponseSchema(
+                org_id=self.org_id,
+                project_id=project_id,
+                id=document.id,
+                bucket=self.org_id,
+                key=key,
+                signed_url=signed_url
+            )
+
+            return result
+
+        except Exception as e:
+            logger.error({"message": "Failed to upload document", "error": str(e)})
+            raise e

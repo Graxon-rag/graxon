@@ -1,12 +1,12 @@
+from ..schemas.document_schema import DocumentMultipartUploadPartSchema, DocumentUploadSchema
+from types_aiobotocore_s3.type_defs import CompletedPartTypeDef
+from ..services.document_service import DocumentService
 from ..databases.minio.client import GMinioClient
 from types_aiobotocore_s3 import S3Client
 from app.utils.logger import logger
 from app.config.env import Env
 from typing import cast
-from io import BytesIO
-import json
 import uuid
-import os
 
 
 class MinioUploadClient:
@@ -16,11 +16,12 @@ class MinioUploadClient:
         self.minio_session = GMinioClient.get_session()
         self.minio_endpoint = f"http://{Env.MINIO_HOST}:{Env.MINIO_PORT}"
         self.bucket = self.org_id
+        self._document_service = DocumentService(org_id=self.org_id, project_id=self.project_id)
 
     def _get_multipart_key(self, document_id: uuid.UUID, filename: str):
         return f"pro_{self.project_id}/doc_{document_id}/{filename}"
 
-    async def multipart_upload_init(self, document_id: uuid.UUID, filename: str) -> dict:
+    async def multipart_upload_init(self, document_id: uuid.UUID, filename: str) -> dict | None:
         try:
             async with self.minio_session.client(  # type: ignore[attr-defined]
                 "s3",
@@ -41,7 +42,7 @@ class MinioUploadClient:
 
                 res = await s3_client.create_multipart_upload(Bucket=self.bucket, Key=key)
 
-                return {"document_id": document_id, "upload_id": res.get("UploadId"), "key": res.get("Key")}
+                return {"document_id": str(document_id), "upload_id": res.get("UploadId"), "key": res.get("Key")}
         except Exception as e:
             logger.error({"message": "Failed to initiate multipart upload", "error": str(e)})
             raise e
@@ -75,5 +76,46 @@ class MinioUploadClient:
             logger.error({"message": "Failed to get multipart presigned url", "error": str(e)})
             raise e
 
-    async def complete_multipart_upload(self, document_id: uuid.UUID, upload_id: str, key: str):
-        pass
+    async def complete_multipart_upload(self, document_id: uuid.UUID, upload_id: str, key: str, file_name: str, parts: list[DocumentMultipartUploadPartSchema]):
+        try:
+            m_parts: list[CompletedPartTypeDef] = []
+
+            # S3 requires parts to be sorted by PartNumber
+            sorted_parts = sorted(parts, key=lambda x: x.part_number)
+
+            for part in sorted_parts:
+                m_parts.append({
+                    "PartNumber": part.part_number,
+                    "ETag": part.etag
+                })
+
+            async with self.minio_session.client(  # type: ignore[attr-defined]
+                "s3",
+                endpoint_url=self.minio_endpoint,
+                aws_access_key_id=Env.MINIO_ROOT_USER,
+                aws_secret_access_key=Env.MINIO_ROOT_PASSWORD,
+                region_name=Env.MINIO_REGION,
+            ) as _s3_client:
+                s3_client = cast(S3Client, _s3_client)
+
+                await s3_client.complete_multipart_upload(
+                    Bucket=self.bucket,
+                    Key=key,
+                    UploadId=upload_id,
+                    MultipartUpload={
+                        "Parts": m_parts
+                    })
+                file_type = file_name.split(".")[-1]
+                await self._document_service.handle_multipart_document_upload(
+                    document=DocumentUploadSchema(
+                    org_id=self.org_id,
+                    project_id=self.project_id,
+                    id=document_id,
+                    name=file_name,
+                    type=file_type),
+                    key=key
+                )
+                return {"document_id": str(document_id)}
+        except Exception as e:
+            logger.error({"message": "Failed to complete multipart upload", "error": str(e)})
+            raise e

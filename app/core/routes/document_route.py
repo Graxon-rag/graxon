@@ -1,16 +1,82 @@
-from fastapi import HTTPException, APIRouter, File, UploadFile, Query, BackgroundTasks
-from ..handlers.document_handler import DocumentHandler
+from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, CompleteMultipartUploadSchema, PresignedUrlRequestSchema
 from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
-from app.utils.logger import logger
+from fastapi import HTTPException, APIRouter, File, UploadFile, Query, Body
 from app.utils.response_util import success_response, error_response
-from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema
+from ..handlers.document_handler import DocumentHandler
 from ..libs.document_lib import DocumentLibs
+from ..minio.upload import MinioUploadClient
+from app.utils.logger import logger
 import uuid
 
 router = APIRouter(
     tags=["Documents"],
     responses={404: {"description": "Not found"}},
 )
+
+
+@router.post("/{org_id}/projects/{project_id}/upload/multipart/{document_id}/init/{file_name}")
+async def multipart_upload_init(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, file_name: str):
+    try:
+        handler = MinioUploadClient(org_id=org_id, project_id=project_id)
+        result = await handler.multipart_upload_init(document_id=document_id, filename=file_name)
+        if not result:
+            logger.error({"message": "Failed to initiate multipart upload", "result": result})
+            return error_response("Failed to initiate multipart upload", HTTP_404_NOT_FOUND)
+
+        return success_response(data=result)
+    except Exception as e:
+        logger.error({"message": "Failed to initiate multipart upload", "error": str(e)})
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.post("/{org_id}/projects/{project_id}/upload/multipart/{document_id}/presigned-url")
+async def multipart_upload_presigned_url(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, body: PresignedUrlRequestSchema):
+    try:
+        handler = MinioUploadClient(org_id=org_id, project_id=project_id)
+        result = await handler.get_multipart_presigned_url(
+            document_id=document_id,
+            upload_id=body.upload_id,
+            key=body.key,
+            part_number=body.part_number
+        )
+        if not result:
+            logger.error({"message": "Failed to get presigned url", "result": result})
+            return error_response("Failed to get presigned url", HTTP_404_NOT_FOUND)
+
+        return success_response(data=result)
+    except Exception as e:
+        logger.error({"message": "Failed to get presigned url", "error": str(e)})
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+
+
+@router.post("/{org_id}/projects/{project_id}/upload/multipart/{document_id}/complete")
+async def multipart_upload_complete(org_id: str, project_id: uuid.UUID, document_id: uuid.UUID, body: CompleteMultipartUploadSchema):
+    try:
+        handler = MinioUploadClient(org_id=org_id, project_id=project_id)
+        result = await handler.complete_multipart_upload(
+            document_id=document_id,
+            upload_id=body.upload_id,
+            key=body.key,
+            file_name=body.file_name,
+            parts=body.parts
+        )
+        if not result:
+            logger.error({"message": "Failed to complete multipart upload", "result": result})
+            return error_response("Failed to complete multipart upload", HTTP_404_NOT_FOUND)
+
+        return success_response(data=result)
+    except Exception as e:
+        logger.error({"message": "Failed to complete multipart upload", "error": str(e)})
+        raise HTTPException(
+            status_code=HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
 
 
 @router.post("/{org_id}/projects/{project_id}/upload/{document_id}")
