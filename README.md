@@ -19,6 +19,7 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Resilient Ingestion & Checkpointing](#resilient-ingestion--checkpointing)
 - [Query Pipeline](#query-pipeline)
 - [Multipart Upload & Resume](#multipart-upload--resume)
+- [Graxon vs Microsoft GraphRAG](#graxon-vs-microsoft-graphrag)
 - [Getting Started](#getting-started)
 - [Execution Choices](#execution-choices)
 - [Swagger](#swagger)
@@ -464,6 +465,32 @@ Completed parts are tracked in a local array during the session to avoid stale s
 | Browser tab closed            | Session persisted, upload resumes on next open                      |
 | Part upload fails             | Error surfaced, session intact, retry skips completed parts         |
 | Upload completes successfully | Session deleted, document handed to `DocumentService` for ingestion |
+
+---
+
+## Graxon vs Microsoft GraphRAG
+
+While Microsoft GraphRAG is a brilliant research methodology for complex offline data discovery, it requires expensive full-corpus re-indexing and lacks multi-tenancy.
+
+**Graxon** is engineered to bring knowledge graph-grounded RAG into **production SaaS environments** — featuring zero-loss checkpointing, dynamic multi-tenant isolation, and real-time hybrid retrieval.
+
+| Feature                  | Graxon                                             | Microsoft GraphRAG                              |
+| :----------------------- | :------------------------------------------------- | :---------------------------------------------- |
+| **Open Source Status**   | Fully open-source (GitHub, Docker Hub, Apache 2.0) | Fully open-source (GitHub, MIT license)         |
+| **Primary Innovation**   | Persistent KG + Hybrid Retrieval + Checkpointing   | Community hierarchy + summarization             |
+| **Graph Node Type**      | Chunk-level (Fine-grained topology)                | Entity-level (High-level extraction)            |
+| **Edge Types**           | 8 typed edges with dynamic weights                 | Semantic relationships (LLM-only)               |
+| **Hybrid Retrieval**     | Dense + Sparse (BM25) + Graph Traversal            | Community summaries + optional vector           |
+| **Query Orchestration**  | LangGraph Multi-Agent (3 types × 2 depths)         | Linear pipeline; community/global search        |
+| **Multi-Tenancy**        | ✅ Built-in (Org → Project → Doc → Chunk)          | ❌ Not supported natively                       |
+| **Fault Tolerance**      | ✅ Zero-loss checkpointing (Redis + MinIO)         | ❌ All-or-nothing; full re-index on failure     |
+| **Multipart Upload**     | ✅ Browser-side resumable uploads                  | ❌ Not supported                                |
+| **Lexical Analysis**     | SpaCy-powered (NER, TF-IDF, n-grams, acronyms)     | LLM-only (No traditional NLP layer)             |
+| **LLM Providers**        | OpenAI, Claude, Gemini, DeepSeek (Dynamic UI)      | OpenAI / Azure OpenAI default                   |
+| **Embedding Providers**  | OpenAI, Gemini, Voyage AI                          | OpenAI / Azure OpenAI default                   |
+| **Sparse Embeddings**    | ✅ FastEmbed (Native BM25 for Qdrant)              | ❌ Not supported                                |
+| **Reranking**            | ✅ Dedicated pluggable reranker agent              | ❌ Relies on LLM community summarization        |
+| **Production Readiness** | Enterprise-ready (Docker, Swagger, async workers)  | Research prototype ("not officially supported") |
 
 ---
 
