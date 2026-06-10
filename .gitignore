@@ -130,3 +130,6 @@ keys/
 # Fast Embed
 .fastembed_cache/
 fastembed_cache/
+
+# Test Data
+test_documents/
