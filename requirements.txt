@@ -22,6 +22,7 @@ botocore-stubs==1.42.41
 catalogue==2.0.10
 certifi==2026.4.22
 cffi==2.0.0
+chardet==7.4.3
 charset-normalizer==3.4.7
 click==8.3.3
 cloudpathlib==0.24.0
