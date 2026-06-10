@@ -1,4 +1,6 @@
+from .code_processor import CodeProcessor, is_code_file, get_language_from_extension
 from .markdown_processor import MarkdownProcessor
+from langchain_text_splitters import Language
 from .text_processor import TextProcessor
 from .processor import Processor
 from app.config.env import Env
@@ -16,6 +18,13 @@ class ProcessorFactory:
             return ProcessorFactory._text_file_processor(file_path, file_type, filename, **kwargs)
         elif safe_file_type in ("markdown", "md") or file_path.lower().endswith(".md"):
             return ProcessorFactory._markdown_file_processor(file_path, file_type, filename, **kwargs)
+
+        elif is_code_file(file_path):
+            language = get_language_from_extension(file_path)
+            if language:
+                return ProcessorFactory._code_file_processor(file_path, file_type, filename, language, **kwargs)
+            else:
+                raise ValueError(f"Unsupported code file type: {file_type}")
 
         raise ValueError(f"Unsupported file type: {file_type}")
 
@@ -55,6 +64,28 @@ class ProcessorFactory:
             filename=filename,
             chunk_number=chunk_number,
             rag_chunk_start_index=rag_chunk_start_index,
+            max_chunk_size_mb=kwargs.get("max_chunk_size_mb", 50),
+            rag_chunk_size=kwargs.get("rag_chunk_size_mb", Env.CHUNK_SIZE),
+            rag_chunk_overlap=kwargs.get("rag_chunk_overlap", Env.CHUNK_OVERLAP),
+            tail_carry_chars=kwargs.get("tail_carry_chars", 500)
+        )
+
+    @staticmethod
+    def _code_file_processor(file_path: str, file_type: str, filename: str, language: Language, **kwargs: Any) -> Processor:
+        chunk_number = kwargs.get("chunk_number")
+        if not chunk_number and chunk_number != 0:
+            raise ValueError("chunk_number is required for code files")
+
+        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        if not rag_chunk_start_index and rag_chunk_start_index != 0:
+            raise ValueError("rag_chunk_start_index is required for code files")
+
+        return CodeProcessor(
+            file_path=file_path,
+            filename=filename,
+            chunk_number=chunk_number,
+            rag_chunk_start_index=rag_chunk_start_index,
+            language=language,
             max_chunk_size_mb=kwargs.get("max_chunk_size_mb", 50),
             rag_chunk_size=kwargs.get("rag_chunk_size_mb", Env.CHUNK_SIZE),
             rag_chunk_overlap=kwargs.get("rag_chunk_overlap", Env.CHUNK_OVERLAP),
