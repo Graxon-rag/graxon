@@ -17,6 +17,7 @@ from .databases.qdrant.client import GQdrantClient
 from .rabbitmq.client import GRabbitMQClient
 from .rabbitmq.consumer import GMQDocumentConsumer
 from .seed import SeedDefaultData
+from .test_something import test_something
 import asyncio
 
 
@@ -132,3 +133,8 @@ app.include_router(graph_router, prefix="/api/graphs")
 @app.get("/")
 def index():
     return {"Graxon server is running, you can go to /docs for the documentation"}
+
+
+@app.post("/test")
+async def test():
+    return await test_something()
