@@ -133,3 +133,4 @@ fastembed_cache/
 
 # Test Data
 test_documents/
+debug/
