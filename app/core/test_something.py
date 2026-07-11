@@ -1,40 +1,80 @@
-from .processor.markdown_processor import MarkdownProcessor
+from .processor.excel_processor import ExcelProcessor
 
 
 async def test_something():
     print("Loading processor")
-    max_chunk_size_mb = 0.01
-    markdown_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/mistal_out.md"
-    filename = "mistal_out.md"
+    sheet = 0
+    file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/test_multisheet.xlsx"
+    filename = "test_multisheet.xlsx"
+    max_chunk_size_mb = 50  # Adjust as needed for Excel
+    rows_per_io_buffer = 500  # Number of rows to read per iteration
 
     result = []
     rag_chunk_start_index = 0
-    chunk_number = 0
+    start_row = 1             # 1-based start (assuming row 0 is header)
+    iteration = 0             # Tracks loop runs (similar to chunk_number)
     is_last = False
 
-    # Unlike the raw byte-window MarkdownProcessor, total page count here isn't
-    # known upfront -- it depends on how the whole file parses (tables, text
-    # splitting, etc.), so the loop runs until process() reports is_last=True,
-    # rather than a precomputed range(total_chunks).
+    # The loop runs until process() reports is_last=True for the sheet
     while not is_last:
-        processor = MarkdownProcessor(
-            markdown_path=markdown_path,
+        processor = ExcelProcessor(
+            file_path=file_path,
             filename=filename,
-            chunk_number=chunk_number,
+            start_row=start_row,
             rag_chunk_start_index=rag_chunk_start_index,
-            max_chunk_size_mb=max_chunk_size_mb,
+            sheet=sheet,
+            rows_per_io_buffer=rows_per_io_buffer,
+            max_chunk_size_mb=max_chunk_size_mb
         )
+
         docs, next_rag_chunk_start_index, is_last = await processor.process()
 
-        print(f"chunk_number={chunk_number} -> {len(docs)} docs, "
+        print(f"iteration={iteration} (start_row={start_row}) -> {len(docs)} docs, "
               f"rag_chunk_start_index {rag_chunk_start_index} -> {next_rag_chunk_start_index}, "
               f"is_last={is_last}")
 
+        # Update indices for the next batch
         rag_chunk_start_index = next_rag_chunk_start_index
         result.append(docs)
-        chunk_number += 1
+
+        # Advance the sliding window down the spreadsheet
+        start_row += rows_per_io_buffer
+        iteration += 1
 
     return result
+
+    # max_chunk_size_mb = 0.01
+    # markdown_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/mistal_out.md"
+    # filename = "mistal_out.md"
+
+    # result = []
+    # rag_chunk_start_index = 0
+    # chunk_number = 0
+    # is_last = False
+
+    # # Unlike the raw byte-window MarkdownProcessor, total page count here isn't
+    # # known upfront -- it depends on how the whole file parses (tables, text
+    # # splitting, etc.), so the loop runs until process() reports is_last=True,
+    # # rather than a precomputed range(total_chunks).
+    # while not is_last:
+    #     processor = MarkdownProcessor(
+    #         markdown_path=markdown_path,
+    #         filename=filename,
+    #         chunk_number=chunk_number,
+    #         rag_chunk_start_index=rag_chunk_start_index,
+    #         max_chunk_size_mb=max_chunk_size_mb,
+    #     )
+    #     docs, next_rag_chunk_start_index, is_last = await processor.process()
+
+    #     print(f"chunk_number={chunk_number} -> {len(docs)} docs, "
+    #           f"rag_chunk_start_index {rag_chunk_start_index} -> {next_rag_chunk_start_index}, "
+    #           f"is_last={is_last}")
+
+    #     rag_chunk_start_index = next_rag_chunk_start_index
+    #     result.append(docs)
+    #     chunk_number += 1
+
+    # return result
 
     # print("Loading processor")
     # max_chunk_size_mb = 0.01

@@ -60,14 +60,11 @@ class ProcessorFactory:
             raise ValueError("rag_chunk_start_index is required for markdown files")
 
         return MarkdownProcessor(
-            file_path=file_path,
+            markdown_path=file_path,
             filename=filename,
             chunk_number=chunk_number,
             rag_chunk_start_index=rag_chunk_start_index,
             max_chunk_size_mb=kwargs.get("max_chunk_size_mb", 50),
-            rag_chunk_size=kwargs.get("rag_chunk_size_mb", Env.CHUNK_SIZE),
-            rag_chunk_overlap=kwargs.get("rag_chunk_overlap", Env.CHUNK_OVERLAP),
-            tail_carry_chars=kwargs.get("tail_carry_chars", 500)
         )
 
     @staticmethod

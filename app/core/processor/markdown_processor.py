@@ -2,6 +2,7 @@ from chonkie import Chunk, MarkdownChef, SentenceChunker
 from langchain_core.documents import Document
 from app.config.config import Config
 from app.utils.logger import logger
+from .processor import Processor
 from typing import List, Tuple
 from pathlib import Path
 import json
@@ -18,7 +19,7 @@ DATA_VALUE_RE = re.compile(r"^\(?-?\$?\s*-?[\d,]+(\.\d+)?%?\)?$")
 DEBUG_FOLDER = "debug"
 
 
-class MarkdownProcessor:
+class MarkdownProcessor(Processor):
     """
     Two-stage, queue-friendly wrapper around chonkie's MarkdownChef.
 
