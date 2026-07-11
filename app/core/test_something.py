@@ -1,47 +1,92 @@
-from .processor.excel_processor import ExcelProcessor
+from .processor.csv_processor import CSVProcessor
 
 
 async def test_something():
     print("Loading processor")
-    sheet = 0
-    file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/test_multisheet.xlsx"
-    filename = "test_multisheet.xlsx"
-    max_chunk_size_mb = 50  # Adjust as needed for Excel
-    rows_per_io_buffer = 500  # Number of rows to read per iteration
+    file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/test.csv"
+    filename = "test.csv"
+
+    max_chunk_size_mb = 50.0      # Adjust as needed for your database limits
+    rows_per_io_buffer = 500      # Number of rows to read per iteration
 
     result = []
     rag_chunk_start_index = 0
-    start_row = 1             # 1-based start (assuming row 0 is header)
-    iteration = 0             # Tracks loop runs (similar to chunk_number)
+    start_row = 1                 # 1-based start (assuming row 0 is header)
+    iteration = 0                 # Tracks loop runs 
     is_last = False
 
-    # The loop runs until process() reports is_last=True for the sheet
+    # The loop runs until process() reports is_last=True for the file
     while not is_last:
-        processor = ExcelProcessor(
+        processor = CSVProcessor(
             file_path=file_path,
             filename=filename,
             start_row=start_row,
             rag_chunk_start_index=rag_chunk_start_index,
-            sheet=sheet,
             rows_per_io_buffer=rows_per_io_buffer,
             max_chunk_size_mb=max_chunk_size_mb
+            # group_size and max_group_size will use the defaults from the class
         )
 
+        # Await the processing of this specific chunk
         docs, next_rag_chunk_start_index, is_last = await processor.process()
 
+        # Log the progress
         print(f"iteration={iteration} (start_row={start_row}) -> {len(docs)} docs, "
               f"rag_chunk_start_index {rag_chunk_start_index} -> {next_rag_chunk_start_index}, "
               f"is_last={is_last}")
 
         # Update indices for the next batch
         rag_chunk_start_index = next_rag_chunk_start_index
-        result.append(docs)
 
-        # Advance the sliding window down the spreadsheet
+        # Use extend to keep a flat list of LangChain Documents
+        result.extend(docs) 
+
+        # Advance the sliding window down the CSV
         start_row += rows_per_io_buffer
         iteration += 1
 
+    print(f"\n✅ Finished processing {filename}!")
     return result
+
+    # sheet = 0
+    # file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/test_multisheet.xlsx"
+    # filename = "test_multisheet.xlsx"
+    # max_chunk_size_mb = 50  # Adjust as needed for Excel
+    # rows_per_io_buffer = 500  # Number of rows to read per iteration
+
+    # result = []
+    # rag_chunk_start_index = 0
+    # start_row = 1             # 1-based start (assuming row 0 is header)
+    # iteration = 0             # Tracks loop runs (similar to chunk_number)
+    # is_last = False
+
+    # # The loop runs until process() reports is_last=True for the sheet
+    # while not is_last:
+    #     processor = ExcelProcessor(
+    #         file_path=file_path,
+    #         filename=filename,
+    #         start_row=start_row,
+    #         rag_chunk_start_index=rag_chunk_start_index,
+    #         sheet=sheet,
+    #         rows_per_io_buffer=rows_per_io_buffer,
+    #         max_chunk_size_mb=max_chunk_size_mb
+    #     )
+
+    #     docs, next_rag_chunk_start_index, is_last = await processor.process()
+
+    #     print(f"iteration={iteration} (start_row={start_row}) -> {len(docs)} docs, "
+    #           f"rag_chunk_start_index {rag_chunk_start_index} -> {next_rag_chunk_start_index}, "
+    #           f"is_last={is_last}")
+
+    #     # Update indices for the next batch
+    #     rag_chunk_start_index = next_rag_chunk_start_index
+    #     result.append(docs)
+
+    #     # Advance the sliding window down the spreadsheet
+    #     start_row += rows_per_io_buffer
+    #     iteration += 1
+
+    # return result
 
     # max_chunk_size_mb = 0.01
     # markdown_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/mistal_out.md"
