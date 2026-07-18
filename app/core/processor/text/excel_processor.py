@@ -2,11 +2,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from langchain_core.documents import Document
 from typing import List, Tuple, Optional
 from sklearn.cluster import KMeans
+from .processor import Processor
 import pandas as pd
 import numpy as np
 
 
-class ExcelProcessor:
+class ExcelProcessor(Processor):
     def __init__(
         self,
         file_path: str,
