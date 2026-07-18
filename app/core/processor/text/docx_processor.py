@@ -1,11 +1,10 @@
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_core.documents import Document
+from docx import Document as DocxDocument
 from app.utils.logger import logger
 from .processor import Processor
 from app.config.env import Env
 from typing import List, Tuple
-from docx import Document as DocxDocument
-import os
 
 
 class DOCXProcessor(Processor):
