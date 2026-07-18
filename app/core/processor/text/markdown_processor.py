@@ -77,16 +77,12 @@ class MarkdownProcessor(Processor):
         self.cache_path = cache_dir / f"{Path(markdown_path).stem}.chunks.json"  # type: ignore
 
     async def process(self) -> Tuple[List[Document], int, bool]:
-        """
-        Returns:
-            chunks: the page of Chunk objects for this chunk_number
-            next_chunk_number: pass this to the next queue message
-            is_last: True if this was the final page
-        """
         try:
-            if not self.cache_path.exists():
+            needs_rebuild = self.chunk_number == 0 or not self.cache_path.exists()
+
+            if needs_rebuild:
                 logger.info(
-                    "No chunk cache found, running full document parse",
+                    "Parsing (first page of file, or cache missing)",
                     extra={"markdown_path": self.markdown_path},
                 )
                 self._parse_and_cache()
@@ -105,25 +101,14 @@ class MarkdownProcessor(Processor):
             page = all_chunks[start:end]
             is_last = self.chunk_number == len(pages) - 1
 
-            # file_chunk_number/filename are only known at page time (they're
-            # queue-level info for THIS message), so they're stamped here
-            # rather than during the one-time parse in _parse_and_cache.
             for c in page:
                 c.metadata["file_chunk_number"] = self.chunk_number
                 c.metadata["filename"] = self.filename
 
             if is_last:
                 if Config.is_dev_env() or Config.is_test_env():
-                    logger.info(
-                        f"Writing {total} chunks to {DEBUG_FOLDER}",
-                        extra={"markdown_path": self.markdown_path},
-                    )
-                    self._write_debug_markdown(
-                        all_chunks,
-                        path=f"{DEBUG_FOLDER}/{Path(self.markdown_path).stem}.md",
-                    )
-                # Cache has served every page now; clean it up so re-processing
-                # the same filename later doesn't silently read stale chunks.
+                    logger.info(f"Writing {total} chunks to {DEBUG_FOLDER}", extra={"markdown_path": self.markdown_path})
+                    self._write_debug_markdown(all_chunks, path=f"{DEBUG_FOLDER}/{Path(self.markdown_path).stem}.md")
                 self.cache_path.unlink(missing_ok=True)
 
             documents = [
@@ -156,14 +141,13 @@ class MarkdownProcessor(Processor):
         table_chunks = self._build_table_chunks(doc, source_file=self.markdown_path)
         text_chunks = self._build_text_chunks(doc, source_file=self.markdown_path)
 
-        # Unified, document-order sequence across BOTH text and table chunks.
         all_chunks = self._assign_sequence(table_chunks + text_chunks)
 
         self.cache_path.parent.mkdir(parents=True, exist_ok=True)
         tmp_path = self.cache_path.with_suffix(".json.tmp")
         with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump([self._chunk_to_dict(c) for c in all_chunks], f)
-        tmp_path.replace(self.cache_path)  # atomic swap-in
+        tmp_path.replace(self.cache_path)
 
     def _chunk_to_dict(self, c: Chunk) -> dict:
         return {
@@ -177,12 +161,7 @@ class MarkdownProcessor(Processor):
         with open(self.cache_path, "r", encoding="utf-8") as f:
             raw = json.load(f)
         return [
-            Chunk(
-                text=r["text"],
-                start_index=r["start_index"],
-                end_index=r["end_index"],
-                metadata=r["metadata"],
-            )
+            Chunk(text=r["text"], start_index=r["start_index"], end_index=r["end_index"], metadata=r["metadata"])
             for r in raw
         ]
 
