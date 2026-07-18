@@ -2,11 +2,12 @@ from sklearn.feature_extraction.text import TfidfVectorizer
 from typing import List, Tuple, Optional, Dict, Any
 from langchain_core.documents import Document
 from sklearn.cluster import KMeans
+from .processor import Processor
 import ijson
 import json
 
 
-class JsonProcessor:
+class JsonProcessor(Processor):
     def __init__(
         self,
         file_path: str,
