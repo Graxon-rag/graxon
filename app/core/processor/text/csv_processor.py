@@ -1,11 +1,12 @@
 from sklearn.feature_extraction.text import TfidfVectorizer
 from langchain_core.documents import Document
 from sklearn.cluster import KMeans
+from .processor import Processor
 from typing import List, Tuple
 import pandas as pd
 
 
-class CSVProcessor:
+class CSVProcessor(Processor):
     def __init__(
         self,
         file_path: str,
