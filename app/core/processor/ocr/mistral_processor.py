@@ -2,6 +2,7 @@ from app.providers.ocr.mistral import MistralOCR
 from .base import IMAGE_MIME_TYPES, OCRProcessor
 from mistralai.client.models import File
 from pypdf import PdfReader, PdfWriter
+from app.utils.logger import logger
 from typing import Tuple
 from pathlib import Path
 import mimetypes
@@ -55,6 +56,8 @@ class MistralOCRProcessor(OCRProcessor):
                             → always 0 for images (single shot)
             is_last:        True = no more pages remain, this was the final batch
         """
+        logger.info(f"Processing via Mistral {self.filename}")
+
         if self._is_image:
             return await self._process_image()
         else:
@@ -167,6 +170,8 @@ class MistralOCRProcessor(OCRProcessor):
         Uploads file_bytes to Mistral Files API, runs OCR,
         returns the full markdown string (all pages joined).
         """
+        logger.info(f"Uploading {upload_filename} to Mistral")
+
         client = await self._ocr.client()
         uploaded = await client.files.upload_async(
             file=File(
@@ -177,6 +182,8 @@ class MistralOCRProcessor(OCRProcessor):
             purpose="ocr",
             timeout_ms=self.timeout_ms,
         )
+
+        logger.info(f"Running Mistral OCR on {uploaded.id}")
 
         result = await client.ocr.process_async(
             model="mistral-ocr-latest",

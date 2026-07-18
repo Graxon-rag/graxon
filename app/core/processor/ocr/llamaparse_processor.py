@@ -2,6 +2,7 @@ from llama_cloud.types.parsing_get_response import MarkdownPageMarkdownResultPag
 from app.providers.ocr.llamaparse import LlamaParseOCR
 from .base import IMAGE_MIME_TYPES, OCRProcessor
 from typing import Tuple, Optional, Literal
+from app.utils.logger import logger
 from pypdf import PdfReader
 from pathlib import Path
 import mimetypes
@@ -61,6 +62,8 @@ class LlamaCloudOCRProcessor(OCRProcessor):
             next_page:  pass as start_page to the next queue message (0 for images)
             is_last:    True = file fully consumed, no more batches needed
         """
+        logger.info(f"Processing via LlamaCloud {self.filename}")
+
         if self._is_image:
             return await self._process_image()
         else:
@@ -149,6 +152,9 @@ class LlamaCloudOCRProcessor(OCRProcessor):
         """
         # --- Upload ---
         client = await self._ocr.client()
+
+        logger.info(f"Uploading {file_path.name} to LlamaCloud")
+
         with open(file_path, "rb") as f:
             file_obj = await client.files.create(
                 file=(file_path.name, f, self._mime_type),
@@ -174,13 +180,19 @@ class LlamaCloudOCRProcessor(OCRProcessor):
         if page_range is not None:
             parse_kwargs["page_ranges"] = {"target_pages": page_range}  # type: ignore
 
-        job = await self.client.parsing.create(**parse_kwargs)  # type: ignore
+        logger.info(f"Creating LlamaCloud parse job with {parse_kwargs}")
+
+        job = await client.parsing.create(**parse_kwargs)  # type: ignore
+
+        logger.info(f"Created LlamaCloud parse job {job.id}")
 
         # --- Poll for completion ---
         elapsed = 0.0
         while True:
             poll = await client.parsing.get(job.id)
             status = poll.job.status
+
+            logger.info(f"Polling LlamaCloud parse job {job.id} with status={status}")
 
             if status == "COMPLETED":
                 break

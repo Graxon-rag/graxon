@@ -131,6 +131,10 @@ keys/
 .fastembed_cache/
 fastembed_cache/
 
-# Test Data
+# Test Data / Debug / Output
 test_documents/
 debug/
+temp/
+tmp/
+output/
+outputs/

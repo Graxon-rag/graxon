@@ -1,52 +1,92 @@
-from .processor.text.json_processor import JsonProcessor
+from .processor.ocr.llamaparse_processor import LlamaCloudOCRProcessor
+# from .processor.text.json_processor import JsonProcessor
+from .processor.ocr.mistral_processor import MistralOCRProcessor
+from .processor.text.markdown_processor import MarkdownProcessor
+from dotenv import load_dotenv
+import os
+load_dotenv()
 
 
 async def test_something():
-    print("Loading processor")
-    file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/nested_test.json"
-    filename = "nested_test.json"
 
-    max_chunk_size_mb = 10.0      # Adjust as needed for your database limits
-    objects_per_buffer = 30      # Number of JSON objects to read per iteration
+    file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/some_page.pdf"
+    filename = "some_page.pdf"
+    api_key = os.environ["LLAMA_CLOUD_API_KEY"]
+    # api_key = os.environ["MISTRAL_API_KEY"]
+    start_page = 0
+    is_last_ocr_batch = False
 
-    result = []
-    rag_chunk_start_index = 0
-    start_object = 0              # 0-based start (JSON doesn't have headers to skip)
-    iteration = 0                 # Tracks loop runs 
-    is_last = False
+    rag_chunk_start_index = 0   # global — becomes each chunk's rag_chunk_number
+    all_docs = []
 
-    # The loop runs until process() reports is_last=True for the file
-    while not is_last:
-        processor = JsonProcessor(
-            file_path=file_path,
-            filename=filename,
-            start_object=start_object,
-            rag_chunk_start_index=rag_chunk_start_index,
-            objects_per_buffer=objects_per_buffer,
-            max_chunk_size_mb=max_chunk_size_mb
-            # group_size and max_group_size will use the defaults from the class
-        )
+    while not is_last_ocr_batch:
+        ocr = LlamaCloudOCRProcessor(file_path, filename, api_key, start_page=start_page, max_pages_per_chunk=15)
+        md_path, next_page, is_last_ocr_batch = await ocr.process()
 
-        # Await the processing of this specific chunk
-        docs, next_rag_chunk_start_index, is_last = await processor.process()
+        chunk_number = 0        # LOCAL — page index into THIS md_path's cache, must restart at 0 per file
+        is_last_md_chunk = False
 
-        # Log the progress
-        print(f"iteration={iteration} (start_object={start_object}) -> {len(docs)} docs, "
-              f"rag_chunk_start_index {rag_chunk_start_index} -> {next_rag_chunk_start_index}, "
-              f"is_last={is_last}")
+        while not is_last_md_chunk:
+            mp = MarkdownProcessor(
+                markdown_path=str(md_path),
+                filename=filename,
+                chunk_number=chunk_number,
+                rag_chunk_start_index=rag_chunk_start_index,
+                max_chunk_size_mb=0.01
+            )
+            docs, rag_chunk_start_index, is_last_md_chunk = await mp.process()
+            all_docs.append(docs)
+            chunk_number += 1
 
-        # Update indices for the next batch
-        rag_chunk_start_index = next_rag_chunk_start_index
+        start_page = next_page
 
-        # Use extend to keep a flat list of LangChain Documents
-        result.extend(docs) 
+    return all_docs
 
-        # Advance the sliding window down the JSON array/objects
-        start_object += objects_per_buffer
-        iteration += 1
+    # print("Loading processor")
+    # file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/nested_test.json"
+    # filename = "nested_test.json"
 
-    print(f"\n✅ Finished processing {filename}!")
-    return result
+    # max_chunk_size_mb = 10.0      # Adjust as needed for your database limits
+    # objects_per_buffer = 30      # Number of JSON objects to read per iteration
+
+    # result = []
+    # rag_chunk_start_index = 0
+    # start_object = 0              # 0-based start (JSON doesn't have headers to skip)
+    # iteration = 0                 # Tracks loop runs 
+    # is_last = False
+
+    # # The loop runs until process() reports is_last=True for the file
+    # while not is_last:
+    #     processor = JsonProcessor(
+    #         file_path=file_path,
+    #         filename=filename,
+    #         start_object=start_object,
+    #         rag_chunk_start_index=rag_chunk_start_index,
+    #         objects_per_buffer=objects_per_buffer,
+    #         max_chunk_size_mb=max_chunk_size_mb
+    #         # group_size and max_group_size will use the defaults from the class
+    #     )
+
+    #     # Await the processing of this specific chunk
+    #     docs, next_rag_chunk_start_index, is_last = await processor.process()
+
+    #     # Log the progress
+    #     print(f"iteration={iteration} (start_object={start_object}) -> {len(docs)} docs, "
+    #           f"rag_chunk_start_index {rag_chunk_start_index} -> {next_rag_chunk_start_index}, "
+    #           f"is_last={is_last}")
+
+    #     # Update indices for the next batch
+    #     rag_chunk_start_index = next_rag_chunk_start_index
+
+    #     # Use extend to keep a flat list of LangChain Documents
+    #     result.extend(docs) 
+
+    #     # Advance the sliding window down the JSON array/objects
+    #     start_object += objects_per_buffer
+    #     iteration += 1
+
+    # print(f"\n✅ Finished processing {filename}!")
+    # return result
 
     # file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/test.csv"
     # filename = "test.csv"
