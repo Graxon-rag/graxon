@@ -1,4 +1,4 @@
-from .processor.json_processor import JsonProcessor
+from .processor.text.json_processor import JsonProcessor
 
 
 async def test_something():
