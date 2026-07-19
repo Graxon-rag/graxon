@@ -1,5 +1,14 @@
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
+from enum import Enum
+
+
+class AudioProviderEnum(str, Enum):
+    DEEPGRAM = "deepgram"
+    GLADIA = "gladia"
+    ASSEMBLYAI = "assemblyai"
+    WHISPER = "whisper"
+    ELEVENLABS = "elevenlabs"
 
 
 class Word(BaseModel):
@@ -25,7 +34,7 @@ class Utterance(BaseModel):
 
 class Transcript(BaseModel):
     """Full normalized transcript for one audio file, regardless of provider."""
-    provider: Literal["gladia", "whisper", "assemblyai", "deepgram", "elevenlabs"]
+    provider: AudioProviderEnum
     language: Optional[str] = None
     source_file: Optional[str] = None
     utterances: List[Utterance] = Field(default_factory=list)

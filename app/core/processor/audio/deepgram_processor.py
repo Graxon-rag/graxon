@@ -1,6 +1,6 @@
+from .model import Utterance, Transcript, Word, AudioProviderEnum
 from deepgram.types.listen_v1response import ListenV1Response
 from app.providers.audio.deepgram import DeepgramProvider
-from .model import Utterance, Transcript, Word
 from langchain_core.documents import Document
 from .chunk_builder import build_documents
 from typing import Tuple, List, Optional
@@ -171,7 +171,7 @@ class DeepgramAudioProcessor(AudioProcessor):
 
         if not raw_utterances:
             return Transcript(
-                provider="deepgram",
+                provider=AudioProviderEnum.DEEPGRAM,
                 source_file=str(audio_path),
                 duration=duration,
                 language=language,
@@ -219,7 +219,7 @@ class DeepgramAudioProcessor(AudioProcessor):
                 )
 
         return Transcript(
-            provider="deepgram",
+            provider=AudioProviderEnum.DEEPGRAM,
             utterances=final_utterances,
             source_file=str(audio_path),
             duration=duration,

@@ -1,5 +1,5 @@
 from app.providers.audio.assembly import AssemblyAudioProvider, aai
-from .model import Utterance, Transcript, Word
+from .model import Utterance, Transcript, Word, AudioProviderEnum
 from langchain_core.documents import Document
 from .chunk_builder import build_documents
 from app.utils.logger import logger
@@ -107,7 +107,7 @@ class AssemblyAudioProcessor(AudioProcessor):
 
         if not result.utterances:
             return Transcript(
-                provider="assemblyai",
+                provider=AudioProviderEnum.ASSEMBLYAI,
                 source_file=str(audio_path),
                 duration=result.audio_duration,
                 language=result.language_code,
@@ -154,7 +154,7 @@ class AssemblyAudioProcessor(AudioProcessor):
             ))
 
         return Transcript(
-            provider="assemblyai",
+            provider=AudioProviderEnum.ASSEMBLYAI,
             utterances=utterances,
             language=result.language_code,
             source_file=str(audio_path),
