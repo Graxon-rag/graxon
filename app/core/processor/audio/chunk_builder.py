@@ -42,7 +42,9 @@ class SpeakerBlock:
     def _header(self) -> str:
         time_range = f"{fmt_time(self.start)} - {fmt_time(self.end)}"
         if self.has_diarization and self.speaker:
-            return f"[Speaker {self.speaker} | {time_range}]"
+            # Normalize: "speaker_0" → "0", "A" → "A", "0" → "0"
+            label = self.speaker.replace("speaker_", "").replace("Speaker_", "")
+            return f"[Speaker {label} | {time_range}]"
         return f"[{time_range}]"
 
 

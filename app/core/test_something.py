@@ -2,7 +2,7 @@
 # # from .processor.text.json_processor import JsonProcessor
 # from .processor.ocr.mistral_processor import MistralOCRProcessor
 # from .processor.text.markdown_processor import MarkdownProcessor
-from .processor.audio.assembly_processor import AssemblyAudioProcessor
+from .processor.audio.elevenlabs_processor import ElevenlabsAudioProcessor
 from dotenv import load_dotenv
 import os
 load_dotenv()
@@ -12,16 +12,17 @@ async def test_something():
     file_chunk_number = 0
     rag_chunk_index = 0
     results = []
-    api_key = os.environ["ASSEMBLYAI_API_KEY"]
+    api_key = os.environ["ELEVENLABS_API_KEY"]
 
     while True:
-        proc = AssemblyAudioProcessor(
+        proc = ElevenlabsAudioProcessor(
             file_path="/home/avvk/Graxon/Graxon/graxon/test_documents/youtube_podcast_audio.mp3",
             filename="youtube_podcast_audio.mp3",
             api_key=api_key,
             file_chunk_number=file_chunk_number,
             rag_chunk_start_index=rag_chunk_index,
             segment_duration_min=2.5,
+            base_url="https://api.in.residency.elevenlabs.io"
         )
         docs, next_rag_idx, is_last = await proc.process()
         results.append(docs)
@@ -33,6 +34,31 @@ async def test_something():
         rag_chunk_index = next_rag_idx
 
     return results
+
+    # file_chunk_number = 0
+    # rag_chunk_index = 0
+    # results = []
+    # api_key = os.environ["ASSEMBLYAI_API_KEY"]
+
+    # while True:
+    #     proc = AssemblyAudioProcessor(
+    #         file_path="/home/avvk/Graxon/Graxon/graxon/test_documents/youtube_podcast_audio.mp3",
+    #         filename="youtube_podcast_audio.mp3",
+    #         api_key=api_key,
+    #         file_chunk_number=file_chunk_number,
+    #         rag_chunk_start_index=rag_chunk_index,
+    #         segment_duration_min=2.5,
+    #     )
+    #     docs, next_rag_idx, is_last = await proc.process()
+    #     results.append(docs)
+    #     # docs → Vector DB + Neo4j
+
+    #     if is_last:
+    #         break
+    #     file_chunk_number += 1
+    #     rag_chunk_index = next_rag_idx
+
+    # return results
 
     # file_chunk_number = 0
     # rag_chunk_index = 0
