@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 
-class AudioProvider(ABC):
+class BaseAudioProvider(ABC):
     @abstractmethod
     async def client(self):
         raise NotImplementedError
