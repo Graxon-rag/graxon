@@ -34,6 +34,7 @@ class DeepgramAudioProcessor(AudioProcessor):
         diarize: bool = True,
         smart_format: bool = True,
         detect_language: bool = True,
+        timeout: float = 60 * 10
     ):
         self.file_path = Path(file_path)
         self.filename = filename
@@ -50,7 +51,7 @@ class DeepgramAudioProcessor(AudioProcessor):
         self.smart_format = smart_format
         self.detect_language = detect_language
 
-        self._client = DeepgramProvider(api_key)
+        self._client = DeepgramProvider(api_key, timeout=timeout)
 
         DEEPGRAM_TEMP_DIR.mkdir(parents=True, exist_ok=True)
 
