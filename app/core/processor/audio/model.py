@@ -7,7 +7,7 @@ class AudioProviderEnum(str, Enum):
     DEEPGRAM = "deepgram"
     GLADIA = "gladia"
     ASSEMBLYAI = "assemblyai"
-    WHISPER = "whisper"
+    GROQ = "groq"
     ELEVENLABS = "elevenlabs"
 
 
