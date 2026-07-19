@@ -119,10 +119,10 @@ def build_documents(
                 "rag_chunk_number": absolute_index,
                 "provider": transcript.provider,
                 "language": transcript.language,
-                "start_time": chunk_start,
-                "end_time": chunk_end,
+                "start_time": round(chunk_start, 2) if chunk_start is not None else None,  # max 2 decimal places
+                "end_time": round(chunk_end, 2) if chunk_end is not None else None,
                 "duration_sec": (
-                    chunk_end - chunk_start
+                    round(chunk_end - chunk_start, 2)
                     if chunk_start is not None and chunk_end is not None
                     else None
                 ),

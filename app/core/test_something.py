@@ -1,46 +1,96 @@
-from .processor.ocr.llamaparse_processor import LlamaCloudOCRProcessor
-# from .processor.text.json_processor import JsonProcessor
-from .processor.ocr.mistral_processor import MistralOCRProcessor
-from .processor.text.markdown_processor import MarkdownProcessor
+# from .processor.ocr.llamaparse_processor import LlamaCloudOCRProcessor
+# # from .processor.text.json_processor import JsonProcessor
+# from .processor.ocr.mistral_processor import MistralOCRProcessor
+# from .processor.text.markdown_processor import MarkdownProcessor
+from .processor.audio.assembly_processor import AssemblyAudioProcessor
 from dotenv import load_dotenv
 import os
 load_dotenv()
 
 
 async def test_something():
+    file_chunk_number = 0
+    rag_chunk_index = 0
+    results = []
+    api_key = os.environ["ASSEMBLYAI_API_KEY"]
 
-    file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/some_page.pdf"
-    filename = "some_page.pdf"
-    api_key = os.environ["LLAMA_CLOUD_API_KEY"]
-    # api_key = os.environ["MISTRAL_API_KEY"]
-    start_page = 0
-    is_last_ocr_batch = False
+    while True:
+        proc = AssemblyAudioProcessor(
+            file_path="/home/avvk/Graxon/Graxon/graxon/test_documents/youtube_podcast_audio.mp3",
+            filename="youtube_podcast_audio.mp3",
+            api_key=api_key,
+            file_chunk_number=file_chunk_number,
+            rag_chunk_start_index=rag_chunk_index,
+            segment_duration_min=2.5,
+        )
+        docs, next_rag_idx, is_last = await proc.process()
+        results.append(docs)
+        # docs → Vector DB + Neo4j
 
-    rag_chunk_start_index = 0   # global — becomes each chunk's rag_chunk_number
-    all_docs = []
+        if is_last:
+            break
+        file_chunk_number += 1
+        rag_chunk_index = next_rag_idx
 
-    while not is_last_ocr_batch:
-        ocr = LlamaCloudOCRProcessor(file_path, filename, api_key, start_page=start_page, max_pages_per_chunk=15)
-        md_path, next_page, is_last_ocr_batch = await ocr.process()
+    return results
 
-        chunk_number = 0        # LOCAL — page index into THIS md_path's cache, must restart at 0 per file
-        is_last_md_chunk = False
+    # file_chunk_number = 0
+    # rag_chunk_index = 0
+    # results = []
+    # api_key = os.environ["DEEPGRAM_API_KEY"]
 
-        while not is_last_md_chunk:
-            mp = MarkdownProcessor(
-                markdown_path=str(md_path),
-                filename=filename,
-                chunk_number=chunk_number,
-                rag_chunk_start_index=rag_chunk_start_index,
-                max_chunk_size_mb=0.01
-            )
-            docs, rag_chunk_start_index, is_last_md_chunk = await mp.process()
-            all_docs.append(docs)
-            chunk_number += 1
+    # while True:
+    #     proc = DeepgramAudioProcessor(
+    #         file_path="/home/avvk/Graxon/Graxon/graxon/test_documents/youtube_podcast_audio.mp3",
+    #         filename="youtube_podcast_audio.mp3",
+    #         api_key=api_key,
+    #         file_chunk_number=file_chunk_number,
+    #         rag_chunk_start_index=rag_chunk_index,
+    #         segment_duration_min=2.5,
+    #     )
+    #     docs, next_rag_idx, is_last = await proc.process()
+    #     results.append(docs)
+    #     # docs → Vector DB + Neo4j
 
-        start_page = next_page
+    #     if is_last:
+    #         break
+    #     file_chunk_number += 1
+    #     rag_chunk_index = next_rag_idx
 
-    return all_docs
+    # return results
+
+    # file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/some_page.pdf"
+    # filename = "some_page.pdf"
+    # api_key = os.environ["LLAMA_CLOUD_API_KEY"]
+    # # api_key = os.environ["MISTRAL_API_KEY"]
+    # start_page = 0
+    # is_last_ocr_batch = False
+
+    # rag_chunk_start_index = 0   # global — becomes each chunk's rag_chunk_number
+    # all_docs = []
+
+    # while not is_last_ocr_batch:
+    #     ocr = LlamaCloudOCRProcessor(file_path, filename, api_key, start_page=start_page, max_pages_per_chunk=15)
+    #     md_path, next_page, is_last_ocr_batch = await ocr.process()
+
+    #     chunk_number = 0        # LOCAL — page index into THIS md_path's cache, must restart at 0 per file
+    #     is_last_md_chunk = False
+
+    #     while not is_last_md_chunk:
+    #         mp = MarkdownProcessor(
+    #             markdown_path=str(md_path),
+    #             filename=filename,
+    #             chunk_number=chunk_number,
+    #             rag_chunk_start_index=rag_chunk_start_index,
+    #             max_chunk_size_mb=0.01
+    #         )
+    #         docs, rag_chunk_start_index, is_last_md_chunk = await mp.process()
+    #         all_docs.append(docs)
+    #         chunk_number += 1
+
+    #     start_page = next_page
+
+    # return all_docs
 
     # print("Loading processor")
     # file_path = "/home/avvk/Graxon/Graxon/graxon/test_documents/nested_test.json"

@@ -5,8 +5,8 @@ from langchain_core.documents import Document
 from .chunk_builder import build_documents
 from typing import Tuple, List, Optional
 from app.utils.logger import logger
-from pydub import AudioSegment
 from .base import AudioProcessor
+from pydub import AudioSegment
 from pathlib import Path
 
 
