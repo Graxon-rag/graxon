@@ -48,7 +48,7 @@ class TxtProcessParams(BaseModel):
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
     max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
-    rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
+    rag_chunk_size_mb: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk in MB.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")
     tail_carry_chars: Optional[int] = Field(default=500, description="The number of characters to carry over to the next chunk.")
 
@@ -130,11 +130,11 @@ class HtmlProcessParams(BaseModel):
 
 class JsonProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     start_object: int = Field(..., description="The start object of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    objects_per_buffer: Optional[str | int] = Field(default=500, description="The number of objects to read from disk at once.")
+    objects_per_buffer: Optional[int] = Field(default=500, description="The number of objects to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
     group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
     max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
