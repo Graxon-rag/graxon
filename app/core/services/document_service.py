@@ -57,7 +57,8 @@ class DocumentService:
         try:
             document = await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
             try:
-                await GMQDocumentProducer.publish_to_processing_exchange(document)
+                # await GMQDocumentProducer.publish_to_processing_exchange(document)
+                print("Document submitted for processing", document)
             except Exception as e:
                 await self._repo.change_document_status(document_id, DocumentStatus.PENDING)
                 raise e
