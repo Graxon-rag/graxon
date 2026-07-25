@@ -96,7 +96,6 @@ class DocxProcessParams(BaseModel):
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    language: Language = Field(..., description="The language of the document file.")
     pages_per_batch: Optional[float] = Field(default=20, description="The number of pages to read from disk at once.")
     rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")

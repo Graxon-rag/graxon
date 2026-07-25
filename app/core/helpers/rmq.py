@@ -344,7 +344,36 @@ class RMQHelper:
 
     @staticmethod
     async def handle_docx(cp: ps.CommonParams, data: ps.DocxProcessParams):
-        pass
+        logger.info({"message": "Processing docx", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "file_chunk_number": data.file_chunk_number, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "chunk_number": data.file_chunk_number,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "pages_per_batch": data.pages_per_batch,
+            "rag_chunk_size": data.rag_chunk_size,
+            "rag_chunk_overlap": data.rag_chunk_overlap,
+            "tail_carry_chars": data.tail_carry_chars
+        }
+
+        processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="docx", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_docx(cp, ps.DocxProcessParams(
+                file_path=data.file_path,
+                filename=data.filename,
+                file_chunk_number=data.file_chunk_number,
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                pages_per_batch=data.pages_per_batch,
+                rag_chunk_size=data.rag_chunk_size,
+                rag_chunk_overlap=data.rag_chunk_overlap,
+                tail_carry_chars=data.tail_carry_chars
+            ))
 
     @staticmethod
     async def handle_excel(cp: ps.CommonParams, data: ps.ExcelProcessParams):
