@@ -377,7 +377,38 @@ class RMQHelper:
 
     @staticmethod
     async def handle_excel(cp: ps.CommonParams, data: ps.ExcelProcessParams):
-        pass
+        logger.info({"message": "Processing json", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "start_row": data.start_row,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "rows_per_io_buffer": data.rows_per_io_buffer,
+            "max_chunk_size_mb": data.max_chunk_size_mb,
+            "group_size": data.group_size,
+            "max_group_size": data.max_group_size,
+            "sheet": data.sheet
+        }
+
+        processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="excel", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_excel(cp, ps.ExcelProcessParams(
+                file_path=data.file_path,
+                filename=data.filename,
+                start_row=data.start_row,
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                rows_per_io_buffer=data.rows_per_io_buffer,
+                sheet=data.sheet,
+                max_chunk_size_mb=data.max_chunk_size_mb,
+                group_size=data.group_size,
+                max_group_size=data.max_group_size
+            ))
 
     @staticmethod
     async def handle_code(cp: ps.CommonParams, data: ps.CodeProcessParams):
