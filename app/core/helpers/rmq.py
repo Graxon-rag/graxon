@@ -139,6 +139,17 @@ class RMQProducerHelper:
             ))
 
     @staticmethod
+    async def produce_html(cp: ps.CommonParams, html: ps.HtmlProcessParams):
+        await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
+                        org_id=cp.org_id,
+                        project_id=cp.project_id,
+                        doc_id=cp.doc_id,
+                        file_type=cp.file_type,
+                        filename=html.filename,
+                        html_params=html
+            ))
+
+    @staticmethod
     async def produce_audio(cp: ps.CommonParams, audio: ps.AudioProcessParams):
         await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
                         org_id=cp.org_id,
@@ -489,7 +500,38 @@ class RMQHelper:
 
     @staticmethod
     async def handle_html(cp: ps.CommonParams, data: ps.HtmlProcessParams):
-        pass
+        logger.info({"message": "Processing html", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "start_unit": data.start_unit, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "start_unit": data.start_unit,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "rows_per_io_buffer": data.rows_per_io_buffer,
+            "units_per_buffer": data.units_per_buffer,
+            "max_chunk_size_mb": data.max_chunk_size_mb,
+            "group_size": data.group_size,
+            "max_group_size": data.max_group_size
+        }
+
+        processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="html", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_html(cp, ps.HtmlProcessParams(
+                file_path=data.file_path,
+                filename=data.filename,
+                start_unit=data.start_unit,
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                rows_per_io_buffer=data.rows_per_io_buffer,
+                units_per_buffer=data.units_per_buffer,
+                max_chunk_size_mb=data.max_chunk_size_mb,
+                group_size=data.group_size,
+                max_group_size=data.max_group_size
+            ))
 
     @staticmethod
     async def handle_csv(cp: ps.CommonParams, data: ps.CSVProcessParams):
