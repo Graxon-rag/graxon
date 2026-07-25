@@ -1,3 +1,4 @@
+from ..processor.ocr.processor_factory import OcrProcessorFactory, ProcessorEnum as ocr_enum
 from ..processor.audio.processor_factory import AudioProcessorFactory
 from ..processor.text.processor_factory import ProcessorFactory
 from ..processor.audio.model import AudioProviderEnum
@@ -570,7 +571,44 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_image(cp: ps.CommonParams, data: ps.ImageProcessParams):
-        pass
+        ocr_processor_type = data.processor
+
+        match ocr_processor_type.value:
+
+            case "datalab":
+                kwargs = {
+                    "start_page": data.start_page,
+                    "max_pages_per_chunk": data.max_pages_per_chunk,
+                    "max_chunk_size_mb": data.max_chunk_size_mb,
+                    "timeout": data.timeout
+                }
+                processor = OcrProcessorFactory.get_processor(ocr_enum.DATALAB, data.file_path, data.filename, data.api_key, **kwargs)
+                md_path, next_rag_start_index, is_last = await processor.process()
+
+            case "llamaparse":
+                kwargs = {
+                    "start_page": data.start_page,
+                    "max_pages_per_chunk": data.max_pages_per_chunk,
+                    "max_chunk_size_mb": data.max_chunk_size_mb,
+                    "timeout": data.timeout,
+                    "tier": data.llama_tier,
+                    "version": data.llama_version,
+                    "poll_interval": data.llama_poll_interval
+                }
+                processor = OcrProcessorFactory.get_processor(ocr_enum.LAMMAPARSE, data.file_path, data.filename, data.api_key, **kwargs)
+                md_path, next_rag_start_index, is_last = await processor.process()
+
+            case "mistral":
+                kwargs = {
+                    "start_page": data.start_page,
+                    "max_pages_per_chunk": data.max_pages_per_chunk,
+                    "max_chunk_size_mb": data.max_chunk_size_mb,
+                    "timeout": data.timeout
+                }
+                processor = OcrProcessorFactory.get_processor(ocr_enum.MISTRAL, data.file_path, data.filename, data.api_key, **kwargs)
+                md_path, next_rag_start_index, is_last = await processor.process()
+            case _:
+                raise ValueError(f"Invalid OCR processor type: {ocr_processor_type}")
 
     @staticmethod
     async def handle_audio(cp: ps.CommonParams, data: ps.AudioProcessParams):

@@ -1,4 +1,4 @@
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from langchain_text_splitters import Language
 from pydantic import BaseModel, Field
 from app.config.env import Env
@@ -198,11 +198,17 @@ class ImageProcessParams(BaseModel):
     max_pages_per_chunk: int = Field(..., description="The maximum number of pages per chunk.")
     is_last_ocr_batch: bool = Field(..., description="True if this is the last chunk.")
     is_last_md_chunk: bool = Field(..., description="True if this is the last chunk.")
+    timeout: float = Field(default=60 * 10, description="The timeout for the OCR service.")
     md_path: str | None = Field(default=None, description="The path to the markdown file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
-    timeout: Optional[int] = Field(default=60 * 10, description="The timeout for the OCR service.")
+
+    # Llamaparse config
+    llama_tier: Optional[Literal["fast", "cost_effective", "agentic", "agentic_plus"]] = Field(default="agentic", description="The tier of the Llamaparse service.")
+    llama_version: Optional[str] = Field(default="latest", description="The version of the Llamaparse service.")
+    llama_poll_interval: Optional[float] = Field(default=2.0, description="The poll interval for the Llamaparse service.")
+
     kwargs: Optional[Dict[str, Any]] = Field(default={}, description="The kwargs for the OCR service.")
 
 
