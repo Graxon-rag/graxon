@@ -247,8 +247,8 @@ class AudioProcessParams(BaseModel):
 
 
 class ProcessParams(BaseModel):
-    org_id: uuid.UUID = Field(..., description="The organization id.")
-    project_uuid: uuid.UUID = Field(..., description="The project uuid.")
+    org_id: str = Field(..., description="The organization id.")
+    project_id: uuid.UUID = Field(..., description="The project uuid.")
     doc_id: uuid.UUID = Field(..., description="The document id.")
     filename: str = Field(..., description="The filename of the document.")
 

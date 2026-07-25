@@ -3,6 +3,7 @@ from app.utils.logger import logger
 from app.constants.rabbitmq import GQueues
 from ..services.document_service import DocumentService
 from ..schemas.document_schema import DocumentGetSchema, DocumentStatusMQSchema
+from ..schemas import processor_schema as ps
 from app.constants.document import DocumentStatus
 from aio_pika.abc import AbstractIncomingMessage
 from .producer import GMQDocumentProducer
@@ -50,19 +51,19 @@ class GMQDocumentConsumer:
         async with message.process(requeue=False, ignore_processed=True):
             body = message.body.decode()
             retry_count = self._get_retry_count(message)
-            document = DocumentGetSchema.model_validate_json(body)
+            data = ps.ProcessParams.model_validate_json(body)
             try:
-                logger.info({"message": "Received message", "retry_count": retry_count, "document": document.model_dump(mode="json")})
+                logger.info({"message": "Received message", "retry_count": retry_count, "document": data.model_dump(mode="json", exclude_none=True)})
 
                 if retry_count > 3:
-                    logger.error({"message": "Max retries exceeded, skipping message", "retry_count": retry_count, "document": document.model_dump(mode="json")})
+                    logger.error({"message": "Max retries exceeded, skipping message", "retry_count": retry_count, "document": data.model_dump(mode="json", exclude_none=True)})
 
-                    await GMQDocumentProducer.publish_to_status_exchange(DocumentStatusMQSchema(org_id=document.org_id, project_id=document.project_id, id=document.id, status=DocumentStatus.FAILED))
+                    await GMQDocumentProducer.publish_to_status_exchange(DocumentStatusMQSchema(org_id=data.org_id, project_id=data.project_id, id=data.doc_id, status=DocumentStatus.FAILED))
 
                     await message.ack()  # ack to drop it permanently, not reject/nack
                     return
 
-                await self._process_document(document)
+                await self._process_document(data)
 
                 await message.ack()  # We are done with the message
             except Exception as e:
@@ -97,7 +98,5 @@ class GMQDocumentConsumer:
         except Exception:
             return 0
 
-    async def _process_document(self, document: DocumentGetSchema):
-        org_id: str = document.org_id
-        project_id: uuid.UUID = document.project_id
-        await DocumentWorkflow(org_id=org_id, project_id=project_id).process(document)
+    async def _process_document(self, data: ps.ProcessParams):
+        pass
