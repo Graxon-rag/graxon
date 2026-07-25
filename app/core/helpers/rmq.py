@@ -54,17 +54,6 @@ class RMQProducerHelper:
             ))
 
     @staticmethod
-    async def produce_md(cp: ps.CommonParams, md: ps.MdProcessParams):
-        await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
-                        org_id=cp.org_id,
-                        project_id=cp.project_id,
-                        doc_id=cp.doc_id,
-                        file_type=cp.file_type,
-                        filename=md.filename,
-                        md_params=md
-            ))
-
-    @staticmethod
     async def produce_pdf(cp: ps.CommonParams, pdf: ps.PdfProcessParams):
         await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
                         org_id=cp.org_id,
@@ -109,7 +98,7 @@ class RMQProducerHelper:
             ))
 
     @staticmethod
-    async def produce_markdown(cp: ps.CommonParams, markdown: ps.MdProcessParams):
+    async def produce_markdown(cp: ps.CommonParams, markdown: ps.MarkdownProcessParams):
         await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
                         org_id=cp.org_id,
                         project_id=cp.project_id,
@@ -304,7 +293,7 @@ class RMQProcessorHelper:
             ))
 
     @staticmethod
-    async def handle_md(cp: ps.CommonParams, data: ps.MdProcessParams):
+    async def handle_md(cp: ps.CommonParams, data: ps.MarkdownProcessParams):
         logger.info({"message": "Processing markdown", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.markdown_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
@@ -322,16 +311,19 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_md(cp, ps.MdProcessParams(
+            await RMQProducerHelper.produce_markdown(cp, ps.MarkdownProcessParams(
                 markdown_path=data.markdown_path,
                 file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
-                is_ocr_part=data.is_ocr_part,
                 max_chunk_size_mb=data.max_chunk_size_mb,
                 tokenizer=data.tokenizer,
-                cache_dir=data.cache_dir
+                cache_dir=data.cache_dir,
+
+                # OCR
+                is_ocr_part=data.is_ocr_part,
+                ocr_params=data.ocr_params
             ))
 
     @staticmethod
@@ -583,7 +575,31 @@ class RMQProcessorHelper:
                     "timeout": data.timeout
                 }
                 processor = OcrProcessorFactory.get_processor(ocr_enum.DATALAB, data.file_path, data.filename, data.api_key, **kwargs)
-                md_path, next_rag_start_index, is_last = await processor.process()
+                md_path, next_page, is_last = await processor.process()
+
+                if not is_last:
+                    md_processor = ps.MarkdownProcessParams(
+                        markdown_path=str(md_path),
+                        filename=md_path.name,
+                        file_chunk_number=0,
+                        rag_chunk_start_index=data.rag_chunk_start_index,
+                        is_last=is_last,
+                        is_ocr_part=True,
+                        ocr_params=ps.ImageProcessParams(
+                            file_path=data.file_path,
+                            filename=data.filename,
+                            processor=ocr_processor_type,
+                            api_key=data.api_key,
+                            start_page=next_page,  # Increment start page
+                            file_chunk_number=0,
+                            rag_chunk_start_index=data.rag_chunk_start_index,
+                            is_last_ocr_batch=is_last,
+                            max_pages_per_chunk=data.max_pages_per_chunk,
+                            max_chunk_size_mb=data.max_chunk_size_mb,
+                            timeout=data.timeout
+                        )
+                    )
+                    await RMQProducerHelper.produce_markdown(cp, md_processor)
 
             case "llamaparse":
                 kwargs = {
@@ -596,7 +612,34 @@ class RMQProcessorHelper:
                     "poll_interval": data.llama_poll_interval
                 }
                 processor = OcrProcessorFactory.get_processor(ocr_enum.LAMMAPARSE, data.file_path, data.filename, data.api_key, **kwargs)
-                md_path, next_rag_start_index, is_last = await processor.process()
+                md_path, next_page, is_last = await processor.process()
+
+                if not is_last:
+                    md_processor = ps.MarkdownProcessParams(
+                        markdown_path=str(md_path),
+                        filename=md_path.name,
+                        file_chunk_number=0,
+                        rag_chunk_start_index=data.rag_chunk_start_index,
+                        is_last=is_last,
+                        is_ocr_part=True,
+                        ocr_params=ps.ImageProcessParams(
+                            file_path=data.file_path,
+                            filename=data.filename,
+                            processor=ocr_processor_type,
+                            api_key=data.api_key,
+                            start_page=next_page,  # Increment start page
+                            file_chunk_number=0,
+                            rag_chunk_start_index=data.rag_chunk_start_index,
+                            is_last_ocr_batch=is_last,
+                            max_pages_per_chunk=data.max_pages_per_chunk,
+                            max_chunk_size_mb=data.max_chunk_size_mb,
+                            timeout=data.timeout,
+                            llama_tier=data.llama_tier,
+                            llama_version=data.llama_version,
+                            llama_poll_interval=data.llama_poll_interval
+                        )
+                    )
+                    await RMQProducerHelper.produce_markdown(cp, md_processor)
 
             case "mistral":
                 kwargs = {
@@ -606,7 +649,31 @@ class RMQProcessorHelper:
                     "timeout": data.timeout
                 }
                 processor = OcrProcessorFactory.get_processor(ocr_enum.MISTRAL, data.file_path, data.filename, data.api_key, **kwargs)
-                md_path, next_rag_start_index, is_last = await processor.process()
+                md_path, next_page, is_last = await processor.process()
+
+                if not is_last:
+                    md_processor = ps.MarkdownProcessParams(
+                        markdown_path=str(md_path),
+                        filename=md_path.name,
+                        file_chunk_number=0,
+                        rag_chunk_start_index=data.rag_chunk_start_index,
+                        is_last=is_last,
+                        is_ocr_part=True,
+                        ocr_params=ps.ImageProcessParams(
+                            file_path=data.file_path,
+                            filename=data.filename,
+                            processor=ocr_processor_type,
+                            api_key=data.api_key,
+                            start_page=next_page,  # Increment start page
+                            file_chunk_number=0,
+                            rag_chunk_start_index=data.rag_chunk_start_index,
+                            is_last_ocr_batch=is_last,
+                            max_pages_per_chunk=data.max_pages_per_chunk,
+                            max_chunk_size_mb=data.max_chunk_size_mb,
+                            timeout=data.timeout
+                        )
+                    )
+                    await RMQProducerHelper.produce_markdown(cp, md_processor)
             case _:
                 raise ValueError(f"Invalid OCR processor type: {ocr_processor_type}")
 

@@ -53,18 +53,6 @@ class TxtProcessParams(BaseModel):
     tail_carry_chars: Optional[int] = Field(default=500, description="The number of characters to carry over to the next chunk.")
 
 
-class MdProcessParams(BaseModel):
-    markdown_path: str = Field(..., description="The path to the document file.")
-    filename: str = Field(..., description="The name of the document file.")
-    file_chunk_number: int = Field(..., description="The chunk number of the file.")
-    rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
-    is_last: bool = Field(..., description="True if this is the last chunk.")
-    is_ocr_part: bool = Field(default=False, description="True if this is the last chunk.")
-    max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
-    tokenizer: Optional[str] = Field(default="gpt2", description="The tokenizer to use.")
-    cache_dir: Optional[str] = Field(default=None, description="The directory to cache chunks in.")
-
-
 class CodeProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
     filename: str = Field(..., description="The name of the document file.")
@@ -197,7 +185,7 @@ class ImageProcessParams(BaseModel):
     start_page: int = Field(..., description="The start page of the document file.")
     max_pages_per_chunk: int = Field(..., description="The maximum number of pages per chunk.")
     is_last_ocr_batch: bool = Field(..., description="True if this is the last chunk.")
-    is_last_md_chunk: bool = Field(..., description="True if this is the last chunk.")
+    rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     timeout: float = Field(default=60 * 10, description="The timeout for the OCR service.")
     md_path: str | None = Field(default=None, description="The path to the markdown file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
@@ -260,6 +248,19 @@ class CommonParams(BaseModel):
     file_type: FileType = Field(..., description="The file type of the document.")
 
 
+class MarkdownProcessParams(BaseModel):
+    markdown_path: str = Field(..., description="The path to the document file.")
+    filename: str = Field(..., description="The name of the document file.")
+    file_chunk_number: int = Field(..., description="The chunk number of the file.")
+    rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
+    is_last: bool = Field(..., description="True if this is the last chunk.")
+    is_ocr_part: bool = Field(default=False, description="True if this is the last chunk.")
+    ocr_params: Optional[ImageProcessParams] = Field(default=None, description="The OCR params.")
+    max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
+    tokenizer: Optional[str] = Field(default="gpt2", description="The tokenizer to use.")
+    cache_dir: Optional[str] = Field(default=None, description="The directory to cache chunks in.")
+
+
 class ProcessParams(CommonParams):
     filename: str = Field(..., description="The filename of the document.")
 
@@ -268,7 +269,7 @@ class ProcessParams(CommonParams):
     json_params: Optional[JsonProcessParams] = None
     xml_params: Optional[XmlProcessParams] = None
     pdf_params: Optional[PdfProcessParams] = None
-    md_params: Optional[MdProcessParams] = None
+    md_params: Optional[MarkdownProcessParams] = None
     yaml_params: Optional[YamlProcessParams] = None
     docx_params: Optional[DocxProcessParams] = None
     excel_params: Optional[ExcelProcessParams] = None
