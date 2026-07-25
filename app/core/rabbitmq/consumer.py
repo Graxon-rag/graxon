@@ -8,6 +8,7 @@ from app.constants.document import DocumentStatus
 from aio_pika.abc import AbstractIncomingMessage
 from .producer import GMQDocumentProducer
 from ..workflow.document_workflow import DocumentWorkflow
+from ..helpers.rmq import RMQHelper
 import uuid
 
 
@@ -100,36 +101,79 @@ class GMQDocumentConsumer:
 
     async def _process_document(self, data: ps.ProcessParams):
         file_type = data.file_type
+        cp: ps.CommonParams = ps.CommonParams(
+            org_id=data.org_id,
+            project_id=data.project_id,
+            doc_id=data.doc_id,
+            file_type=file_type,
+        )
+
+        logger.info({"message": "Processing document", "file_type": file_type, "common_params": cp.model_dump(mode="json", exclude_none=True)})
         match file_type:
+            # Audio
             case ps.FileType.AUDIO:
-                pass
+                if data.audio_params is None:
+                    raise ValueError("Audio params is None")
+                await RMQHelper.handle_audio(cp, data.audio_params)
+
+            # Image
             case ps.FileType.IMAGE:
-                pass
+                if data.image_params is None:
+                    raise ValueError("Image params is None")
+                await RMQHelper.handle_image(cp, data.image_params)
+
+            # Video
             case ps.FileType.VIDEO:
                 pass
+
+            # Text
             case ps.FileType.CODE:
-                pass
+                if data.code_params is None:
+                    raise ValueError("Code params is None")
+                await RMQHelper.handle_code(cp, data.code_params)
             case ps.FileType.TEXT:
-                pass
+                if data.txt_params is None:
+                    raise ValueError("Text params is None")
+                await RMQHelper.handle_txt(cp, data.txt_params)
             case ps.FileType.JSON:
-                pass
+                if data.json_params is None:
+                    raise ValueError("JSON params is None")
+                await RMQHelper.handle_json(cp, data.json_params)
             case ps.FileType.PDF:
-                pass
+                if data.pdf_params is None:
+                    raise ValueError("PDF params is None")
+                await RMQHelper.handle_pdf(cp, data.pdf_params)
             case ps.FileType.MARKDOWN:
-                pass
+                if data.md_params is None:
+                    raise ValueError("Markdown params is None")
+                await RMQHelper.handle_md(cp, data.md_params)
             case ps.FileType.DOC:
-                pass
+                if data.docx_params is None:
+                    raise ValueError("Docx params is None")
+                await RMQHelper.handle_docx(cp, data.docx_params)
             case ps.FileType.PPT:
-                pass
+                if data.ppt_params is None:
+                    raise ValueError("PPT params is None")
+                await RMQHelper.handle_ppt(cp, data.ppt_params)
             case ps.FileType.EXCEL:
-                pass
+                if data.excel_params is None:
+                    raise ValueError("Excel params is None")
+                await RMQHelper.handle_excel(cp, data.excel_params)
             case ps.FileType.HTML:
-                pass
+                if data.html_params is None:
+                    raise ValueError("HTML params is None")
+                await RMQHelper.handle_html(cp, data.html_params)
             case ps.FileType.CSV:
-                pass
+                if data.csv_params is None:
+                    raise ValueError("CSV params is None")
+                await RMQHelper.handle_csv(cp, data.csv_params)
             case ps.FileType.XML:
-                pass
+                if data.xml_params is None:
+                    raise ValueError("XML params is None")
+                await RMQHelper.handle_xml(cp, data.xml_params)
             case ps.FileType.YAML:
-                pass
+                if data.yaml_params is None:
+                    raise ValueError("YAML params is None")
+                await RMQHelper.handle_yaml(cp, data.yaml_params)
             case _:
                 raise ValueError(f"Unsupported file type: {file_type.value.lower()}")

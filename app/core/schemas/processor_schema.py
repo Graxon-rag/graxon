@@ -246,13 +246,15 @@ class AudioProcessParams(BaseModel):
     kwargs: Optional[Dict[str, Any]] = Field(default={}, description="The kwargs for the OCR service.")
 
 
-class ProcessParams(BaseModel):
+class CommonParams(BaseModel):
     org_id: str = Field(..., description="The organization id.")
     project_id: uuid.UUID = Field(..., description="The project uuid.")
     doc_id: uuid.UUID = Field(..., description="The document id.")
-    filename: str = Field(..., description="The filename of the document.")
-
     file_type: FileType = Field(..., description="The file type of the document.")
+
+
+class ProcessParams(CommonParams):
+    filename: str = Field(..., description="The filename of the document.")
 
     # Text
     txt_params: Optional[TxtProcessParams] = None
@@ -266,6 +268,7 @@ class ProcessParams(BaseModel):
     code_params: Optional[CodeProcessParams] = None
     ppt_params: Optional[PptxProcessParams] = None
     html_params: Optional[HtmlProcessParams] = None
+    csv_params: Optional[CSVProcessParams] = None
 
     # Image
     image_params: Optional[ImageProcessParams] = None
