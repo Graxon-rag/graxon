@@ -195,7 +195,7 @@ class RMQHelper:
         if not is_last:
             await RMQProducerHelper.produce_txt(cp, ps.TxtProcessParams(
                 file_path=data.file_path,
-                file_chunk_number=data.file_chunk_number,
+                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
@@ -230,7 +230,7 @@ class RMQHelper:
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
-                start_object=data.start_object + (data.objects_per_buffer or 500),
+                start_object=data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
                 max_chunk_size_mb=data.max_chunk_size_mb,
                 objects_per_buffer=data.objects_per_buffer,
                 group_size=data.group_size,
@@ -262,7 +262,7 @@ class RMQHelper:
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
-                start_object=data.start_object + (data.objects_per_buffer or 500),
+                start_object=data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
                 max_chunk_size_mb=data.max_chunk_size_mb,
                 objects_per_buffer=data.objects_per_buffer,
                 group_size=data.group_size,
@@ -290,7 +290,7 @@ class RMQHelper:
         if not is_last:
             await RMQProducerHelper.produce_pdf(cp, ps.PdfProcessParams(
                 file_path=data.file_path,
-                file_chunk_number=data.file_chunk_number,
+                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
@@ -321,7 +321,7 @@ class RMQHelper:
         if not is_last:
             await RMQProducerHelper.produce_md(cp, ps.MdProcessParams(
                 markdown_path=data.markdown_path,
-                file_chunk_number=data.file_chunk_number,
+                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
@@ -357,7 +357,7 @@ class RMQHelper:
                 filename=data.filename,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
-                start_object=data.start_object + (data.objects_per_buffer or 500),
+                start_object=data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
                 max_chunk_size_mb=data.max_chunk_size_mb,
                 objects_per_buffer=data.objects_per_buffer,
                 group_size=data.group_size,
@@ -388,7 +388,7 @@ class RMQHelper:
             await RMQProducerHelper.produce_docx(cp, ps.DocxProcessParams(
                 file_path=data.file_path,
                 filename=data.filename,
-                file_chunk_number=data.file_chunk_number,
+                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
                 pages_per_batch=data.pages_per_batch,
@@ -422,7 +422,7 @@ class RMQHelper:
             await RMQProducerHelper.produce_excel(cp, ps.ExcelProcessParams(
                 file_path=data.file_path,
                 filename=data.filename,
-                start_row=data.start_row,
+                start_row=(data.start_row + data.rows_per_io_buffer),  # adding rows_per_io_buffer
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
                 rows_per_io_buffer=data.rows_per_io_buffer,
@@ -457,7 +457,7 @@ class RMQHelper:
             await RMQProducerHelper.produce_code(cp, ps.CodeProcessParams(
                 file_path=data.file_path,
                 filename=data.filename,
-                file_chunk_number=data.file_chunk_number,
+                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number,
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
                 language=data.language,
@@ -490,7 +490,7 @@ class RMQHelper:
             await RMQProducerHelper.produce_ppt(cp, ps.PptxProcessParams(
                 file_path=data.file_path,
                 filename=data.filename,
-                file_chunk_number=data.file_chunk_number,
+                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
                 pages_per_batch=data.pages_per_batch,
@@ -523,7 +523,7 @@ class RMQHelper:
             await RMQProducerHelper.produce_html(cp, ps.HtmlProcessParams(
                 file_path=data.file_path,
                 filename=data.filename,
-                start_unit=data.start_unit,
+                start_unit=(data.start_unit + (data.units_per_buffer or 500)),  # adding units_per_buffer to start_unit
                 rag_chunk_start_index=next_rag_start_index,
                 is_last=is_last,
                 rows_per_io_buffer=data.rows_per_io_buffer,
@@ -535,7 +535,36 @@ class RMQHelper:
 
     @staticmethod
     async def handle_csv(cp: ps.CommonParams, data: ps.CSVProcessParams):
-        pass
+        logger.info({"message": "Processing csv", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "start_row": data.start_row,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "rows_per_io_buffer": data.rows_per_io_buffer,
+            "max_chunk_size_mb": data.max_chunk_size_mb,
+            "group_size": data.group_size,
+            "max_group_size": data.max_group_size
+        }
+
+        processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="csv", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_csv(cp, ps.CSVProcessParams(
+                file_path=data.file_path,
+                filename=data.filename,
+                start_row=(data.start_row + data.rows_per_io_buffer),  # adding rows_per_io_buffer
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                rows_per_io_buffer=data.rows_per_io_buffer,
+                max_chunk_size_mb=data.max_chunk_size_mb,
+                group_size=data.group_size,
+                max_group_size=data.max_group_size
+            ))
 
     @staticmethod
     async def handle_image(cp: ps.CommonParams, data: ps.ImageProcessParams):

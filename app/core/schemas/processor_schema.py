@@ -121,7 +121,7 @@ class HtmlProcessParams(BaseModel):
     start_unit: int = Field(..., description="The start unit of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    units_per_buffer: Optional[str | int] = Field(default=0, description="The number of units to read from disk at once.")
+    units_per_buffer: Optional[int] = Field(default=0, description="The number of units to read from disk at once.")
     rows_per_io_buffer: int = Field(..., description="The number of rows to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
     group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
