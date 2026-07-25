@@ -27,7 +27,7 @@ class FileType(str, Enum):
     MARKDOWN = "markdown"
     DOC = "doc"
     PPT = "ppt"
-    EXCEl = "excel"
+    EXCEL = "excel"
     HTML = "html"
     CSV = "csv"
     XML = "xml"

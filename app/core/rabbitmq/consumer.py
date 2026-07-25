@@ -99,4 +99,37 @@ class GMQDocumentConsumer:
             return 0
 
     async def _process_document(self, data: ps.ProcessParams):
-        pass
+        file_type = data.file_type
+        match file_type:
+            case ps.FileType.AUDIO:
+                pass
+            case ps.FileType.IMAGE:
+                pass
+            case ps.FileType.VIDEO:
+                pass
+            case ps.FileType.CODE:
+                pass
+            case ps.FileType.TEXT:
+                pass
+            case ps.FileType.JSON:
+                pass
+            case ps.FileType.PDF:
+                pass
+            case ps.FileType.MARKDOWN:
+                pass
+            case ps.FileType.DOC:
+                pass
+            case ps.FileType.PPT:
+                pass
+            case ps.FileType.EXCEL:
+                pass
+            case ps.FileType.HTML:
+                pass
+            case ps.FileType.CSV:
+                pass
+            case ps.FileType.XML:
+                pass
+            case ps.FileType.YAML:
+                pass
+            case _:
+                raise ValueError(f"Unsupported file type: {file_type.value.lower()}")
