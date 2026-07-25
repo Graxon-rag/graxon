@@ -209,10 +209,11 @@ class ImageProcessParams(BaseModel):
 class AudioProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
     filename: str = Field(..., description="The name of the document file.")
-    processor: OCRProcessor = Field(..., description="The OCR service to use.")
+    processor: AudioProcessor = Field(..., description="The OCR service to use.")
     api_key: str = Field(..., description="The API key for the OCR service.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
+    is_last: bool = Field(..., description="True if this is the last chunk.")
 
     segment_duration_min: Optional[float] = Field(default=10, description="The duration of the audio segment in minutes.")
 
@@ -242,7 +243,7 @@ class AudioProcessParams(BaseModel):
     # Groq
     groq_model: Optional[str] = Field(default="whisper-large-v3", description="The model to use for transcription.")
 
-    timeout: Optional[int] = Field(default=60 * 10, description="The timeout for the OCR service.")
+    timeout: float = Field(default=60 * 10, description="The timeout for the OCR service.")
     kwargs: Optional[Dict[str, Any]] = Field(default={}, description="The kwargs for the OCR service.")
 
 
