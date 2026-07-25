@@ -55,7 +55,7 @@ class TxtProcessParams(BaseModel):
 
 class MdProcessParams(BaseModel):
     markdown_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -66,7 +66,7 @@ class MdProcessParams(BaseModel):
 
 class CodeProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -79,7 +79,7 @@ class CodeProcessParams(BaseModel):
 
 class CSVProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     start_row: int = Field(..., description="The start row of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -91,7 +91,7 @@ class CSVProcessParams(BaseModel):
 
 class DocxProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -104,7 +104,7 @@ class DocxProcessParams(BaseModel):
 
 class ExcelProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     start_row: int = Field(..., description="The start row of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -117,7 +117,7 @@ class ExcelProcessParams(BaseModel):
 
 class HtmlProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     start_unit: int = Field(..., description="The start unit of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -142,7 +142,7 @@ class JsonProcessParams(BaseModel):
 
 class PdfProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -154,7 +154,7 @@ class PdfProcessParams(BaseModel):
 
 class PptxProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -165,7 +165,7 @@ class PptxProcessParams(BaseModel):
 
 class XmlProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     start_object: int = Field(..., description="The start object of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -178,7 +178,7 @@ class XmlProcessParams(BaseModel):
 
 class YamlProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     start_object: int = Field(..., description="The start object of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
@@ -191,7 +191,7 @@ class YamlProcessParams(BaseModel):
 
 class ImageProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     processor: OCRProcessor = Field(..., description="The OCR service to use.")
     api_key: str = Field(..., description="The API key for the OCR service.")
     start_page: int = Field(..., description="The start page of the document file.")
@@ -208,7 +208,7 @@ class ImageProcessParams(BaseModel):
 
 class AudioProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
-    filename: float = Field(..., description="The size of the document file.")
+    filename: str = Field(..., description="The name of the document file.")
     processor: OCRProcessor = Field(..., description="The OCR service to use.")
     api_key: str = Field(..., description="The API key for the OCR service.")
     file_chunk_number: int = Field(..., description="The chunk number of the file.")

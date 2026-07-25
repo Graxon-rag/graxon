@@ -9,6 +9,7 @@ from .yaml_processor import YAMLProcessor
 from .pptx_processor import PPTXProcessor
 from .docx_processor import DOCXProcessor
 from .xml_processor import XMLProcessor
+from .pdf_processor import PDFProcessor
 from .csv_processor import CSVProcessor
 from .processor import Processor
 from app.config.env import Env
@@ -25,6 +26,9 @@ class ProcessorFactory:
 
         if safe_file_type in ("text", "txt") or lower_path.endswith(".txt"):
             return ProcessorFactory._text_file_processor(file_path, file_type, filename, **kwargs)
+
+        if safe_file_type in ("pdf") or lower_path.endswith(".pdf"):
+            return ProcessorFactory._pdf_file_processor(file_path, file_type, filename, **kwargs)
 
         elif safe_file_type in ("markdown", "md") or lower_path.endswith(".md"):
             return ProcessorFactory._markdown_file_processor(file_path, file_type, filename, **kwargs)
@@ -61,6 +65,34 @@ class ProcessorFactory:
                 raise ValueError(f"Unsupported code file type: {file_type}")
 
         raise ValueError(f"Unsupported file type: {file_type}")
+
+    @staticmethod
+    def _pdf_file_processor(file_path: str, file_type: str, filename: str, **kwargs: Any) -> Processor:
+        # file_path: str,
+        # filename: str,
+        # chunk_number: int,
+        # rag_chunk_start_index: int,
+        # pages_per_batch: int = 20,
+        # rag_chunk_size: int = Env.CHUNK_SIZE,
+        # rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
+        # # carry last N chars of previous batch to patch page boundary cuts
+        # tail_carry_chars: int = 500,
+
+        chunk_number = kwargs.get("chunk_number")
+        if not chunk_number and chunk_number != 0:
+            raise ValueError("chunk_number is required for pdf files")
+
+        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        if not rag_chunk_start_index and rag_chunk_start_index != 0:
+            raise ValueError("rag_chunk_start_index is required for pdf files")
+
+        return PDFProcessor(
+            file_path=file_path,
+            filename=filename,
+            chunk_number=chunk_number,
+            rag_chunk_start_index=rag_chunk_start_index,
+            **kwargs
+        )
 
     @staticmethod
     def _json_file_processor(file_path: str, file_type: str, filename: str, **kwargs: Any) -> Processor:
