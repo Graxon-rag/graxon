@@ -211,17 +211,12 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_txt(cp, ps.TxtProcessParams(
-                file_path=data.file_path,
-                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                filename=data.filename,
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                rag_chunk_size_mb=data.rag_chunk_size_mb,
-                rag_chunk_overlap=data.rag_chunk_overlap,
-                tail_carry_chars=data.tail_carry_chars
-            ))
+            await RMQProducerHelper.produce_txt(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last,
+
+            }))
 
     @staticmethod
     async def handle_json(cp: ps.CommonParams, data: ps.JsonProcessParams):
@@ -243,17 +238,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_json(cp, ps.JsonProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                start_object=data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                objects_per_buffer=data.objects_per_buffer,
-                group_size=data.group_size,
-                max_group_size=data.max_group_size
-            ))
+            await RMQProducerHelper.produce_json(cp, data.model_copy(update={
+                "start_object": data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_xml(cp: ps.CommonParams, data: ps.XmlProcessParams):
@@ -275,17 +264,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_xml(cp, ps.XmlProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                start_object=data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                objects_per_buffer=data.objects_per_buffer,
-                group_size=data.group_size,
-                max_group_size=data.max_group_size
-            ))
+            await RMQProducerHelper.produce_xml(cp, data.model_copy(update={
+                "start_object": data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_pdf(cp: ps.CommonParams, data: ps.PdfProcessParams):
@@ -306,17 +289,11 @@ class RMQProcessorHelper:
 
         # TODO: Process
         if not is_last:
-            await RMQProducerHelper.produce_pdf(cp, ps.PdfProcessParams(
-                file_path=data.file_path,
-                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                filename=data.filename,
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                pages_per_batch=data.pages_per_batch,
-                rag_chunk_size=data.rag_chunk_size,
-                rag_chunk_overlap=data.rag_chunk_overlap,
-                tail_carry_chars=data.tail_carry_chars
-            ))
+            await RMQProducerHelper.produce_pdf(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_markdown(cp: ps.CommonParams, data: ps.MarkdownProcessParams):
@@ -401,17 +378,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_yaml(cp, ps.YamlProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                start_object=data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                objects_per_buffer=data.objects_per_buffer,
-                group_size=data.group_size,
-                max_group_size=data.max_group_size
-            ))
+            await RMQProducerHelper.produce_yaml(cp, data.model_copy(update={
+                "start_object": data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_docx(cp: ps.CommonParams, data: ps.DocxProcessParams):
@@ -434,17 +405,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_docx(cp, ps.DocxProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                pages_per_batch=data.pages_per_batch,
-                rag_chunk_size=data.rag_chunk_size,
-                rag_chunk_overlap=data.rag_chunk_overlap,
-                tail_carry_chars=data.tail_carry_chars
-            ))
+            await RMQProducerHelper.produce_docx(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_excel(cp: ps.CommonParams, data: ps.ExcelProcessParams):
@@ -468,18 +433,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_excel(cp, ps.ExcelProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                start_row=(data.start_row + data.rows_per_io_buffer),  # adding rows_per_io_buffer
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                rows_per_io_buffer=data.rows_per_io_buffer,
-                sheet=data.sheet,
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                group_size=data.group_size,
-                max_group_size=data.max_group_size
-            ))
+            await RMQProducerHelper.produce_excel(cp, data.model_copy(update={
+                "start_row": data.start_row + data.rows_per_io_buffer,  # adding rows_per_io_buffer
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_code(cp: ps.CommonParams, data: ps.CodeProcessParams):
@@ -503,18 +461,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_code(cp, ps.CodeProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number,
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                language=data.language,
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                rag_chunk_size=data.rag_chunk_size,
-                rag_chunk_overlap=data.rag_chunk_overlap,
-                tail_carry_chars=data.tail_carry_chars
-            ))
+            await RMQProducerHelper.produce_code(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_ppt(cp: ps.CommonParams, data: ps.PptxProcessParams):
@@ -536,16 +487,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_ppt(cp, ps.PptxProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                pages_per_batch=data.pages_per_batch,
-                rag_chunk_size=data.rag_chunk_size,
-                rag_chunk_overlap=data.rag_chunk_overlap
-            ))
+            await RMQProducerHelper.produce_ppt(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_html(cp: ps.CommonParams, data: ps.HtmlProcessParams):
@@ -569,18 +515,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_html(cp, ps.HtmlProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                start_unit=(data.start_unit + (data.units_per_buffer or 500)),  # adding units_per_buffer to start_unit
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                rows_per_io_buffer=data.rows_per_io_buffer,
-                units_per_buffer=data.units_per_buffer,
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                group_size=data.group_size,
-                max_group_size=data.max_group_size
-            ))
+            await RMQProducerHelper.produce_html(cp, data.model_copy(update={
+                "start_unit": data.start_unit + (data.units_per_buffer or 500),  # adding units_per_buffer to start_unit
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_csv(cp: ps.CommonParams, data: ps.CSVProcessParams):
@@ -603,17 +542,11 @@ class RMQProcessorHelper:
         # TODO: Process
 
         if not is_last:
-            await RMQProducerHelper.produce_csv(cp, ps.CSVProcessParams(
-                file_path=data.file_path,
-                filename=data.filename,
-                start_row=(data.start_row + data.rows_per_io_buffer),  # adding rows_per_io_buffer
-                rag_chunk_start_index=next_rag_start_index,
-                is_last=is_last,
-                rows_per_io_buffer=data.rows_per_io_buffer,
-                max_chunk_size_mb=data.max_chunk_size_mb,
-                group_size=data.group_size,
-                max_group_size=data.max_group_size
-            ))
+            await RMQProducerHelper.produce_csv(cp, data.model_copy(update={
+                "start_row": data.start_row + data.rows_per_io_buffer,  # adding rows_per_io_buffer
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last
+            }))
 
     @staticmethod
     async def handle_image(cp: ps.CommonParams, data: ps.ImageProcessParams):
