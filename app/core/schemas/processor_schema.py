@@ -20,6 +20,27 @@ class AudioProcessor(str, Enum):
     ELEVENLABS = "elevenlabs"
 
 
+class FileType(str, Enum):
+    TEXT = "text"
+    JSON = "json"
+    PDF = "pdf"
+    MARKDOWN = "markdown"
+    DOC = "doc"
+    PPT = "ppt"
+    EXCEl = "excel"
+    HTML = "html"
+    CSV = "csv"
+    XML = "xml"
+    CODE = "code"
+    YAML = "yaml"
+
+    AUDIO = "audio"
+
+    IMAGE = "image"
+
+    VIDEO = "video"
+
+
 class TxtProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
     filename: str = Field(..., description="The name of the document file.")
@@ -223,3 +244,31 @@ class AudioProcessParams(BaseModel):
 
     timeout: Optional[int] = Field(default=60 * 10, description="The timeout for the OCR service.")
     kwargs: Optional[Dict[str, Any]] = Field(default={}, description="The kwargs for the OCR service.")
+
+
+class ProcessParams(BaseModel):
+    org_id: uuid.UUID = Field(..., description="The organization id.")
+    project_uuid: uuid.UUID = Field(..., description="The project uuid.")
+    doc_id: uuid.UUID = Field(..., description="The document id.")
+    filename: str = Field(..., description="The filename of the document.")
+
+    file_type: FileType = Field(..., description="The file type of the document.")
+
+    # Text
+    txt_params: Optional[TxtProcessParams] = None
+    json_params: Optional[JsonProcessParams] = None
+    xml_params: Optional[XmlProcessParams] = None
+    pdf_params: Optional[PdfProcessParams] = None
+    md_params: Optional[MdProcessParams] = None
+    yaml_params: Optional[YamlProcessParams] = None
+    docx_params: Optional[DocxProcessParams] = None
+    excel_params: Optional[ExcelProcessParams] = None
+    code_params: Optional[CodeProcessParams] = None
+    ppt_params: Optional[PptxProcessParams] = None
+    html_params: Optional[HtmlProcessParams] = None
+
+    # Image
+    image_params: Optional[ImageProcessParams] = None
+
+    # Audio
+    audio_params: Optional[AudioProcessParams] = None
