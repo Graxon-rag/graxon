@@ -7,6 +7,33 @@ from ..schemas import processor_schema as ps
 from app.utils.logger import logger
 
 
+_AUDIO_PROVIDERS = {
+    "assemblyai": (AudioProviderEnum.ASSEMBLYAI, {
+        "speaker_labels": "speaker_labels",
+        "language_detection": "language_detection",
+    }),
+    "deepgram": (AudioProviderEnum.DEEPGRAM, {
+        "model": "deepgram_model",
+        "diarize": "diarize",
+        "smart_format": "smart_format",
+        "detect_language": "detect_language",
+    }),
+    "elevenlabs": (AudioProviderEnum.ELEVENLABS, {
+        "base_url": "base_url",
+        "model_id": "ele_model_id",
+        "tag_audio_events": "tag_audio_events",
+        "diarize": "diarize",
+    }),
+    "gladia": (AudioProviderEnum.GLADIA, {
+        "model": "gladia_model",
+        "diarization": "diarization",
+    }),
+    "groq": (AudioProviderEnum.GROQ, {
+        "model": "groq_model",
+    }),
+}
+
+
 class RMQProducerHelper:
     @staticmethod
     async def produce_txt(cp: ps.CommonParams, txt: ps.TxtProcessParams):
@@ -673,124 +700,27 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_audio(cp: ps.CommonParams, data: ps.AudioProcessParams):
-        audio_processor_type = data.processor
+        entry = _AUDIO_PROVIDERS.get(data.processor.value)
+        if entry is None:
+            raise Exception(f"Unknown audio processor type: {data.processor}")
 
-        match audio_processor_type.value:
-            case "assemblyai":
-                kwargs = {
-                    "speaker_labels": data.speaker_labels,
-                    "language_detection": data.language_detection
-                }
-                processor = AudioProcessorFactory.get_processor(AudioProviderEnum.ASSEMBLYAI, data.file_path, data.filename, data.api_key, data.file_chunk_number, data.rag_chunk_start_index, timeout=data.timeout, **kwargs)
-                docs, next_rag_start_index, is_last = await processor.process()
+        provider_enum, param_map = entry
+        kwargs = {kw: getattr(data, attr) for kw, attr in param_map.items()}
 
-                # Todo: Process
-                if not is_last:
-                    await RMQProducerHelper.produce_audio(cp, ps.AudioProcessParams(
-                        file_path=data.file_path,
-                        filename=data.filename,
-                        processor=audio_processor_type,
-                        api_key=data.api_key,
-                        file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                        rag_chunk_start_index=next_rag_start_index,
-                        is_last=is_last,
-                        speaker_labels=data.speaker_labels,
-                        language_detection=data.language_detection
-                    ))
+        processor = AudioProcessorFactory.get_processor(
+            provider_enum, data.file_path, data.filename, data.api_key,
+            data.file_chunk_number, data.rag_chunk_start_index,
+            timeout=data.timeout, **kwargs,
+        )
+        docs, next_rag_start_index, is_last = await processor.process()
 
-            case "deepgram":
-                kwargs = {
-                    "model": data.deepgram_model,
-                    "diarize": data.diarize,
-                    "smart_format": data.smart_format,
-                    "detect_language": data.detect_language
-                }
-                processor = AudioProcessorFactory.get_processor(AudioProviderEnum.DEEPGRAM, data.file_path, data.filename, data.api_key, data.file_chunk_number, data.rag_chunk_start_index, timeout=data.timeout, **kwargs)
-                docs, next_rag_start_index, is_last = await processor.process()
+        # TODO: process docs
 
-                # Todo: Process
-                if not is_last:
-                    await RMQProducerHelper.produce_audio(cp, ps.AudioProcessParams(
-                        file_path=data.file_path,
-                        filename=data.filename,
-                        processor=audio_processor_type,
-                        api_key=data.api_key,
-                        file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                        rag_chunk_start_index=next_rag_start_index,
-                        is_last=is_last,
-                        deepgram_model=data.deepgram_model,
-                        diarize=data.diarize,
-                        smart_format=data.smart_format,
-                        detect_language=data.detect_language
-                    ))
-
-            case "elevenlabs":
-                kwargs = {
-                    "base_url": data.base_url,
-                    "model_id": data.ele_model_id,
-                    "tag_audio_events": data.tag_audio_events,
-                    "diarize": data.diarize
-                }
-                processor = AudioProcessorFactory.get_processor(AudioProviderEnum.ELEVENLABS, data.file_path, data.filename, data.api_key, data.file_chunk_number, data.rag_chunk_start_index, timeout=data.timeout, **kwargs)
-                docs, next_rag_start_index, is_last = await processor.process()
-
-                # Todo: Process
-                if not is_last:
-                    await RMQProducerHelper.produce_audio(cp, ps.AudioProcessParams(
-                        file_path=data.file_path,
-                        filename=data.filename,
-                        processor=audio_processor_type,
-                        api_key=data.api_key,
-                        file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                        rag_chunk_start_index=next_rag_start_index,
-                        is_last=is_last,
-                        base_url=data.base_url,
-                        ele_model_id=data.ele_model_id,
-                        tag_audio_events=data.tag_audio_events,
-                        diarize=data.diarize
-                    ))
-
-            case "gladia":
-                kwargs = {
-                    "model": data.gladia_model,
-                    "diarization": data.diarization
-                }
-                processor = AudioProcessorFactory.get_processor(AudioProviderEnum.GLADIA, data.file_path, data.filename, data.api_key, data.file_chunk_number, data.rag_chunk_start_index, timeout=data.timeout, **kwargs)
-                docs, next_rag_start_index, is_last = await processor.process()
-
-                # Todo: Process
-                if not is_last:
-                    await RMQProducerHelper.produce_audio(cp, ps.AudioProcessParams(
-                        file_path=data.file_path,
-                        filename=data.filename,
-                        processor=audio_processor_type,
-                        api_key=data.api_key,
-                        file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                        rag_chunk_start_index=next_rag_start_index,
-                        is_last=is_last,
-                        gladia_model=data.gladia_model,
-                        diarization=data.diarization
-                    ))
-
-            case "groq":
-                kwargs = {
-                    "model": data.groq_model,
-                }
-                processor = AudioProcessorFactory.get_processor(AudioProviderEnum.GROQ, data.file_path, data.filename, data.api_key, data.file_chunk_number, data.rag_chunk_start_index, timeout=data.timeout, **kwargs)
-                docs, next_rag_start_index, is_last = await processor.process()
-
-                # Todo: Process
-                if not is_last:
-                    await RMQProducerHelper.produce_audio(cp, ps.AudioProcessParams(
-                        file_path=data.file_path,
-                        filename=data.filename,
-                        processor=audio_processor_type,
-                        api_key=data.api_key,
-                        file_chunk_number=(data.file_chunk_number + 1),  # Increment chunk number
-                        rag_chunk_start_index=next_rag_start_index,
-                        is_last=is_last,
-                        groq_model=data.groq_model,
-                    ))
-
-            case _:
-                raise Exception(f"Unknown audio processor type: {audio_processor_type}")
+        if not is_last:
+            # every provider-specific field is already on `data` and unchanged
+            # between chunks -- only these three move.
+            await RMQProducerHelper.produce_audio(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last,
+            }))
