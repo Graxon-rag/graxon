@@ -59,6 +59,7 @@ class MdProcessParams(BaseModel):
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
+    is_ocr_part: bool = Field(default=False, description="True if this is the last chunk.")
     max_chunk_size_mb: Optional[float] = Field(default=30, description="The maximum size of a chunk in MB.")
     tokenizer: Optional[str] = Field(default="gpt2", description="The tokenizer to use.")
     cache_dir: Optional[str] = Field(default=None, description="The directory to cache chunks in.")

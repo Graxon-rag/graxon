@@ -269,7 +269,34 @@ class RMQHelper:
 
     @staticmethod
     async def handle_md(cp: ps.CommonParams, data: ps.MdProcessParams):
-        pass
+        logger.info({"message": "Processing markdown", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.markdown_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "chunk_number": data.file_chunk_number,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "max_chunk_size_mb": data.max_chunk_size_mb,
+            "tokenizer": data.tokenizer,
+            "cache_dir": data.cache_dir
+        }
+        processor = ProcessorFactory().get_processor(file_path=data.markdown_path, file_type="md", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_md(cp, ps.MdProcessParams(
+                markdown_path=data.markdown_path,
+                file_chunk_number=data.file_chunk_number,
+                filename=data.filename,
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                is_ocr_part=data.is_ocr_part,
+                max_chunk_size_mb=data.max_chunk_size_mb,
+                tokenizer=data.tokenizer,
+                cache_dir=data.cache_dir
+            ))
 
     @staticmethod
     async def handle_yaml(cp: ps.CommonParams, data: ps.YamlProcessParams):

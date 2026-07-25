@@ -321,6 +321,8 @@ class ProcessorFactory:
             chunk_number=chunk_number,
             rag_chunk_start_index=rag_chunk_start_index,
             max_chunk_size_mb=kwargs.get("max_chunk_size_mb", 50),
+            tokenizer=kwargs.get("tokenizer", "gpt2"),
+            cache_dir=kwargs.get("cache_dir")
         )
 
     @staticmethod
