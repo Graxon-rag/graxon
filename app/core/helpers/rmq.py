@@ -117,6 +117,17 @@ class RMQProducerHelper:
             ))
 
     @staticmethod
+    async def produce_yaml(cp: ps.CommonParams, yaml: ps.YamlProcessParams):
+        await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
+                        org_id=cp.org_id,
+                        project_id=cp.project_id,
+                        doc_id=cp.doc_id,
+                        file_type=cp.file_type,
+                        filename=yaml.filename,
+                        yaml_params=yaml
+            ))
+
+    @staticmethod
     async def produce_audio(cp: ps.CommonParams, audio: ps.AudioProcessParams):
         await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
                         org_id=cp.org_id,
@@ -300,7 +311,36 @@ class RMQHelper:
 
     @staticmethod
     async def handle_yaml(cp: ps.CommonParams, data: ps.YamlProcessParams):
-        pass
+        logger.info({"message": "Processing yaml", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "start_object": data.start_object,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "max_chunk_size_mb": data.max_chunk_size_mb,
+            "objects_per_buffer": data.objects_per_buffer,
+            "group_size": data.group_size,
+            "max_group_size": data.max_group_size
+        }
+
+        processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="yaml", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_yaml(cp, ps.YamlProcessParams(
+                file_path=data.file_path,
+                filename=data.filename,
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                start_object=data.start_object + (data.objects_per_buffer or 500),
+                max_chunk_size_mb=data.max_chunk_size_mb,
+                objects_per_buffer=data.objects_per_buffer,
+                group_size=data.group_size,
+                max_group_size=data.max_group_size
+            ))
 
     @staticmethod
     async def handle_docx(cp: ps.CommonParams, data: ps.DocxProcessParams):
