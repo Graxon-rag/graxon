@@ -128,6 +128,17 @@ class RMQProducerHelper:
             ))
 
     @staticmethod
+    async def produce_code(cp: ps.CommonParams, code: ps.CodeProcessParams):
+        await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
+                        org_id=cp.org_id,
+                        project_id=cp.project_id,
+                        doc_id=cp.doc_id,
+                        file_type=cp.file_type,
+                        filename=code.filename,
+                        code_params=code
+            ))
+
+    @staticmethod
     async def produce_audio(cp: ps.CommonParams, audio: ps.AudioProcessParams):
         await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
                         org_id=cp.org_id,
@@ -377,7 +388,7 @@ class RMQHelper:
 
     @staticmethod
     async def handle_excel(cp: ps.CommonParams, data: ps.ExcelProcessParams):
-        logger.info({"message": "Processing json", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing excel", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_row": data.start_row,
@@ -412,7 +423,38 @@ class RMQHelper:
 
     @staticmethod
     async def handle_code(cp: ps.CommonParams, data: ps.CodeProcessParams):
-        pass
+        logger.info({"message": "Processing code file", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+
+        kwargs = {
+            "chunk_number": data.file_chunk_number,
+            "rag_chunk_start_index": data.rag_chunk_start_index,
+            "language": data.language,
+            "max_chunk_size_mb": data.max_chunk_size_mb,
+            "rag_chunk_size": data.rag_chunk_size,
+            "rag_chunk_overlap": data.rag_chunk_overlap,
+            "tail_carry_chars": data.tail_carry_chars
+        }
+
+        processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="code", filename=data.filename, **kwargs)
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
+
+        # TODO: Process
+
+        if not is_last:
+            await RMQProducerHelper.produce_code(cp, ps.CodeProcessParams(
+                file_path=data.file_path,
+                filename=data.filename,
+                file_chunk_number=data.file_chunk_number,
+                rag_chunk_start_index=next_rag_start_index,
+                is_last=is_last,
+                language=data.language,
+                max_chunk_size_mb=data.max_chunk_size_mb,
+                rag_chunk_size=data.rag_chunk_size,
+                rag_chunk_overlap=data.rag_chunk_overlap,
+                tail_carry_chars=data.tail_carry_chars
+            ))
 
     @staticmethod
     async def handle_ppt(cp: ps.CommonParams, data: ps.PptxProcessParams):
