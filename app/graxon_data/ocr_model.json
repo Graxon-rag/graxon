@@ -6,7 +6,8 @@
       "provider": "datalab",
       "model_name": "Latest",
       "model_id": "latest",
-      "description": "Latest model for datalab."
+      "description": "Latest model for datalab.",
+      "model_metadata": {}
     }
   ],
   "mistral": [
@@ -16,7 +17,8 @@
       "provider": "mistral",
       "model_name": "OCR 4",
       "model_id": "mistral-ocr-4-0",
-      "description": "OCR 4 model for datalab."
+      "description": "OCR 4 model for datalab.",
+      "model_metadata": {}
     },
     {
       "org_id": "dev",
@@ -24,7 +26,8 @@
       "provider": "mistral",
       "model_name": "OCR 3",
       "model_id": "mistral-ocr-2512",
-      "description": "OCR 3 model for datalab."
+      "description": "OCR 3 model for datalab.",
+      "model_metadata": {}
     },
     {
       "org_id": "dev",
@@ -32,7 +35,8 @@
       "provider": "mistral",
       "model_name": "OCR Latest",
       "model_id": "mistral-ocr-latest",
-      "description": "Latest model for datalab."
+      "description": "Latest model for datalab.",
+      "model_metadata": {}
     }
   ],
   "llamaparse": [
@@ -42,7 +46,8 @@
       "provider": "llamaparse",
       "model_name": "Latest",
       "model_id": "latest",
-      "description": "Latest model for Llamaparse."
+      "description": "Latest model for Llamaparse.",
+      "model_metadata": {}
     }
   ]
 }

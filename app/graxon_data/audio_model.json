@@ -1,0 +1,156 @@
+{
+  "deepgram": [
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-3",
+      "model_id": "nova-3",
+      "description": "Deepgram's latest flagship speech-to-text model with the highest accuracy and multilingual support.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-3 General",
+      "model_id": "nova-3-general",
+      "description": "Optimized for general-purpose speech recognition with Nova-3.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-3 Medical",
+      "model_id": "nova-3-medical",
+      "description": "Optimized for medical conversations with improved healthcare terminology recognition.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-2",
+      "model_id": "nova-2",
+      "description": "High-accuracy speech recognition model for a wide range of transcription tasks.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-2 General",
+      "model_id": "nova-2-general",
+      "description": "General-purpose speech-to-text model based on Nova-2.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-2 Meeting",
+      "model_id": "nova-2-meeting",
+      "description": "Optimized for meeting transcription with multiple speakers and conversational audio.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Deepgram",
+      "provider": "deepgram",
+      "model_name": "Nova-2 Finance",
+      "model_id": "nova-2-finance",
+      "description": "Optimized for financial conversations with improved recognition of finance-specific terminology.",
+      "model_metadata": {}
+    }
+  ],
+  "gladia": [
+    {
+      "org_id": "dev",
+      "name": "Gladia",
+      "provider": "gladia",
+      "model_name": "Solaria-3",
+      "model_id": "solaria-3",
+      "description": "Gladia's latest multilingual speech-to-text model optimized for high accuracy, low latency, speaker diarization, and real-time transcription.",
+      "model_metadata": {}
+    }
+  ],
+  "assemblyai": [
+    {
+      "org_id": "dev",
+      "name": "AssemblyAI",
+      "provider": "assemblyai",
+      "model_name": "Best",
+      "model_id": "best",
+      "description": "The best model optimized for accuracy.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "AssemblyAI",
+      "provider": "assemblyai",
+      "model_name": "Nano",
+      "model_id": "nano",
+      "description": "A lightweight, lower cost model for a wide range of languages.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "AssemblyAI",
+      "provider": "assemblyai",
+      "model_name": "SLAM-1",
+      "model_id": "slam-1",
+      "description": "A Speech Language Model optimized explicitly for speech-to-text tasks.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "AssemblyAI",
+      "provider": "assemblyai",
+      "model_name": "Universal",
+      "model_id": "universal",
+      "description": "The model optimized for accuracy, low latency, ease of use, and multi-language support.",
+      "model_metadata": {}
+    }
+  ],
+  "groq": [
+    {
+      "org_id": "dev",
+      "name": "Groq",
+      "provider": "groq",
+      "model_name": "Whisper Large V3",
+      "model_id": "whisper-large-v3",
+      "description": "OpenAI Whisper Large V3 optimized for high-accuracy multilingual speech recognition and transcription.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Groq",
+      "provider": "groq",
+      "model_name": "Whisper Large V3 Turbo",
+      "model_id": "whisper-large-v3-turbo",
+      "description": "A faster, lower-latency variant of Whisper Large V3 optimized for real-time transcription while maintaining high accuracy.",
+      "model_metadata": {}
+    }
+  ],
+  "elevenlabs": [
+    {
+      "org_id": "dev",
+      "name": "ElevenLabs",
+      "provider": "elevenlabs",
+      "model_name": "Scribe V2",
+      "model_id": "scribe_v2",
+      "description": "The latest ElevenLabs speech-to-text model with improved accuracy, multilingual support, and punctuation.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "ElevenLabs",
+      "provider": "elevenlabs",
+      "model_name": "Scribe V1",
+      "model_id": "scribe_v1",
+      "description": "The original ElevenLabs speech-to-text model providing fast and accurate transcription.",
+      "model_metadata": {}
+    }
+  ]
+}
