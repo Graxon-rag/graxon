@@ -320,7 +320,8 @@ class OCRModel(Base):
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
-    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -340,7 +341,8 @@ class OCRModel(Base):
             "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
-            "model": self.model,
+            "model_name": self.model_name,
+            "model_id": self.model_id,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
@@ -354,7 +356,8 @@ class AudioModel(Base):
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
-    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -374,7 +377,8 @@ class AudioModel(Base):
             "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
-            "model": self.model,
+            "model_name": self.model_name,
+            "model_id": self.model_id,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
@@ -388,7 +392,8 @@ class VideoModel(Base):
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
-    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -408,7 +413,8 @@ class VideoModel(Base):
             "org_id": self.org_id,
             "name": self.name,
             "provider": self.provider,
-            "model": self.model,
+            "model_name": self.model_name,
+            "model_id": self.model_id,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
