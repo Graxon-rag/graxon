@@ -1,9 +1,9 @@
-import uuid
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
 import datetime
+import uuid
 
 
 status_constraint_string = f"status in ('{DocumentStatus.PENDING}', '{DocumentStatus.PROCESSING}', '{DocumentStatus.PROCESSED}', '{DocumentStatus.FAILED}', '{DocumentStatus.QUEUED}')"
@@ -307,6 +307,108 @@ class ReRankerModel(Base):
             "provider": self.provider,
             "model": self.model,
             "size_in_gb": self.size_in_gb,
+            "description": self.description,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class OCRModel(Base):
+    __tablename__ = PGTables.OCR_MODEL_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "org_id": self.org_id,
+            "name": self.name,
+            "provider": self.provider,
+            "model": self.model,
+            "description": self.description,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class AudioModel(Base):
+    __tablename__ = PGTables.AUDIO_MODEL_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "org_id": self.org_id,
+            "name": self.name,
+            "provider": self.provider,
+            "model": self.model,
+            "description": self.description,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class VideoModel(Base):
+    __tablename__ = PGTables.VIDEO_MODEL_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider: Mapped[str] = mapped_column(String(255), nullable=False)
+    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    description: Mapped[str] = mapped_column(String(255), nullable=False)
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "org_id": self.org_id,
+            "name": self.name,
+            "provider": self.provider,
+            "model": self.model,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
