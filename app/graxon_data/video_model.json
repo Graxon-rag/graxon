@@ -1,0 +1,60 @@
+{
+  "twelvelabs": [
+    {
+      "org_id": "dev",
+      "name": "TwelveLabs",
+      "provider": "twelvelabs",
+      "model_name": "Pegasus 1.2",
+      "model_id": "pegasus1.2",
+      "description": "A multimodal AI model for analyzing videos, generating summaries, answering questions, and extracting insights from video content.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "TwelveLabs",
+      "provider": "twelvelabs",
+      "model_name": "Pegasus 1.5",
+      "model_id": "pegasus1.5",
+      "description": "The latest Pegasus model with improved video understanding, higher accuracy, and enhanced multimodal reasoning capabilities.",
+      "model_metadata": {}
+    }
+  ],
+  "gemini": [
+    {
+      "org_id": "dev",
+      "name": "Google Gemini",
+      "provider": "gemini",
+      "model_name": "Gemini 3.5 Flash",
+      "model_id": "gemini-3.5-flash",
+      "description": "A fast multimodal model optimized for video, audio, image, and text understanding with low latency.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Google Gemini",
+      "provider": "gemini",
+      "model_name": "Gemini 3.5 Pro",
+      "model_id": "gemini-3.5-pro",
+      "description": "Google's flagship multimodal model for advanced video analysis, long-context reasoning, and complex understanding tasks.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Google Gemini",
+      "provider": "gemini",
+      "model_name": "Gemini 2.5 Flash",
+      "model_id": "gemini-2.5-flash",
+      "description": "A high-performance multimodal model balancing speed and accuracy for video and audio analysis.",
+      "model_metadata": {}
+    },
+    {
+      "org_id": "dev",
+      "name": "Google Gemini",
+      "provider": "gemini",
+      "model_name": "Gemini 2.5 Pro",
+      "model_id": "gemini-2.5-pro",
+      "description": "Google's most capable multimodal model for deep video understanding, reasoning, and content extraction.",
+      "model_metadata": {}
+    }
+  ]
+}

@@ -17,7 +17,7 @@ class EmbeddingModelProvider(str, Enum):
 class OCRModelProvider(str, Enum):
     DATALAB = "datalab"
     MISTRAL = "mistral"
-    LAMMAPARSE = "llamaparse"
+    LLAMAPARSE = "llamaparse"
 
 
 class AudioModelProvider(str, Enum):
@@ -46,7 +46,7 @@ class ModelProvider(str, Enum):
     # OCR
     DATALAB = "datalab"
     MISTRAL = "mistral"
-    LAMMAPARSE = "llamaparse"
+    LLAMAPARSE = "llamaparse"
 
     # Audio
     DEEPGRAM = "deepgram"
