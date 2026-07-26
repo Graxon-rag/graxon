@@ -1,24 +1,24 @@
-import os
-from fastapi import Depends, FastAPI, HTTPException
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from slowapi import Limiter, _rate_limit_exceeded_handler
-from slowapi.util import get_remote_address
-from slowapi.errors import RateLimitExceeded
-from fastapi.middleware.cors import CORSMiddleware
-from contextlib import asynccontextmanager
-from dotenv import load_dotenv
-from .load_imp_env import load_imp_env
-from fastapi.openapi.docs import get_swagger_ui_html
-from .databases.minio.client import GMinioClient
 from .databases.postgresql.client import GPostgresqlClient
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from fastapi.openapi.docs import get_swagger_ui_html
+from fastapi import Depends, FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from .databases.qdrant.client import GQdrantClient
+from .rabbitmq.consumer import GMQDocumentConsumer
+from .databases.minio.client import GMinioClient
 from .databases.redis.client import GRedisClient
 from .databases.neo4j.client import GNeo4jClient
-from .databases.qdrant.client import GQdrantClient
+from slowapi.errors import RateLimitExceeded
 from .rabbitmq.client import GRabbitMQClient
-from .rabbitmq.consumer import GMQDocumentConsumer
-from .seed import SeedDefaultData
+from slowapi.util import get_remote_address
 from .test_something import test_something
+from contextlib import asynccontextmanager
+from .load_imp_env import load_imp_env
+from .seed import SeedDefaultData
+from dotenv import load_dotenv
 import asyncio
+import os
 
 
 # Routes
@@ -33,6 +33,9 @@ from .routes.project_route import router as project_router
 from .routes.document_route import router as document_router
 from .routes.query_route import router as query_router
 from .routes.graph_route import router as graph_router
+from .routes.audio_model_route import router as audio_model_router
+from .routes.video_model_route import router as video_model_router
+from .routes.ocr_model_route import router as ocr_model_router
 
 
 load_dotenv()
@@ -128,6 +131,9 @@ app.include_router(project_router, prefix="/api/projects")
 app.include_router(document_router, prefix="/api/documents")
 app.include_router(query_router, prefix="/api/query")
 app.include_router(graph_router, prefix="/api/graphs")
+app.include_router(audio_model_router, prefix="/api/audio-models")
+app.include_router(video_model_router, prefix="/api/video-models")
+app.include_router(ocr_model_router, prefix="/api/ocr-models")
 
 
 @app.get("/")
