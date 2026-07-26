@@ -1,4 +1,5 @@
 from app.constants.model_provider import OCRModelProvider
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 import datetime
 import uuid
@@ -23,6 +24,10 @@ class OCRModelCreateSchema(BaseModel):
     description: str = Field(
         description="The description of the OCR model",
     )
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the audio model",
+    )
 
 
 class OCRModelGetSchema(BaseModel):
@@ -46,6 +51,10 @@ class OCRModelGetSchema(BaseModel):
     )
     description: str = Field(
         description="The description of the OCR model",
+    )
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the audio model",
     )
     created_at: datetime.datetime = Field(
         description="The created at of the OCR model",

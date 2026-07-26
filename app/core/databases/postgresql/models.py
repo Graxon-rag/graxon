@@ -1,7 +1,8 @@
-from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint
+from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
+from typing import Dict, Any
 import datetime
 import uuid
 
@@ -322,6 +323,7 @@ class OCRModel(Base):
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
     model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -343,6 +345,7 @@ class OCRModel(Base):
             "provider": self.provider,
             "model_name": self.model_name,
             "model_id": self.model_id,
+            "model_metadata": self.model_metadata,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
@@ -358,6 +361,7 @@ class AudioModel(Base):
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
     model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -379,6 +383,7 @@ class AudioModel(Base):
             "provider": self.provider,
             "model_name": self.model_name,
             "model_id": self.model_id,
+            "model_metadata": self.model_metadata,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at
@@ -394,6 +399,7 @@ class VideoModel(Base):
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
     model_name: Mapped[str] = mapped_column(String(255), nullable=False)
     model_id: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -415,6 +421,7 @@ class VideoModel(Base):
             "provider": self.provider,
             "model_name": self.model_name,
             "model_id": self.model_id,
+            "model_metadata": self.model_metadata,
             "description": self.description,
             "created_at": self.created_at,
             "updated_at": self.updated_at

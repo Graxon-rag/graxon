@@ -35,6 +35,7 @@ class MistralOCRProcessor(OCRProcessor):
 
         self.timeout_ms = timeout * 1000
         self._ocr = MistralOCR(api_key=api_key, timeout=timeout, **kwargs)
+        self.ocr_model = kwargs.get("model", "mistral-ocr-latest")
 
         # Ensure temp dir exists
         MISTRAL_TEMP_DIR.mkdir(parents=True, exist_ok=True)
@@ -186,7 +187,7 @@ class MistralOCRProcessor(OCRProcessor):
         logger.info(f"Running Mistral OCR on {uploaded.id}")
 
         result = await client.ocr.process_async(
-            model="mistral-ocr-latest",
+            model=self.ocr_model or "mistral-ocr-latest",
             timeout_ms=self.timeout_ms,
             document={
                 "type": "file",

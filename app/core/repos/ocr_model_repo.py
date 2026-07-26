@@ -22,6 +22,7 @@ class OCRModelRepo:
                     model_name=data.model_name,
                     model_id=data.model_id,
                     description=data.description,
+                    model_metadata=data.model_metadata or {}
                 )
                 session.add(new_ocr_model)
                 await session.commit()

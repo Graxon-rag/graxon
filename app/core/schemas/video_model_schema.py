@@ -1,4 +1,5 @@
 from app.constants.model_provider import VideoModelProvider
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 import datetime
 import uuid
@@ -26,6 +27,10 @@ class VideoModelGetSchema(BaseModel):
     description: str = Field(
         description="The description of the video model",
     )
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the audio model",
+    )
     created_at: datetime.datetime = Field(
         description="The created at of the video model",
     )
@@ -52,4 +57,8 @@ class VideoModelCreateSchema(BaseModel):
     )
     description: str = Field(
         description="The description of the video model",
+    )
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the audio model",
     )

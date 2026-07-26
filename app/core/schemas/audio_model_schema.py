@@ -1,4 +1,5 @@
 from app.constants.model_provider import AudioModelProvider
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
 import datetime
 import uuid
@@ -22,6 +23,10 @@ class AudioModelGetSchema(BaseModel):
     )
     model_id: str = Field(
         description="The model id of the audio model",
+    )
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the audio model",
     )
     description: str = Field(
         description="The description of the audio model",
@@ -52,4 +57,8 @@ class AudioModelCreateSchema(BaseModel):
     )
     description: str = Field(
         description="The description of the audio model",
+    )
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the audio model",
     )
