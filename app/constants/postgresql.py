@@ -7,6 +7,9 @@ class PGTables:
     LLM_MODEL_TABLE: str = "llm_models"
     EMBEDDING_MODEL_TABLE: str = "embedding_models"
     DOCUMENT_TABLE: str = "documents"
+    OCR_MODEL_TABLE: str = "ocr_models"
+    AUDIO_MODEL_TABLE: str = "audio_models"
+    VIDEO_MODEL_TABLE: str = "video_models"
 
 
 class PGDatabase:
