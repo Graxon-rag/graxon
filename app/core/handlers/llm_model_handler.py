@@ -1,7 +1,7 @@
 from ..schemas.llm_model_schema import LLMModelCreateSchema, LLMModelGetSchema
+from app.constants.model_provider import LLMModelProvider
 from ..services.llm_model_service import LLMModelService
 from app.utils.logger import logger
-from app.constants.model_provider import LLMModelProvider
 import uuid
 
 
