@@ -1,5 +1,5 @@
+from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider, ModelProvider, AudioModelProvider, OCRModelProvider, VideoModelProvider
 from fastapi import APIRouter
-from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider, ModelProvider
 
 router = APIRouter(
     tags=["Model Provider"],
@@ -16,6 +16,21 @@ async def get_llm_model_provider():
 @router.get("/embedding_model")
 async def get_embedding_model_provider():
     return [e.value for e in EmbeddingModelProvider]
+
+
+@router.get("/audio-model")
+async def get_audio_model_provider():
+    return [e.value for e in AudioModelProvider]
+
+
+@router.get("/ocr-model")
+async def get_ocr_model_provider():
+    return [e.value for e in OCRModelProvider]
+
+
+@router.get("/video-model")
+async def get_video_model_provider():
+    return [e.value for e in VideoModelProvider]
 
 
 @router.get("/all")
