@@ -28,17 +28,32 @@ class AudioModelProvider(str, Enum):
     ELEVENLABS = "elevenlabs"
 
 
+class VideoModelProvider(str, Enum):
+    TWELVELABS = "twelvelabs"
+    GEMINI = "gemini"
+
+
 class ModelProvider(str, Enum):
+    # LLM
+    DEEPSEEK = "deepseek"
+
+    # Embedding
     OPENAI = "openai"
     GEMINI = "gemini"
-    DEEPSEEK = "deepseek"
     CLAUDE = "claude"
     VOYAGE = "voyage"
+
+    # OCR
     DATALAB = "datalab"
     MISTRAL = "mistral"
     LAMMAPARSE = "llamaparse"
+
+    # Audio
     DEEPGRAM = "deepgram"
     GLADIA = "gladia"
     ASSEMBLYAI = "assemblyai"
     GROQ = "groq"
     ELEVENLABS = "elevenlabs"
+
+    # Video
+    TWELVELABS = "twelvelabs"
