@@ -1,6 +1,7 @@
 from app.core.schemas.chunk_schema import ChunkPrevNextVecSimilaritySchema, ChunkPrevNextSchema, ChunkVecSimilarity
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowFastEmbedder
 from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
+from .prompts.query_expansion_prompt import QUERY_EXPANSION_PROMPT, QueryExpansionResponse
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
 from app.core.lexical_engine.query import LexicalEngineQuery, QueryAnalysis
 from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional, List
@@ -197,12 +198,42 @@ class DocumentQueryGraph():
             raise e
 
     async def _query_expansion(self, state: DQGState):
+        original_query = (state["query"] or "").strip()
         try:
-            # TODO: implement query expansion
-            pass
+            if not original_query:
+                return {"queries": [original_query]}
+
+            providers = state["providers"]
+            llm_provider = providers.llm
+            llm = WorkflowLLM.llm(
+                provider=llm_provider.provider,
+                api_key=llm_provider.api_key,
+                model=llm_provider.model,
+            ).with_structured_output(QueryExpansionResponse)
+
+            prompt = QUERY_EXPANSION_PROMPT.format(query=original_query)
+            response = await llm.ainvoke(prompt=prompt)
+            expanded_query = self._extract_expanded_query(response)
+
+            if not expanded_query:
+                raise ValueError("Expanded query is empty")
+
+            logger.info({
+                "message": "Query expanded successfully",
+                "original_query_length": len(original_query),
+                "expanded_query_length": len(expanded_query),
+            })
+            return {"queries": [expanded_query]}
         except Exception as e:
             logger.error({"message": "Failed to query expansion", "error": str(e)})
-            raise e
+            return {"queries": [original_query]}
+
+    def _extract_expanded_query(self, response) -> str:
+        if isinstance(response, QueryExpansionResponse):
+            return response.expanded_query.strip()
+        if isinstance(response, dict):
+            return str(response.get("expanded_query") or "").strip()
+        return str(getattr(response, "expanded_query", "") or "").strip()
 
     async def _embedding(self, state: DQGState):
         try:
