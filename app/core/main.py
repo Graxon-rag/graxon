@@ -36,6 +36,7 @@ from .routes.graph_route import router as graph_router
 from .routes.audio_model_route import router as audio_model_router
 from .routes.video_model_route import router as video_model_router
 from .routes.ocr_model_route import router as ocr_model_router
+from .routes.webhook_route import router as webhook_router
 
 
 load_dotenv()
@@ -134,6 +135,7 @@ app.include_router(graph_router, prefix="/api/graphs")
 app.include_router(audio_model_router, prefix="/api/audio-models")
 app.include_router(video_model_router, prefix="/api/video-models")
 app.include_router(ocr_model_router, prefix="/api/ocr-models")
+app.include_router(webhook_router, prefix="/api/webhooks")
 
 
 @app.get("/")

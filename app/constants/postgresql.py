@@ -10,6 +10,7 @@ class PGTables:
     OCR_MODEL_TABLE: str = "ocr_models"
     AUDIO_MODEL_TABLE: str = "audio_models"
     VIDEO_MODEL_TABLE: str = "video_models"
+    WEBHOOK_TABLE: str = "webhooks"
 
 
 class PGDatabase:
