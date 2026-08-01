@@ -1,4 +1,4 @@
-from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider, ModelProvider, AudioModelProvider, OCRModelProvider, VideoModelProvider, RerankerModelProvider
+from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider, ModelProvider, AudioModelProvider, OCRModelProvider, VideoModelProvider, RerankerModelProvider, SparseModelProvider
 from fastapi import APIRouter
 
 router = APIRouter(
@@ -36,6 +36,11 @@ async def get_video_model_provider():
 @router.get("/reranker-model")
 async def get_reranker_model_provider():
     return [e.value for e in RerankerModelProvider]
+
+
+@router.get("/sparse-model")
+async def get_sparse_model_provider():
+    return [e.value for e in SparseModelProvider]
 
 
 @router.get("/all")
