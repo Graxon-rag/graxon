@@ -18,6 +18,7 @@ from .load_imp_env import load_imp_env
 from .seed import SeedDefaultData
 from dotenv import load_dotenv
 import asyncio
+import json
 import os
 
 
@@ -146,3 +147,23 @@ def index():
 @app.post("/test")
 async def test():
     return await test_something()
+
+
+@app.post("/openapi-docs")
+async def make_docs():
+    # Get the OpenAPI schema
+    openapi_schema = app.openapi()
+
+    # Define the target directory and file path
+    docs_dir = "docs"
+    file_path = os.path.join(docs_dir, "openapi.json")
+
+    # Create the directory if it does not exist
+    os.makedirs(docs_dir, exist_ok=True)
+
+    # Save the schema to the file
+    with open(file_path, "w") as f:
+        json.dump(openapi_schema, f, indent=2)
+
+    print(f"{file_path} generated successfully!")
+    return {"message": f"{file_path} generated successfully!"}
