@@ -1,50 +1,338 @@
-[
-  {
-    "org_id": "dev",
-    "name": "MiniLM L6 v2",
-    "provider": "Xenova",
-    "model": "Xenova/ms-marco-MiniLM-L-6-v2",
-    "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks",
-    "size_in_gb": 0.08
-  },
-  {
-    "org_id": "dev",
-    "name": "MiniLM L12 v2",
-    "provider": "Xenova",
-    "model": "Xenova/ms-marco-MiniLM-L-12-v2",
-    "description": "MiniLM-L-12-v2 model optimized for re-ranking tasks",
-    "size_in_gb": 0.12
-  },
-  {
-    "org_id": "dev",
-    "name": "Jina Reranker Tiny EN",
-    "provider": "jinaai",
-    "model": "jinaai/jina-reranker-v1-tiny-en",
-    "description": "Blazing-fast English reranker with ~8K context support",
-    "size_in_gb": 0.13
-  },
-  {
-    "org_id": "dev",
-    "name": "Jina Reranker Turbo EN",
-    "provider": "jinaai",
-    "model": "jinaai/jina-reranker-v1-turbo-en",
-    "description": "High-performance English reranker with ~8K context support",
-    "size_in_gb": 0.15
-  },
-  {
-    "org_id": "dev",
-    "name": "BGE Reranker Base",
-    "provider": "BAAI",
-    "model": "BAAI/bge-reranker-base",
-    "description": "BGE base cross-encoder model for high-quality re-ranking",
-    "size_in_gb": 1.04
-  },
-  {
-    "org_id": "dev",
-    "name": "Jina Reranker v2 Multilingual",
-    "provider": "jinaai",
-    "model": "jinaai/jina-reranker-v2-base-multilingual",
-    "description": "Multilingual cross-encoder reranker supporting multiple languages",
-    "size_in_gb": 1.11
-  }
-]
+{
+  "local": [
+    {
+      "org_id": "dev",
+      "name": "MiniLM L6 v2",
+      "provider_type": "local",
+      "provider": "xenova",
+      "model_name": "Xenova | ms-marco-MiniLM-L-6-v2",
+      "model_id": "Xenova/ms-marco-MiniLM-L-6-v2",
+      "description": "MiniLM-L-6-v2 model optimized for re-ranking tasks",
+      "model_metadata": {},
+      "size_in_gb": 0.08
+    },
+    {
+      "org_id": "dev",
+      "name": "MiniLM L12 v2",
+      "provider_type": "local",
+      "provider": "xenova",
+      "model_name": "Xenova | ms-marco-MiniLM-L-12-v2",
+      "model_id": "Xenova/ms-marco-MiniLM-L-12-v2",
+      "description": "MiniLM-L-12-v2 model optimized for re-ranking tasks",
+      "model_metadata": {},
+      "size_in_gb": 0.12
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker Tiny EN",
+      "provider_type": "local",
+      "provider": "jina",
+      "model_name": "Jinaai | jina-reranker-v1-tiny-en",
+      "model_id": "jinaai/jina-reranker-v1-tiny-en",
+      "description": "Blazing-fast English reranker with ~8K context support",
+      "model_metadata": {},
+      "size_in_gb": 0.13
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker Turbo EN",
+      "provider_type": "local",
+      "provider": "jina",
+      "model_name": "Jinaai | jina-reranker-v1-turbo-en",
+      "model_id": "jinaai/jina-reranker-v1-turbo-en",
+      "description": "High-performance English reranker with ~8K context support",
+      "model_metadata": {},
+      "size_in_gb": 0.15
+    },
+    {
+      "org_id": "dev",
+      "name": "BGE Reranker Base",
+      "provider_type": "local",
+      "provider": "baai",
+      "model_name": "BAAI | bge-reranker-base",
+      "model_id": "BAAI/bge-reranker-base",
+      "description": "BGE base cross-encoder model for high-quality re-ranking",
+      "model_metadata": {},
+      "size_in_gb": 1.04
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker v2 Multilingual",
+      "provider_type": "local",
+      "provider": "jina",
+      "model_name": "Jinaai | jina-reranker-v2-base-multilingual",
+      "model_id": "jinaai/jina-reranker-v2-base-multilingual",
+      "description": "Multilingual cross-encoder reranker supporting multiple languages",
+      "model_metadata": {},
+      "size_in_gb": 1.11
+    }
+  ],
+  "cloud": [
+    {
+      "org_id": "dev",
+      "name": "Rerank V4.0 Pro",
+      "provider_type": "cloud",
+      "provider": "cohere",
+      "model_name": "Cohere | rerank-v4.0-pro",
+      "model_id": "rerank-v4.0-pro",
+      "description": "A multilingual model for re-ranking English and non-English documents and semi-structured data (JSON), optimized for state-of-the-art quality and complex use cases",
+      "model_metadata": {},
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Rerank V4.0 Fast",
+      "provider_type": "cloud",
+      "provider": "cohere",
+      "model_name": "Cohere | rerank-v4.0-fast",
+      "model_id": "rerank-v4.0-fast",
+      "description": "A lightweight multilingual model for re-ranking English and non-English documents and semi-structured data (JSON), optimized for low latency and high throughput",
+      "model_metadata": {},
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Rerank V3.5",
+      "provider_type": "cloud",
+      "provider": "cohere",
+      "model_name": "Cohere | rerank-v3.5",
+      "model_id": "rerank-v3.5",
+      "description": "A multilingual model for re-ranking documents and semi-structured data (JSON), supporting the same languages as embed-multilingual-v3.0 with a 4096-token context length",
+      "model_metadata": {},
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Rerank English V3.0",
+      "provider_type": "cloud",
+      "provider": "cohere",
+      "model_name": "Cohere | rerank-english-v3.0",
+      "model_id": "rerank-english-v3.0",
+      "description": "A model for re-ranking English language documents and semi-structured data (JSON) with a 4096-token context length",
+      "model_metadata": {},
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Rerank Multilingual V3.0",
+      "provider_type": "cloud",
+      "provider": "cohere",
+      "model_name": "Cohere | rerank-multilingual-v3.0",
+      "model_id": "rerank-multilingual-v3.0",
+      "description": "A multilingual model for re-ranking non-English documents and semi-structured data (JSON), supporting the same languages as embed-multilingual-v3.0 with a 4096-token context length",
+      "model_metadata": {},
+      "size_in_gb": null
+    },
+
+    {
+      "org_id": "dev",
+      "name": "Rerank 2.5",
+      "provider_type": "cloud",
+      "provider": "voyage",
+      "model_name": "Voyage | rerank-2.5",
+      "model_id": "rerank-2.5",
+      "description": "A generalist reranker optimized for high quality with instruction-following and multilingual support, with a 32,000-token context length",
+      "model_metadata": {
+        "context_length": 32000
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Rerank 2.5 Lite",
+      "provider_type": "cloud",
+      "provider": "voyage",
+      "model_name": "Voyage | rerank-2.5-lite",
+      "model_id": "rerank-2.5-lite",
+      "description": "A generalist reranker optimized for both latency and quality with instruction-following and multilingual support, with a 32,000-token context length",
+      "model_metadata": {
+        "context_length": 32000
+      },
+      "size_in_gb": null
+    },
+
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker V3.5",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-v3.5",
+      "model_id": "jina-reranker-v3.5",
+      "description": "A domain-ready listwise reranker for multilingual and structured retrieval with 131K-token input context and 0.6B parameters",
+      "model_metadata": {
+        "parameters": "0.6B",
+        "input_token_length": 131000,
+        "output_dimension": 512,
+        "license": "CC-BY-NC-4.0",
+        "release_date": "2026-07-27",
+        "tags": [
+          "listwise",
+          "multilingual",
+          "code-search",
+          "long-context",
+          "reranker",
+          "decoder-only"
+        ]
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker V3",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-v3",
+      "model_id": "jina-reranker-v3",
+      "description": "A listwise reranker for state-of-the-art multilingual document retrieval with 131K-token input context and 597M parameters",
+      "model_metadata": {
+        "parameters": "597M",
+        "input_token_length": 131000,
+        "output_dimension": 256,
+        "license": "CC-BY-NC-4.0",
+        "release_date": "2025-10-01",
+        "tags": [
+          "listwise",
+          "multilingual",
+          "code-search",
+          "long-context",
+          "reranker",
+          "decoder-only"
+        ]
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker M0",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-m0",
+      "model_id": "jina-reranker-m0",
+      "description": "A multilingual multimodal reranker for ranking visual documents with support for text and image queries and documents",
+      "model_metadata": {
+        "parameters": "2.4B",
+        "input_token_length": 10000,
+        "input_image_size": "768×28×28",
+        "license": "CC-BY-NC-4.0",
+        "release_date": "2025-04-08",
+        "tags": [
+          "multimodal",
+          "multilingual",
+          "code-search",
+          "long-context",
+          "reranker",
+          "vlm",
+          "decoder-only"
+        ]
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker V2 Base Multilingual",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-v2-base-multilingual",
+      "model_id": "jina-reranker-v2-base-multilingual",
+      "description": "A multilingual cross-encoder reranker with function calling and code search support, optimized for production RAG and retrieval workloads",
+      "model_metadata": {
+        "parameters": "278M",
+        "input_token_length": 1000,
+        "license": "CC-BY-NC-4.0",
+        "release_date": "2024-06-25",
+        "tags": [
+          "multilingual",
+          "cross-lingual",
+          "function-calling",
+          "code-search",
+          "long-context",
+          "production-ready",
+          "reranker",
+          "rag-optimized",
+          "high-performance",
+          "100-languages"
+        ]
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker V1 Tiny EN",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-v1-tiny-en",
+      "model_id": "jina-reranker-v1-tiny-en",
+      "description": "A lightweight English reranker optimized for fast and reliable ranking of large numbers of documents with 8K-token input context",
+      "model_metadata": {
+        "parameters": "33M",
+        "input_token_length": 8000,
+        "license": "Apache-2.0",
+        "release_date": "2024-04-18",
+        "tags": [
+          "reranker",
+          "english",
+          "long-context",
+          "memory-efficient",
+          "high-throughput",
+          "edge-optimized",
+          "bert-based",
+          "production-ready",
+          "lightweight",
+          "fast-inference"
+        ]
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker V1 Turbo EN",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-v1-turbo-en",
+      "model_id": "jina-reranker-v1-turbo-en",
+      "description": "An English reranker offering a strong combination of fast inference speed and accurate relevance scores with 8K-token input context",
+      "model_metadata": {
+        "parameters": "37.8M",
+        "input_token_length": 8000,
+        "license": "Apache-2.0",
+        "release_date": "2024-04-18",
+        "tags": [
+          "high-speed",
+          "memory-efficient",
+          "english",
+          "production-ready",
+          "reranker",
+          "rag-optimized",
+          "high-performance",
+          "cost-effective"
+        ]
+      },
+      "size_in_gb": null
+    },
+    {
+      "org_id": "dev",
+      "name": "Jina Reranker V1 Base EN",
+      "provider_type": "cloud",
+      "provider": "jina",
+      "model_name": "Jina | jina-reranker-v1-base-en",
+      "model_id": "jina-reranker-v1-base-en",
+      "description": "An English reranker designed to maximize search and RAG relevance with 8K-token input context and 137M parameters",
+      "model_metadata": {
+        "parameters": "137M",
+        "input_token_length": 8000,
+        "license": "Apache-2.0",
+        "release_date": "2024-02-29",
+        "tags": [
+          "reranker",
+          "english",
+          "base-model",
+          "high-precision",
+          "long-context",
+          "search-refinement",
+          "document-ranking"
+        ]
+      },
+      "size_in_gb": null
+    }
+  ]
+}
