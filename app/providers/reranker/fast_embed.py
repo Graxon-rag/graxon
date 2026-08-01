@@ -12,7 +12,7 @@ class FastEmbedReranker(BaseReranker):
 
         print("FastEmbed models loaded")
 
-    def rerank(self, query: str, docs: list[Document], top_k: int = 10, **kwargs) -> list[Document]:
+    async def rerank(self, query: str, docs: list[Document], top_k: int = 10, **kwargs) -> list[Document]:
         try:
             if not docs:
                 return []
