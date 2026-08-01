@@ -33,6 +33,14 @@ class VideoModelProvider(str, Enum):
     GEMINI = "gemini"
 
 
+class RerankerModelProvider(str, Enum):
+    XENOVA = "xenova"
+    BBAI = "baai"
+    JINA = "jina"
+    COHERE = "cohere"
+    VOYAGE = "voyage"
+
+
 class ModelProvider(str, Enum):
     # LLM
     DEEPSEEK = "deepseek"
@@ -57,3 +65,9 @@ class ModelProvider(str, Enum):
 
     # Video
     TWELVELABS = "twelvelabs"
+
+    # Reranker
+    XENOVA = "xenova"
+    BBAI = "baai"
+    JINA = "jina"
+    COHERE = "cohere"
