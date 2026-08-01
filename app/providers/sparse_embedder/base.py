@@ -4,9 +4,9 @@ from abc import ABC, abstractmethod
 
 class BaseSparseEmbedder(ABC):
     @abstractmethod
-    def embed(self, text: str, **kwargs) -> SparseEmbedding:
+    async def embed(self, text: str, **kwargs) -> SparseEmbedding:
         raise NotImplementedError
 
     @abstractmethod
-    def embed_batch(self, texts: list[str], **kwargs) -> list[SparseEmbedding]:
+    async def embed_batch(self, texts: list[str], **kwargs) -> list[SparseEmbedding]:
         raise NotImplementedError

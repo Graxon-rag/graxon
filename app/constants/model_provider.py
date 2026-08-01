@@ -67,7 +67,7 @@ class ModelProvider(str, Enum):
     TWELVELABS = "twelvelabs"
 
     # Reranker
-    XENOVA = "xenova"
-    BBAI = "baai"
+    # XENOVA = "xenova"
+    # BBAI = "baai"
     JINA = "jina"
     COHERE = "cohere"

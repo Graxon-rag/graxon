@@ -1,7 +1,7 @@
-from fastembed import SparseTextEmbedding
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
-from app.utils.logger import logger
+from fastembed import SparseTextEmbedding
 from .base import BaseSparseEmbedder
+from app.utils.logger import logger
 
 
 class FastEmbedSparseEmbedder(BaseSparseEmbedder):
@@ -13,7 +13,7 @@ class FastEmbedSparseEmbedder(BaseSparseEmbedder):
 
         print("FastEmbed models loaded")
 
-    def embed(self, text: str, **kwargs) -> SparseEmbedding:
+    async def embed(self, text: str, **kwargs) -> SparseEmbedding:
         try:
             # Return type is SparseEmbedding — SparseTextEmbedding.embed() is a generator, so it must be consumed with list()
             result = list(self._embedder.embed(text, **kwargs))
@@ -22,7 +22,7 @@ class FastEmbedSparseEmbedder(BaseSparseEmbedder):
             logger.error({"message": "Failed to embed text via FastEmbed", "error": str(e)})
             raise e
 
-    def embed_batch(self, texts: list[str], **kwargs) -> list[SparseEmbedding]:
+    async def embed_batch(self, texts: list[str], **kwargs) -> list[SparseEmbedding]:
         try:
             # Return type is SparseEmbedding — SparseTextEmbedding.embed() is a generator, so it must be consumed with list()
             result = list(self._embedder.embed(texts, **kwargs))

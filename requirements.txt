@@ -108,6 +108,7 @@ mccabe==0.7.0
 mdurl==0.1.2
 mistralai==2.7.0
 mmh3==5.2.1
+msgspec==0.21.1
 multidict==6.7.1
 murmurhash==1.0.15
 mypy_extensions==1.1.0
@@ -123,6 +124,7 @@ packaging==26.2
 pamqp==3.3.0
 pandas==3.0.3
 pillow==12.2.0
+pinecone==9.1.0
 portalocker==3.2.0
 preshed==3.0.13
 propcache==0.4.1
