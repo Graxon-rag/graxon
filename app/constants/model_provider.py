@@ -45,6 +45,7 @@ class SparseModelProvider(str, Enum):
     PINECONE = "pinecone"
     QDRANT = "qdrant"
     PRITHIVIDA = "prithivida"
+    PRITHVIDA = "prithvida"
 
 
 class ModelProvider(str, Enum):
@@ -82,3 +83,4 @@ class ModelProvider(str, Enum):
     PINECONE = "pinecone"
     QDRANT = "qdrant"
     PRITHIVIDA = "prithivida"
+    PRITHVIDA = "prithvida"

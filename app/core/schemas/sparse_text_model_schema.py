@@ -14,6 +14,7 @@ class SparseModelProvider(str, Enum):
     PINECONE = "pinecone"
     QDRANT = "qdrant"
     PRITHIVIDA = "prithivida"
+    PRITHVIDA = "prithvida"
 
 
 class SparseTextModelCreateSchema(BaseModel):

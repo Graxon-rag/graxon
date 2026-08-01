@@ -4,7 +4,7 @@
       "org_id": "dev",
       "name": "BM25",
       "provider_type": "local",
-      "provider": "qrant",
+      "provider": "qdrant",
       "model_name": "Qdrant | bm25",
       "model_id": "Qdrant/bm25",
       "description": "BM25 sparse embedding model for keyword-based retrieval",
