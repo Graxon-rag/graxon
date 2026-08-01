@@ -1,11 +1,12 @@
-from ..databases.minio.client import GMinioClient
-from app.config.env import Env
-from types_aiobotocore_s3 import S3Client
-from fastapi import UploadFile
 from ..schemas.document_schema import DocumentGetSignedUrlSchema
-from app.utils.logger import logger
+from ..databases.minio.client import GMinioClient
 from typing import cast, Tuple, Optional, Any
+from types_aiobotocore_s3 import S3Client
+from app.utils.logger import logger
+from fastapi import UploadFile
+from app.config.env import Env
 from io import BytesIO
+import mimetypes
 import json
 import uuid
 import os
@@ -65,7 +66,7 @@ class MinioHelper:
             logger.error({"message": "Failed to upload file", "error": str(e)})
             raise e
 
-    async def get_signed_url(self, document: DocumentGetSignedUrlSchema, ttl: int = 900) -> str:  # 15 minutes ttl
+    async def get_signed_url(self, document: DocumentGetSignedUrlSchema, ttl: int = 900) -> str:
         try:
             key = document.key
 
@@ -79,19 +80,22 @@ class MinioHelper:
 
                 s3_client = cast(S3Client, _s3_client)
 
-                # Ensure bucket exists
                 try:
                     await s3_client.head_bucket(Bucket=self.bucket)
                 except Exception:
                     raise Exception(f"Bucket {self.bucket} does not exist")
+
+                content_type = mimetypes.guess_type(key)[0] or "application/octet-stream"
 
                 signed_url = await s3_client.generate_presigned_url(
                     ClientMethod="get_object",
                     Params={
                         "Bucket": self.bucket,
                         "Key": key,
+                        "ResponseContentType": content_type,
+                        "ResponseContentDisposition": "inline",
                     },
-                    ExpiresIn=ttl,  # 15 minutes
+                    ExpiresIn=ttl,
                 )
 
                 return signed_url
