@@ -1,4 +1,4 @@
-from .databases.postgresql.models import Organization, LLMModel, EmbeddingModel, ReRankerModel, SparseTextModel
+from .databases.postgresql.models import Organization, LLMModel, EmbeddingModel, ReRankerModel, SparseTextModel, AudioModel, VideoModel, OCRModel
 from .databases.postgresql.client import GPostgresqlClient
 from app.utils.logger import logger
 from .libs.org_lib import OrgLib
@@ -149,6 +149,57 @@ class SeedDefaultData:
                         created_at=now,
                         updated_at=now,
                     ))
+
+                # Audio/ STT Model
+                audio_data = json.loads((GRAXON_DATA_PATH / "audio_model.json").read_text())
+                for provider_data in audio_data.values():
+                    for m in provider_data:
+                        session.add(AudioModel(
+                            id=uuid.uuid4(),
+                            org_id=org_id,
+                            name=m["name"],
+                            provider=m["provider"],
+                            model_name=m["model_name"],
+                            model_id=m["model_id"],
+                            description=m["description"],
+                            model_metadata=m["model_metadata"] or {},
+                            created_at=now,
+                            updated_at=now,
+                        ))
+
+                # OCR Model
+                ocr_data = json.loads((GRAXON_DATA_PATH / "ocr_model.json").read_text())
+                for provider_data in ocr_data.values():
+                    for m in provider_data:
+                        session.add(OCRModel(
+                            id=uuid.uuid4(),
+                            org_id=org_id,
+                            name=m["name"],
+                            provider=m["provider"],
+                            model_name=m["model_name"],
+                            model_id=m["model_id"],
+                            description=m["description"],
+                            model_metadata=m["model_metadata"] or {},
+                            created_at=now,
+                            updated_at=now,
+                        ))
+
+                # Video Model
+                video_data = json.loads((GRAXON_DATA_PATH / "video_model.json").read_text())
+                for provider_data in video_data.values():
+                    for m in provider_data:
+                        session.add(VideoModel(
+                            id=uuid.uuid4(),
+                            org_id=org_id,
+                            name=m["name"],
+                            provider=m["provider"],
+                            model_name=m["model_name"],
+                            model_id=m["model_id"],
+                            description=m["description"],
+                            model_metadata=m["model_metadata"] or {},
+                            created_at=now,
+                            updated_at=now,
+                        ))
 
                 await session.commit()
                 logger.info("PostgreSQL seed data inserted successfully.")
