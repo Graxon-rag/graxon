@@ -1,34 +1,69 @@
-[
-  {
-    "org_id": "dev",
-    "name": "BM25",
-    "provider": "Qdrant",
-    "model": "Qdrant/bm25",
-    "description": "BM25 sparse embedding model for keyword-based retrieval",
-    "size_in_gb": 0.01
-  },
-  {
-    "org_id": "dev",
-    "name": "BM42 MiniLM L6 Attentions",
-    "provider": "Qdrant",
-    "model": "Qdrant/bm42-all-minilm-l6-v2-attentions",
-    "description": "Lightweight sparse embedding model using MiniLM attentions",
-    "size_in_gb": 0.09
-  },
-  {
-    "org_id": "dev",
-    "name": "Splade++ EN v1",
-    "provider": "prithivida",
-    "model": "prithivida/Splade_PP_en_v1",
-    "description": "SPLADE++ sparse embedding model for English retrieval tasks",
-    "size_in_gb": 0.532
-  },
-  {
-    "org_id": "dev",
-    "name": "Splade++ EN v1 (alt repo)",
-    "provider": "prithvida",
-    "model": "prithvida/Splade_PP_en_v1",
-    "description": "Alternative repository for SPLADE++ sparse embedding model",
-    "size_in_gb": 0.532
-  }
-]
+{
+  "local": [
+    {
+      "org_id": "dev",
+      "name": "BM25",
+      "provider_type": "local",
+      "provider": "qrant",
+      "model_name": "Qdrant | bm25",
+      "model_id": "Qdrant/bm25",
+      "description": "BM25 sparse embedding model for keyword-based retrieval",
+      "model_metadata": {},
+      "size_in_gb": 0.01
+    },
+    {
+      "org_id": "dev",
+      "name": "BM42 MiniLM L6 Attentions",
+      "provider_type": "local",
+      "provider": "qdrant",
+      "model_name": "Qdrant | bm42-all-minilm-l6-v2-attentions",
+      "model_id": "Qdrant/bm42-all-minilm-l6-v2-attentions",
+      "description": "Lightweight sparse embedding model using MiniLM attentions",
+      "model_metadata": {},
+      "size_in_gb": 0.09
+    },
+    {
+      "org_id": "dev",
+      "name": "Splade++ EN v1",
+      "provider_type": "local",
+      "provider": "prithivida",
+      "model_name": "Prithivida | Splade_PP_en_v1",
+      "model_id": "prithivida/Splade_PP_en_v1",
+      "description": "SPLADE++ sparse embedding model for English retrieval tasks",
+      "model_metadata": {},
+      "size_in_gb": 0.532
+    },
+    {
+      "org_id": "dev",
+      "name": "Splade++ EN v1 (alt repo)",
+      "provider_type": "local",
+      "provider": "prithvida",
+      "model_name": "Prithvida | Splade_PP_en_v1",
+      "model_id": "prithvida/Splade_PP_en_v1",
+      "description": "Alternative repository for SPLADE++ sparse embedding model",
+      "model_metadata": {},
+      "size_in_gb": 0.532
+    }
+  ],
+  "cloud": [
+    {
+      "org_id": "dev",
+      "name": "Pinecone Sparse English v0",
+      "provider_type": "cloud",
+      "provider": "pinecone",
+      "model_name": "Pinecone | pinecone-sparse-english-v0",
+      "model_id": "pinecone-sparse-english-v0",
+      "description": "Learned sparse embedding model for English text retrieval, optimized for lexical relevance and hybrid dense+sparse search.",
+      "model_metadata": {
+        "metric": "dotproduct",
+        "max_input_tokens": 2048,
+        "default_max_input_tokens": 512,
+        "task": "embedding",
+        "input_types": ["query", "passage"],
+        "supports_return_tokens": true,
+        "supports_truncate_none": true
+      },
+      "size_in_gb": null
+    }
+  ]
+}
