@@ -11,7 +11,7 @@ class CohereReranker(BaseReranker):
 
     async def rerank(self, query: str, docs: list[Document], top_k: int = 10, **kwargs) -> list[Document]:
         try:
-            print({
+            logger.info({
                 "message": f"Calling Cohere API for reranking {len(docs)} documents",
                 "query": query,
                 "top_k": top_k,
