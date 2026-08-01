@@ -41,6 +41,12 @@ class RerankerModelProvider(str, Enum):
     VOYAGE = "voyage"
 
 
+class SparseModelProvider(str, Enum):
+    PINECONE = "pinecone"
+    QDRANT = "qdrant"
+    PRITHIVIDA = "prithivida"
+
+
 class ModelProvider(str, Enum):
     # LLM
     DEEPSEEK = "deepseek"
@@ -71,3 +77,8 @@ class ModelProvider(str, Enum):
     # BBAI = "baai"
     JINA = "jina"
     COHERE = "cohere"
+
+    # Sparse
+    PINECONE = "pinecone"
+    QDRANT = "qdrant"
+    PRITHIVIDA = "prithivida"
