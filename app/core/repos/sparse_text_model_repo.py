@@ -17,9 +17,12 @@ class SparseTextModelRepo:
                 new_sparse_text_model = SparseTextModel(
                     org_id=self.org_id,
                     name=sparse_text_model.name,
+                    provider_type=sparse_text_model.provider_type,
                     provider=sparse_text_model.provider,
-                    model=sparse_text_model.model,
+                    model_name=sparse_text_model.model_name,
+                    model_id=sparse_text_model.model_id,
                     description=sparse_text_model.description,
+                    model_metadata=sparse_text_model.model_metadata or {},
                     size_in_gb=sparse_text_model.size_in_gb,
                 )
                 session.add(new_sparse_text_model)

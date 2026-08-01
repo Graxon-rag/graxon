@@ -1,6 +1,19 @@
+from typing import Optional, Dict, Any
 from pydantic import BaseModel, Field
-import uuid
+from enum import Enum
 import datetime
+import uuid
+
+
+class SparseModelProviderType(str, Enum):
+    LOCAL = "local"
+    CLOUD = "cloud"
+
+
+class SparseModelProvider(str, Enum):
+    PINECONE = "pinecone"
+    QDRANT = "qdrant"
+    PRITHIVIDA = "prithivida"
 
 
 class SparseTextModelCreateSchema(BaseModel):
@@ -11,16 +24,27 @@ class SparseTextModelCreateSchema(BaseModel):
     name: str = Field(
         description="The name of the sparse text model",
     )
-    provider: str = Field(
+    provider_type: SparseModelProviderType = Field(
+        description="The provider type of the sparse text model",
+    )
+    provider: SparseModelProvider = Field(
         description="The provider of the sparse text model",
     )
-    model: str = Field(
-        description="The model of the sparse text model",
+    model_name: str = Field(
+        description="The model name of the sparse text model",
+    )
+    model_id: str = Field(
+        description="The model id of the sparse text model",
     )
     description: str = Field(
         description="The description of the sparse text model",
     )
-    size_in_gb: float = Field(
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the sparse text model",
+    )
+    size_in_gb: Optional[float] = Field(
+        default=0.0,
         description="The size of the sparse text model in GB",
     )
 
@@ -36,16 +60,27 @@ class SparseTextModelGetSchema(BaseModel):
     name: str = Field(
         description="The name of the sparse text model",
     )
-    provider: str = Field(
+    provider_type: SparseModelProviderType = Field(
+        description="The provider type of the sparse text model",
+    )
+    provider: SparseModelProvider = Field(
         description="The provider of the sparse text model",
     )
-    model: str = Field(
-        description="The model of the sparse text model",
+    model_name: str = Field(
+        description="The model name of the sparse text model",
+    )
+    model_id: str = Field(
+        description="The model id of the sparse text model",
     )
     description: str = Field(
         description="The description of the sparse text model",
     )
-    size_in_gb: float = Field(
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the sparse text model",
+    )
+    size_in_gb: Optional[float] = Field(
+        default=0.0,
         description="The size of the sparse text model in GB",
     )
     created_at: datetime.datetime = Field(
