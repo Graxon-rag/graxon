@@ -56,7 +56,7 @@ class JinaReranker(BaseReranker):
                         continue
 
                     # Fetch the original Langchain Document as it is
-                    doc = docs[idx]
+                    doc: Document = docs[idx]
 
                     # Optional but recommended: Add the Cohere score to the document's metadata
                     doc.metadata["rerank_relevance_score"] = r.get("relevance_score", 0.0)
