@@ -1,0 +1,5425 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "Graxon API",
+    "version": "1.0"
+  },
+  "paths": {
+    "/api/rerankers/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Reranker"
+        ],
+        "summary": "Create Reranker",
+        "operationId": "create_reranker_api_rerankers__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReRankerCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rerankers/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "Reranker"
+        ],
+        "summary": "Create Multiple Rerankers",
+        "operationId": "create_multiple_rerankers_api_rerankers__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ReRankerCreateSchema"
+                },
+                "title": "Rerankers"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rerankers/{org_id}/get/all": {
+      "get": {
+        "tags": [
+          "Reranker"
+        ],
+        "summary": "Get All Rerankers",
+        "operationId": "get_all_rerankers_api_rerankers__org_id__get_all_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rerankers/{org_id}/get/{reranker_id}": {
+      "get": {
+        "tags": [
+          "Reranker"
+        ],
+        "summary": "Get Reranker",
+        "operationId": "get_reranker_api_rerankers__org_id__get__reranker_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "reranker_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Reranker Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/rerankers/{org_id}/delete/{reranker_id}": {
+      "delete": {
+        "tags": [
+          "Reranker"
+        ],
+        "summary": "Delete Reranker",
+        "operationId": "delete_reranker_api_rerankers__org_id__delete__reranker_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "reranker_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Reranker Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sparse-text-models/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Sparse Text Model"
+        ],
+        "summary": "Create Sparse Text Model",
+        "operationId": "create_sparse_text_model_api_sparse_text_models__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SparseTextModelCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sparse-text-models/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "Sparse Text Model"
+        ],
+        "summary": "Create Multiple Sparse Text Models",
+        "operationId": "create_multiple_sparse_text_models_api_sparse_text_models__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SparseTextModelCreateSchema"
+                },
+                "title": "Sparse Text Models"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sparse-text-models/{org_id}/get/all": {
+      "get": {
+        "tags": [
+          "Sparse Text Model"
+        ],
+        "summary": "Get All Sparse Text Models",
+        "operationId": "get_all_sparse_text_models_api_sparse_text_models__org_id__get_all_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sparse-text-models/{org_id}/get/{sparse_text_model_id}": {
+      "get": {
+        "tags": [
+          "Sparse Text Model"
+        ],
+        "summary": "Get Sparse Text Model",
+        "operationId": "get_sparse_text_model_api_sparse_text_models__org_id__get__sparse_text_model_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "sparse_text_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sparse Text Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/sparse-text-models/{org_id}/delete/{sparse_text_model_id}": {
+      "delete": {
+        "tags": [
+          "Sparse Text Model"
+        ],
+        "summary": "Delete Sparse Text Model",
+        "operationId": "delete_sparse_text_model_api_sparse_text_models__org_id__delete__sparse_text_model_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "sparse_text_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Sparse Text Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/model-providers/llm_model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Llm Model Provider",
+        "operationId": "get_llm_model_provider_api_model_providers_llm_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/embedding_model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Embedding Model Provider",
+        "operationId": "get_embedding_model_provider_api_model_providers_embedding_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/audio-model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Audio Model Provider",
+        "operationId": "get_audio_model_provider_api_model_providers_audio_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/ocr-model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Ocr Model Provider",
+        "operationId": "get_ocr_model_provider_api_model_providers_ocr_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/video-model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Video Model Provider",
+        "operationId": "get_video_model_provider_api_model_providers_video_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/reranker-model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Reranker Model Provider",
+        "operationId": "get_reranker_model_provider_api_model_providers_reranker_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/sparse-model": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get Sparse Model Provider",
+        "operationId": "get_sparse_model_provider_api_model_providers_sparse_model_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-providers/all": {
+      "get": {
+        "tags": [
+          "Model Provider"
+        ],
+        "summary": "Get All",
+        "operationId": "get_all_api_model_providers_all_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/model-credentials/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Model Credential"
+        ],
+        "summary": "Create Model Credential",
+        "operationId": "create_model_credential_api_model_credentials__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ModelCredentialCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/model-credentials/{org_id}/get/all/provider/{provider}": {
+      "get": {
+        "tags": [
+          "Model Credential"
+        ],
+        "summary": "Get All Model Credentials",
+        "operationId": "get_all_model_credentials_api_model_credentials__org_id__get_all_provider__provider__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ModelProvider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/model-credentials/{org_id}/get/{model_credential_id}": {
+      "get": {
+        "tags": [
+          "Model Credential"
+        ],
+        "summary": "Get Model Credential",
+        "operationId": "get_model_credential_api_model_credentials__org_id__get__model_credential_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "model_credential_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Model Credential Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/model-credentials/{org_id}/delete/{model_credential_id}": {
+      "delete": {
+        "tags": [
+          "Model Credential"
+        ],
+        "summary": "Delete Model Credential",
+        "operationId": "delete_model_credential_api_model_credentials__org_id__delete__model_credential_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "model_credential_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Model Credential Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm-models/{org_id}/create": {
+      "post": {
+        "tags": [
+          "LLM Model"
+        ],
+        "summary": "Create Llm Model",
+        "operationId": "create_llm_model_api_llm_models__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LLMModelCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm-models/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "LLM Model"
+        ],
+        "summary": "Create Multiple Llm Models",
+        "operationId": "create_multiple_llm_models_api_llm_models__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/LLMModelCreateSchema"
+                },
+                "title": "Data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm-models/{org_id}/get/all/provider/{provider}": {
+      "get": {
+        "tags": [
+          "LLM Model"
+        ],
+        "summary": "Get All Llm Models",
+        "operationId": "get_all_llm_models_api_llm_models__org_id__get_all_provider__provider__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/LLMModelProvider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm-models/{org_id}/get/{llm_model_id}": {
+      "get": {
+        "tags": [
+          "LLM Model"
+        ],
+        "summary": "Get Llm Model",
+        "operationId": "get_llm_model_api_llm_models__org_id__get__llm_model_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "llm_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Llm Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/llm-models/{org_id}/delete/{llm_model_id}": {
+      "delete": {
+        "tags": [
+          "LLM Model"
+        ],
+        "summary": "Delete Llm Model",
+        "operationId": "delete_llm_model_api_llm_models__org_id__delete__llm_model_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "llm_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Llm Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embedding-models/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Embedding Model"
+        ],
+        "summary": "Create Embedding Model",
+        "operationId": "create_embedding_model_api_embedding_models__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/EmbeddingModelCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embedding-models/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "Embedding Model"
+        ],
+        "summary": "Create Multiple Embedding Models",
+        "operationId": "create_multiple_embedding_models_api_embedding_models__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/EmbeddingModelCreateSchema"
+                },
+                "title": "Data"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embedding-models/{org_id}/get/all/provider/{provider}": {
+      "get": {
+        "tags": [
+          "Embedding Model"
+        ],
+        "summary": "Get All Embedding Models",
+        "operationId": "get_all_embedding_models_api_embedding_models__org_id__get_all_provider__provider__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/EmbeddingModelProvider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embedding-models/{org_id}/get/{embedding_model_id}": {
+      "get": {
+        "tags": [
+          "Embedding Model"
+        ],
+        "summary": "Get Embedding Model",
+        "operationId": "get_embedding_model_api_embedding_models__org_id__get__embedding_model_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "embedding_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Embedding Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/embedding-models/{org_id}/delete/{embedding_model_id}": {
+      "delete": {
+        "tags": [
+          "Embedding Model"
+        ],
+        "summary": "Delete Embedding Model",
+        "operationId": "delete_embedding_model_api_embedding_models__org_id__delete__embedding_model_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "embedding_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Embedding Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orgs/create": {
+      "post": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Create Org",
+        "operationId": "create_org_api_orgs_create_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgCreateSchema"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orgs/get/all": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Get All Orgs",
+        "operationId": "get_all_orgs_api_orgs_get_all_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          }
+        }
+      }
+    },
+    "/api/orgs/get/{org_id}": {
+      "get": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Get Org",
+        "operationId": "get_org_api_orgs_get__org_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/orgs/delete/{org_id}": {
+      "delete": {
+        "tags": [
+          "Organization"
+        ],
+        "summary": "Delete Org",
+        "operationId": "delete_org_api_orgs_delete__org_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Create Project",
+        "operationId": "create_project_api_projects__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProjectCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{org_id}/get/all": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Get All Projects",
+        "operationId": "get_all_projects_api_projects__org_id__get_all_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{org_id}/get/{project_id}/details": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Get Project Details",
+        "operationId": "get_project_details_api_projects__org_id__get__project_id__details_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{org_id}/get/{project_id}": {
+      "get": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Get Project",
+        "operationId": "get_project_api_projects__org_id__get__project_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/projects/{org_id}/delete/{project_id}": {
+      "delete": {
+        "tags": [
+          "Project"
+        ],
+        "summary": "Delete Project",
+        "operationId": "delete_project_api_projects__org_id__delete__project_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/upload/multipart/{document_id}/init/{file_name}": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Multipart Upload Init",
+        "operationId": "multipart_upload_init_api_documents__org_id__projects__project_id__upload_multipart__document_id__init__file_name__post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          },
+          {
+            "name": "file_name",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "File Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/upload/multipart/{document_id}/presigned-url": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Multipart Upload Presigned Url",
+        "operationId": "multipart_upload_presigned_url_api_documents__org_id__projects__project_id__upload_multipart__document_id__presigned_url_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PresignedUrlRequestSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/upload/multipart/{document_id}/complete": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Multipart Upload Complete",
+        "operationId": "multipart_upload_complete_api_documents__org_id__projects__project_id__upload_multipart__document_id__complete_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteMultipartUploadSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/upload/{document_id}": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Upload Document",
+        "operationId": "upload_document_api_documents__org_id__projects__project_id__upload__document_id__post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/Body_upload_document_api_documents__org_id__projects__project_id__upload__document_id__post"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/get/all": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get All Documents",
+        "operationId": "get_all_documents_api_documents__org_id__projects__project_id__get_all_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/get/{document_id}": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get Document",
+        "operationId": "get_document_api_documents__org_id__projects__project_id__get__document_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/delete/{document_id}": {
+      "delete": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Delete Document",
+        "operationId": "delete_document_api_documents__org_id__projects__project_id__delete__document_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/get-signed-url": {
+      "get": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get Document Signed Url",
+        "operationId": "get_document_signed_url_api_documents__org_id__projects__project_id__get_signed_url_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "S3/MinIO bucket name",
+              "title": "Bucket"
+            },
+            "description": "S3/MinIO bucket name"
+          },
+          {
+            "name": "key",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Object key (path inside bucket)",
+              "title": "Key"
+            },
+            "description": "Object key (path inside bucket)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/documents/{org_id}/projects/{project_id}/process/{document_id}": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Submit Process Document",
+        "operationId": "submit_process_document_api_documents__org_id__projects__project_id__process__document_id__post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "document_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Document Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/query/{org_id}/projects/{project_id}": {
+      "get": {
+        "tags": [
+          "Query"
+        ],
+        "summary": "Query",
+        "operationId": "query_api_query__org_id__projects__project_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "description": "Query text",
+              "title": "Query"
+            },
+            "description": "Query text"
+          },
+          {
+            "name": "document_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional document id",
+              "title": "Document Id"
+            },
+            "description": "Optional document id"
+          },
+          {
+            "name": "top_k",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Top K"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "query_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/QueryType",
+              "description": "Query type",
+              "default": "smart"
+            },
+            "description": "Query type"
+          },
+          {
+            "name": "query_depth",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/QueryDepth",
+              "description": "Query depth",
+              "default": "standard"
+            },
+            "description": "Query depth"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/tags": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Tags",
+        "operationId": "get_tags_api_graphs_tags_get",
+        "parameters": [
+          {
+            "name": "tag",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Tag name",
+              "title": "Tag"
+            },
+            "description": "Tag name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/entities": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Entities",
+        "operationId": "get_entities_api_graphs_entities_get",
+        "parameters": [
+          {
+            "name": "entity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Entity name",
+              "title": "Entity"
+            },
+            "description": "Entity name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/concepts": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Concepts",
+        "operationId": "get_concepts_api_graphs_concepts_get",
+        "parameters": [
+          {
+            "name": "concept",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Concept name",
+              "title": "Concept"
+            },
+            "description": "Concept name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/keywords": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Keywords",
+        "operationId": "get_keywords_api_graphs_keywords_get",
+        "parameters": [
+          {
+            "name": "keyword",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Keyword name",
+              "title": "Keyword"
+            },
+            "description": "Keyword name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/phrases": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Phrases",
+        "operationId": "get_phrases_api_graphs_phrases_get",
+        "parameters": [
+          {
+            "name": "phrase",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Phrase name",
+              "title": "Phrase"
+            },
+            "description": "Phrase name"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/chunks": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Chunks",
+        "operationId": "get_chunks_api_graphs_chunks_get",
+        "parameters": [
+          {
+            "name": "chunk_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Chunk id",
+              "title": "Chunk Id"
+            },
+            "description": "Chunk id"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/orgs/{org_id}/projects/{project_id}/chunks/tags/{tag_id}": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Chunks By Tag",
+        "operationId": "get_chunks_by_tag_api_graphs_orgs__org_id__projects__project_id__chunks_tags__tag_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "tag_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Tag Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/orgs/{org_id}/projects/{project_id}/chunks/entities/{entity_id}": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Chunks By Entity",
+        "operationId": "get_chunks_by_entity_api_graphs_orgs__org_id__projects__project_id__chunks_entities__entity_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "entity_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Entity Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/orgs/{org_id}/projects/{project_id}/chunks/keywords/{keyword_id}": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Chunks By Keyword",
+        "operationId": "get_chunks_by_keyword_api_graphs_orgs__org_id__projects__project_id__chunks_keywords__keyword_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "keyword_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Keyword Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/orgs/{org_id}/projects/{project_id}/chunks/phrases/{phrase_id}": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Chunks By Phrase",
+        "operationId": "get_chunks_by_phrase_api_graphs_orgs__org_id__projects__project_id__chunks_phrases__phrase_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "phrase_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Phrase Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/orgs/{org_id}/projects/{project_id}/chunks/concepts/{concept_id}": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Chunks By Concept",
+        "operationId": "get_chunks_by_concept_api_graphs_orgs__org_id__projects__project_id__chunks_concepts__concept_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "concept_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Concept Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/graphs/orgs/{org_id}/projects/{project_id}/mappings": {
+      "get": {
+        "tags": [
+          "Graph"
+        ],
+        "summary": "Get Mappings",
+        "operationId": "get_mappings_api_graphs_orgs__org_id__projects__project_id__mappings_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "mapping_type",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "enum": [
+                "HAS_TAG",
+                "HAS_ENTITY",
+                "HAS_CONCEPT",
+                "HAS_KEYWORD",
+                "HAS_PHRASE",
+                "HAS_ACRONYM"
+              ],
+              "type": "string",
+              "title": "Mapping Type"
+            }
+          },
+          {
+            "name": "get_all",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "description": "Get all mappings",
+              "default": false,
+              "title": "Get All"
+            },
+            "description": "Get all mappings"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 100,
+              "minimum": 1,
+              "description": "Number of results",
+              "default": 10,
+              "title": "Limit"
+            },
+            "description": "Number of results"
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Offset",
+              "default": 0,
+              "title": "Offset"
+            },
+            "description": "Offset"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio-models/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Audio/STT Model"
+        ],
+        "summary": "Create Audio Model",
+        "operationId": "create_audio_model_api_audio_models__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AudioModelCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio-models/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "Audio/STT Model"
+        ],
+        "summary": "Create Multiple Audio Models",
+        "operationId": "create_multiple_audio_models_api_audio_models__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/AudioModelCreateSchema"
+                },
+                "title": "Audio Models"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio-models/{org_id}/get/{audio_model_id}": {
+      "get": {
+        "tags": [
+          "Audio/STT Model"
+        ],
+        "summary": "Get Audio Model",
+        "operationId": "get_audio_model_api_audio_models__org_id__get__audio_model_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "audio_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Audio Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio-models/{org_id}/get/all/provider/{provider}": {
+      "get": {
+        "tags": [
+          "Audio/STT Model"
+        ],
+        "summary": "Get All Audio Models",
+        "operationId": "get_all_audio_models_api_audio_models__org_id__get_all_provider__provider__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/AudioModelProvider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/audio-models/{org_id}/delete/{audio_model_id}": {
+      "delete": {
+        "tags": [
+          "Audio/STT Model"
+        ],
+        "summary": "Delete Audio Model",
+        "operationId": "delete_audio_model_api_audio_models__org_id__delete__audio_model_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "audio_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Audio Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video-models/{org_id}/create": {
+      "post": {
+        "tags": [
+          "Video Model"
+        ],
+        "summary": "Create Video Model",
+        "operationId": "create_video_model_api_video_models__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VideoModelCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video-models/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "Video Model"
+        ],
+        "summary": "Create Multiple Video Models",
+        "operationId": "create_multiple_video_models_api_video_models__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/VideoModelCreateSchema"
+                },
+                "title": "Video Models"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video-models/{org_id}/get/{video_model_id}": {
+      "get": {
+        "tags": [
+          "Video Model"
+        ],
+        "summary": "Get Video Model",
+        "operationId": "get_video_model_api_video_models__org_id__get__video_model_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "video_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Video Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video-models/{org_id}/get/all/provider/{provider}": {
+      "get": {
+        "tags": [
+          "Video Model"
+        ],
+        "summary": "Get All Video Models",
+        "operationId": "get_all_video_models_api_video_models__org_id__get_all_provider__provider__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/VideoModelProvider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/video-models/{org_id}/delete/{video_model_id}": {
+      "delete": {
+        "tags": [
+          "Video Model"
+        ],
+        "summary": "Delete Video Model",
+        "operationId": "delete_video_model_api_video_models__org_id__delete__video_model_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "video_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Video Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ocr-models/{org_id}/create": {
+      "post": {
+        "tags": [
+          "OCR Model"
+        ],
+        "summary": "Create Ocr Model",
+        "operationId": "create_ocr_model_api_ocr_models__org_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OCRModelCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ocr-models/{org_id}/create-multiple": {
+      "post": {
+        "tags": [
+          "OCR Model"
+        ],
+        "summary": "Create Multiple Ocr Models",
+        "operationId": "create_multiple_ocr_models_api_ocr_models__org_id__create_multiple_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/OCRModelCreateSchema"
+                },
+                "title": "Ocr Models"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ocr-models/{org_id}/get/all/provider/{provider}": {
+      "get": {
+        "tags": [
+          "OCR Model"
+        ],
+        "summary": "Get All Ocr Models",
+        "operationId": "get_all_ocr_models_api_ocr_models__org_id__get_all_provider__provider__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "provider",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/OCRModelProvider"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ocr-models/{org_id}/get/{ocr_model_id}": {
+      "get": {
+        "tags": [
+          "OCR Model"
+        ],
+        "summary": "Get Ocr Model",
+        "operationId": "get_ocr_model_api_ocr_models__org_id__get__ocr_model_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "ocr_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Ocr Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ocr-models/{org_id}/delete/{ocr_model_id}": {
+      "delete": {
+        "tags": [
+          "OCR Model"
+        ],
+        "summary": "Delete Ocr Model",
+        "operationId": "delete_ocr_model_api_ocr_models__org_id__delete__ocr_model_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "ocr_model_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Ocr Model Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/{org_id}/{project_id}/create": {
+      "post": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Create Webhook",
+        "operationId": "create_webhook_api_webhooks__org_id___project_id__create_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookCreateSchema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/{org_id}/{project_id}/get/{webhook_id}": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Get Webhook",
+        "operationId": "get_webhook_api_webhooks__org_id___project_id__get__webhook_id__get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Webhook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/{org_id}/{project_id}/list": {
+      "get": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "List Webhooks",
+        "operationId": "list_webhooks_api_webhooks__org_id___project_id__list_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/webhooks/{org_id}/{project_id}/delete/{webhook_id}": {
+      "delete": {
+        "tags": [
+          "Webhooks"
+        ],
+        "summary": "Delete Webhook",
+        "operationId": "delete_webhook_api_webhooks__org_id___project_id__delete__webhook_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "project_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Project Id"
+            }
+          },
+          {
+            "name": "webhook_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Webhook Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "404": {
+            "description": "Not found"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/": {
+      "get": {
+        "summary": "Index",
+        "operationId": "index__get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/test": {
+      "post": {
+        "summary": "Test",
+        "operationId": "test_test_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi-docs": {
+      "post": {
+        "summary": "Make Docs",
+        "operationId": "make_docs_openapi_docs_post",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AudioModelCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the audio model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the audio model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/AudioModelProvider",
+            "description": "The provider of the audio model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the audio model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the audio model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the audio model"
+          },
+          "model_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Metadata",
+            "description": "The model metadata of the audio model",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider",
+          "model_name",
+          "model_id",
+          "description"
+        ],
+        "title": "AudioModelCreateSchema"
+      },
+      "AudioModelProvider": {
+        "type": "string",
+        "enum": [
+          "deepgram",
+          "gladia",
+          "assemblyai",
+          "groq",
+          "elevenlabs"
+        ],
+        "title": "AudioModelProvider"
+      },
+      "Body_upload_document_api_documents__org_id__projects__project_id__upload__document_id__post": {
+        "properties": {
+          "file": {
+            "type": "string",
+            "contentMediaType": "application/octet-stream",
+            "title": "File"
+          }
+        },
+        "type": "object",
+        "required": [
+          "file"
+        ],
+        "title": "Body_upload_document_api_documents__org_id__projects__project_id__upload__document_id__post"
+      },
+      "CompleteMultipartUploadSchema": {
+        "properties": {
+          "upload_id": {
+            "type": "string",
+            "title": "Upload Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "file_name": {
+            "type": "string",
+            "title": "File Name"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "parts": {
+            "items": {
+              "$ref": "#/components/schemas/DocumentMultipartUploadPartSchema"
+            },
+            "type": "array",
+            "title": "Parts"
+          }
+        },
+        "type": "object",
+        "required": [
+          "upload_id",
+          "key",
+          "file_name",
+          "parts"
+        ],
+        "title": "CompleteMultipartUploadSchema"
+      },
+      "DocumentMultipartUploadPartSchema": {
+        "properties": {
+          "etag": {
+            "type": "string",
+            "title": "Etag",
+            "description": "The etag of the document"
+          },
+          "part_number": {
+            "type": "integer",
+            "title": "Part Number",
+            "description": "The part number of the document"
+          }
+        },
+        "type": "object",
+        "required": [
+          "etag",
+          "part_number"
+        ],
+        "title": "DocumentMultipartUploadPartSchema"
+      },
+      "EmbeddingModelCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the embedding model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the embedding model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/EmbeddingModelProvider",
+            "description": "The provider of the embedding model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the embedding model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the embedding model"
+          },
+          "dimension": {
+            "type": "integer",
+            "title": "Dimension",
+            "description": "The dimension of the embedding model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the embedding model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider",
+          "model_name",
+          "model_id",
+          "dimension",
+          "description"
+        ],
+        "title": "EmbeddingModelCreateSchema"
+      },
+      "EmbeddingModelProvider": {
+        "type": "string",
+        "enum": [
+          "openai",
+          "gemini",
+          "voyage"
+        ],
+        "title": "EmbeddingModelProvider"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "type": "array",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "title": "HTTPValidationError"
+      },
+      "LLMModelCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the LLM model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the LLM model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/LLMModelProvider",
+            "description": "The provider of the LLM model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the LLM model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the LLM model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the LLM model"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider",
+          "model_name",
+          "model_id",
+          "description"
+        ],
+        "title": "LLMModelCreateSchema"
+      },
+      "LLMModelProvider": {
+        "type": "string",
+        "enum": [
+          "openai",
+          "gemini",
+          "deepseek",
+          "claude"
+        ],
+        "title": "LLMModelProvider"
+      },
+      "ModelCredentialCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the model credential"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the model credential"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the model credential"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/ModelProvider",
+            "description": "The provider of the model credential"
+          },
+          "api_key": {
+            "type": "string",
+            "title": "Api Key",
+            "description": "The api key of the model credential"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "description",
+          "provider",
+          "api_key"
+        ],
+        "title": "ModelCredentialCreateSchema"
+      },
+      "ModelProvider": {
+        "type": "string",
+        "enum": [
+          "deepseek",
+          "openai",
+          "gemini",
+          "claude",
+          "voyage",
+          "datalab",
+          "mistral",
+          "llamaparse",
+          "deepgram",
+          "gladia",
+          "assemblyai",
+          "groq",
+          "elevenlabs",
+          "twelvelabs",
+          "jina",
+          "cohere",
+          "pinecone",
+          "qdrant",
+          "prithivida",
+          "prithvida"
+        ],
+        "title": "ModelProvider"
+      },
+      "OCRModelCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the OCR model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the OCR model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/OCRModelProvider",
+            "description": "The provider of the OCR model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the OCR model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the OCR model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the OCR model"
+          },
+          "model_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Metadata",
+            "description": "The model metadata of the audio model",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider",
+          "model_name",
+          "model_id",
+          "description"
+        ],
+        "title": "OCRModelCreateSchema"
+      },
+      "OCRModelProvider": {
+        "type": "string",
+        "enum": [
+          "datalab",
+          "mistral",
+          "llamaparse"
+        ],
+        "title": "OCRModelProvider"
+      },
+      "OrgCreateSchema": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the organization"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the organization"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "description"
+        ],
+        "title": "OrgCreateSchema"
+      },
+      "PresignedUrlRequestSchema": {
+        "properties": {
+          "upload_id": {
+            "type": "string",
+            "title": "Upload Id"
+          },
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "part_number": {
+            "type": "integer",
+            "title": "Part Number"
+          }
+        },
+        "type": "object",
+        "required": [
+          "upload_id",
+          "key",
+          "part_number"
+        ],
+        "title": "PresignedUrlRequestSchema"
+      },
+      "ProjectCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the project"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the project"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the project"
+          },
+          "llm_model_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Llm Model Id",
+            "description": "The LLM model id of the project"
+          },
+          "embedding_model_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Embedding Model Id",
+            "description": "The embedding model id of the project"
+          },
+          "sparse_text_model_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Sparse Text Model Id",
+            "description": "The sparse text model id of the project"
+          },
+          "reranker_model_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Reranker Model Id",
+            "description": "The reranker model id of the project"
+          },
+          "llm_model_credential_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Llm Model Credential Id",
+            "description": "The LLM model credential id of the project"
+          },
+          "embedding_model_credential_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Embedding Model Credential Id",
+            "description": "The embedding model credential id of the project"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "description",
+          "llm_model_id",
+          "embedding_model_id",
+          "sparse_text_model_id",
+          "reranker_model_id",
+          "llm_model_credential_id",
+          "embedding_model_credential_id"
+        ],
+        "title": "ProjectCreateSchema"
+      },
+      "QueryDepth": {
+        "type": "string",
+        "enum": [
+          "standard",
+          "advanced"
+        ],
+        "title": "QueryDepth"
+      },
+      "QueryType": {
+        "type": "string",
+        "enum": [
+          "quick",
+          "smart",
+          "expert"
+        ],
+        "title": "QueryType"
+      },
+      "ReRankerCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the reranker model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the reranker model"
+          },
+          "provider_type": {
+            "$ref": "#/components/schemas/RerankerModelProviderType",
+            "description": "The provider type of the reranker model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/RerankerModelProvider",
+            "description": "The provider of the reranker model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the reranker model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the reranker model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the reranker model"
+          },
+          "model_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Metadata",
+            "description": "The model metadata of the reranker model",
+            "default": {}
+          },
+          "size_in_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size In Gb",
+            "description": "The size of the reranker model in GB",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider_type",
+          "provider",
+          "model_name",
+          "model_id",
+          "description"
+        ],
+        "title": "ReRankerCreateSchema"
+      },
+      "RerankerModelProvider": {
+        "type": "string",
+        "enum": [
+          "xenova",
+          "baai",
+          "jina",
+          "cohere",
+          "voyage"
+        ],
+        "title": "RerankerModelProvider"
+      },
+      "RerankerModelProviderType": {
+        "type": "string",
+        "enum": [
+          "local",
+          "cloud"
+        ],
+        "title": "RerankerModelProviderType"
+      },
+      "SparseModelProvider": {
+        "type": "string",
+        "enum": [
+          "pinecone",
+          "qdrant",
+          "prithivida",
+          "prithvida"
+        ],
+        "title": "SparseModelProvider"
+      },
+      "SparseModelProviderType": {
+        "type": "string",
+        "enum": [
+          "local",
+          "cloud"
+        ],
+        "title": "SparseModelProviderType"
+      },
+      "SparseTextModelCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the sparse text model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the sparse text model"
+          },
+          "provider_type": {
+            "$ref": "#/components/schemas/SparseModelProviderType",
+            "description": "The provider type of the sparse text model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/SparseModelProvider",
+            "description": "The provider of the sparse text model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the sparse text model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the sparse text model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the sparse text model"
+          },
+          "model_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Metadata",
+            "description": "The model metadata of the sparse text model",
+            "default": {}
+          },
+          "size_in_gb": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size In Gb",
+            "description": "The size of the sparse text model in GB",
+            "default": 0.0
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider_type",
+          "provider",
+          "model_name",
+          "model_id",
+          "description"
+        ],
+        "title": "SparseTextModelCreateSchema"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "type": "array",
+            "title": "Location"
+          },
+          "msg": {
+            "type": "string",
+            "title": "Message"
+          },
+          "type": {
+            "type": "string",
+            "title": "Error Type"
+          },
+          "input": {
+            "title": "Input"
+          },
+          "ctx": {
+            "type": "object",
+            "title": "Context"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError"
+      },
+      "VideoModelCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the video model"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the video model"
+          },
+          "provider": {
+            "$ref": "#/components/schemas/VideoModelProvider",
+            "description": "The provider of the video model"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name",
+            "description": "The model name of the video model"
+          },
+          "model_id": {
+            "type": "string",
+            "title": "Model Id",
+            "description": "The model id of the video model"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description",
+            "description": "The description of the video model"
+          },
+          "model_metadata": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Metadata",
+            "description": "The model metadata of the audio model",
+            "default": {}
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "provider",
+          "model_name",
+          "model_id",
+          "description"
+        ],
+        "title": "VideoModelCreateSchema"
+      },
+      "VideoModelProvider": {
+        "type": "string",
+        "enum": [
+          "twelvelabs",
+          "gemini"
+        ],
+        "title": "VideoModelProvider"
+      },
+      "WebhookCreateSchema": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "title": "Org Id",
+            "description": "The organization id of the Webhook"
+          },
+          "project_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Project Id",
+            "description": "The project id of the Webhook"
+          },
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id",
+            "description": "The id of the document"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name",
+            "description": "The name of the Webhook"
+          },
+          "url": {
+            "type": "string",
+            "title": "Url",
+            "description": "The url of the Webhook"
+          },
+          "token": {
+            "type": "string",
+            "title": "Token",
+            "description": "The token of the Webhook, will be pass in header 'X-GRAXON-TOKEN' to the request"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "project_id",
+          "name",
+          "url",
+          "token"
+        ],
+        "title": "WebhookCreateSchema"
+      }
+    }
+  }
+}
