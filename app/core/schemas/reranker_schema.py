@@ -1,6 +1,21 @@
 from pydantic import BaseModel, Field
-import uuid
+from typing import Optional, Dict, Any
+from enum import Enum
 import datetime
+import uuid
+
+
+class RerankerModelProviderType(str, Enum):
+    LOCAL = "local"
+    CLOUD = "cloud"
+
+
+class RerankerModelProvider(str, Enum):
+    XENOVA = "xenova"
+    BBAI = "baai"
+    JINA = "jina"
+    COHERE = "cohere"
+    VOYAGE = "voyage"
 
 
 class ReRankerCreateSchema(BaseModel):
@@ -10,16 +25,27 @@ class ReRankerCreateSchema(BaseModel):
     name: str = Field(
         description="The name of the reranker model",
     )
-    provider: str = Field(
+    provider_type: RerankerModelProviderType = Field(
+        description="The provider type of the reranker model",
+    )
+    provider: RerankerModelProvider = Field(
         description="The provider of the reranker model",
     )
-    model: str = Field(
-        description="The model of the reranker model",
+    model_name: str = Field(
+        description="The model name of the reranker model",
+    )
+    model_id: str = Field(
+        description="The model id of the reranker model",
     )
     description: str = Field(
         description="The description of the reranker model",
     )
-    size_in_gb: float = Field(
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the reranker model",
+    )
+    size_in_gb: Optional[float] = Field(
+        default=0.0,
         description="The size of the reranker model in GB",
     )
 
@@ -34,16 +60,27 @@ class ReRankerGetSchema(BaseModel):
     name: str = Field(
         description="The name of the reranker model",
     )
-    provider: str = Field(
+    provider_type: RerankerModelProviderType = Field(
+        description="The provider type of the reranker model",
+    )
+    provider: RerankerModelProvider = Field(
         description="The provider of the reranker model",
     )
-    model: str = Field(
-        description="The model of the reranker model",
+    model_name: str = Field(
+        description="The model name of the reranker model",
+    )
+    model_id: str = Field(
+        description="The model id of the reranker model",
     )
     description: str = Field(
         description="The description of the reranker model",
     )
-    size_in_gb: float = Field(
+    model_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The model metadata of the reranker model",
+    )
+    size_in_gb: Optional[float] = Field(
+        default=0.0,
         description="The size of the reranker model in GB",
     )
     created_at: datetime.datetime = Field(

@@ -17,9 +17,12 @@ class ReRankerRepo:
                 new_reranker = ReRankerModel(
                     org_id=self.org_id,
                     name=reranker.name,
+                    provider_type=reranker.provider_type,
                     provider=reranker.provider,
-                    model=reranker.model,
+                    model_name=reranker.model_name,
+                    model_id=reranker.model_id,
                     description=reranker.description,
+                    model_metadata=reranker.model_metadata,
                     size_in_gb=reranker.size_in_gb,
                 )
                 session.add(new_reranker)

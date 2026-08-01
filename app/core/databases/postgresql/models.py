@@ -2,7 +2,7 @@ from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, Chec
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 import datetime
 import uuid
 
@@ -284,10 +284,14 @@ class ReRankerModel(Base):
     id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
+    provider_type: Mapped[str] = mapped_column(String(255), nullable=False)
     provider: Mapped[str] = mapped_column(String(255), nullable=False)
-    model: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    model_id: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
-    size_in_gb: Mapped[float] = mapped_column(Float, nullable=False)
+    model_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True)
+    size_in_gb: Mapped[float] = mapped_column(Float, nullable=True)
+
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
         TIMESTAMP(timezone=True),
@@ -305,8 +309,10 @@ class ReRankerModel(Base):
             "id": self.id,
             "org_id": self.org_id,
             "name": self.name,
+            "provider_type": self.provider_type,
             "provider": self.provider,
-            "model": self.model,
+            "model_name": self.model_name,
+            "model_id": self.model_id,
             "size_in_gb": self.size_in_gb,
             "description": self.description,
             "created_at": self.created_at,

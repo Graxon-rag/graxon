@@ -122,18 +122,32 @@ class SeedDefaultData:
 
                 # Reranker Models
                 reranker_data = json.loads((GRAXON_DATA_PATH / "reranker_models.json").read_text())
-                for m in reranker_data:
-                    session.add(ReRankerModel(
-                        id=uuid.uuid4(),
-                        org_id=org_id,
-                        name=m["name"],
-                        provider=m["provider"],
-                        model=m["model"],
-                        description=m["description"],
-                        size_in_gb=m["size_in_gb"],
-                        created_at=now,
-                        updated_at=now,
-                    ))
+                for provider_name, provider_data in reranker_data.items():
+                    print(f"\nProcessing {provider_name}: {len(provider_data)} models")
+
+                    for m in provider_data:
+                        # print(f"Adding: {m['name']}")
+
+                        try:
+                            model = ReRankerModel(
+                                id=uuid.uuid4(),
+                                org_id=org_id,
+                                name=m["name"],
+                                provider_type=m["provider_type"],
+                                provider=m["provider"],
+                                model_name=m["model_name"],
+                                model_id=m["model_id"],
+                                description=m["description"],
+                                model_metadata=m["model_metadata"] or {},
+                                size_in_gb=m["size_in_gb"],
+                                created_at=now,
+                                updated_at=now,
+                            )
+
+                            session.add(model)
+                            # print(f"SUCCESS: {m['name']}")
+                        except Exception as e:
+                            print(f"FAILED: {m['name']}: {e}")
 
                 # Sparse Text Models
                 sparse_data = json.loads((GRAXON_DATA_PATH / "spare_text_models.json").read_text())
