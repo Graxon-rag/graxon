@@ -26,6 +26,17 @@ class ProjectConfigRepo:
             logger.error({"message": "Failed to create project config", "error": str(e)})
             raise e
 
+    async def get_by_project(self) -> ProjectConfigGetSchema | None:
+        try:
+            async with self._db.get_session() as session:
+                config = await session.scalar(select(ProjectConfig).where(ProjectConfig.project_id == self.project_id))
+                if config is None:
+                    raise Exception(f"Project config with project id {self.project_id} not found")
+                return ProjectConfigGetSchema(**config.to_dict())
+        except Exception as e:
+            logger.error({"message": "Failed to get project config", "error": str(e)})
+            raise e
+
     async def get(self, config_id: uuid.UUID) -> ProjectConfigGetSchema | None:
         try:
             async with self._db.get_session() as session:

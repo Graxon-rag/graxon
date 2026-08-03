@@ -1,11 +1,12 @@
 from ..schemas.project_schema import ProjectCreateSchema, ProjectGetSchema, ProjectDetailSchema
 from ..databases.postgresql.client import GPostgresqlClient
-from ..databases.postgresql.models import Project
 from ..helpers.project_helper import ProjectHelper
+from .project_config_repo import ProjectConfigRepo
+from ..databases.postgresql.models import Project
 from ..neo4j.project import GN4Project
-from ..libs.id import IDLibs
 from app.utils.logger import logger
 from sqlalchemy import select
+from ..libs.id import IDLibs
 import uuid
 
 
@@ -35,15 +36,11 @@ class ProjectRepo:
                     name=data.name,
                     org_id=self.org_id,
                     description=data.description,
-                    llm_model_id=data.llm_model_id,
-                    embedding_model_id=data.embedding_model_id,
-                    sparse_text_model_id=data.sparse_text_model_id,
-                    reranker_model_id=data.reranker_model_id,
-                    llm_model_credential_id=data.llm_model_credential_id,
-                    embedding_model_credential_id=data.embedding_model_credential_id,
+                    project_metadata=data.project_metadata
                 )
                 session.add(project)
                 await self.graph_db.create(project.id, readable_id, data.name, data.description)
+                await ProjectConfigRepo(self.org_id, project.id).create(data.config)
                 await session.commit()
                 return ProjectGetSchema(**project.to_dict())
         except Exception as e:

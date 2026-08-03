@@ -15,6 +15,13 @@ class ProjectConfigHandler:
             logger.error({"message": "Failed to create project config", "error": str(e)})
             raise e
 
+    async def get_by_project(self) -> ProjectConfigGetSchema | None:
+        try:
+            return await self._service.get_by_project()
+        except Exception as e:
+            logger.error({"message": "Failed to get project config", "error": str(e)})
+            raise e
+
     async def get(self, config_id: uuid.UUID) -> ProjectConfigGetSchema | None:
         try:
             return await self._service.get(config_id)

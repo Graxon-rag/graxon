@@ -1,12 +1,30 @@
-from pydantic import BaseModel, Field
-import uuid
-import datetime
-from typing import Optional
-from .llm_model_schema import LLMModelGetSchema
-from .embedding_model_schema import EmbeddingModelGetSchema
-from .model_credential_schema import ModelCredentialGetSchema
-from .reranker_schema import ReRankerGetSchema
 from .sparse_text_model_schema import SparseTextModelGetSchema
+from .model_credential_schema import ModelCredentialGetSchema
+from .project_config_schema import ProjectConfigCreateSchema
+from .embedding_model_schema import EmbeddingModelGetSchema
+from .llm_model_schema import LLMModelGetSchema
+from .reranker_schema import ReRankerGetSchema
+from pydantic import BaseModel, Field
+from typing import Optional, Dict, Any
+import datetime
+import uuid
+
+
+class ProjectCreateSchema(BaseModel):
+    org_id: str = Field(
+        description="The organization id of the project",
+    )
+    name: str = Field(
+        description="The name of the project",
+    )
+    config: ProjectConfigCreateSchema
+    description: str = Field(
+        description="The description of the project",
+    )
+    project_metadata: Optional[Dict[str, Any]] = Field(
+        default={},
+        description="The project metadata of the project",
+    )
 
 
 class ProjectGetSchema(BaseModel):
@@ -25,59 +43,11 @@ class ProjectGetSchema(BaseModel):
     description: str = Field(
         description="The description of the project",
     )
-    llm_model_id: uuid.UUID = Field(
-        description="The LLM model id of the project",
-    )
-    embedding_model_id: uuid.UUID = Field(
-        description="The embedding model id of the project",
-    )
-    sparse_text_model_id: uuid.UUID = Field(
-        description="The sparse text model id of the project",
-    )
-    reranker_model_id: uuid.UUID = Field(
-        description="The reranker model id of the project",
-    )
-    llm_model_credential_id: uuid.UUID = Field(
-        description="The LLM model credential id of the project",
-    )
-    embedding_model_credential_id: uuid.UUID = Field(
-        description="The embedding model credential id of the project",
-    )
     created_at: datetime.datetime = Field(
         description="The created at of the project",
     )
     updated_at: datetime.datetime = Field(
         description="The updated at of the project",
-    )
-
-
-class ProjectCreateSchema(BaseModel):
-    org_id: str = Field(
-        description="The organization id of the project",
-    )
-    name: str = Field(
-        description="The name of the project",
-    )
-    description: str = Field(
-        description="The description of the project",
-    )
-    llm_model_id: uuid.UUID = Field(
-        description="The LLM model id of the project",
-    )
-    embedding_model_id: uuid.UUID = Field(
-        description="The embedding model id of the project",
-    )
-    sparse_text_model_id: uuid.UUID = Field(
-        description="The sparse text model id of the project",
-    )
-    reranker_model_id: uuid.UUID = Field(
-        description="The reranker model id of the project",
-    )
-    llm_model_credential_id: uuid.UUID = Field(
-        description="The LLM model credential id of the project",
-    )
-    embedding_model_credential_id: uuid.UUID = Field(
-        description="The embedding model credential id of the project",
     )
 
 
