@@ -1,0 +1,78 @@
+from ..schemas.project_config_schema import ProjectConfigGetSchema, ProjectConfigCreateSchema, ProjectConfigUpdateSchema
+from ..databases.postgresql.client import GPostgresqlClient
+from ..databases.postgresql.models import ProjectConfig
+from app.utils.logger import logger
+from sqlalchemy import select
+import uuid
+
+
+class ProjectConfigRepo:
+    def __init__(self, org_id: str, project_id: uuid.UUID):
+        self._db = GPostgresqlClient()
+        self.org_id = org_id
+        self.project_id = project_id
+
+    async def create(self, p: ProjectConfigCreateSchema) -> ProjectConfigGetSchema:
+        try:
+            async with self._db.get_session() as session:
+                config = ProjectConfig(**p.model_dump())
+                session.add(config)
+                await session.commit()
+                get_result = await self.get(config.id)
+                if get_result is None:
+                    raise Exception(f"Project config with id {config.id} not found")
+                return get_result
+        except Exception as e:
+            logger.error({"message": "Failed to create project config", "error": str(e)})
+            raise e
+
+    async def get(self, config_id: uuid.UUID) -> ProjectConfigGetSchema | None:
+        try:
+            async with self._db.get_session() as session:
+                config = await session.scalar(select(ProjectConfig).where(ProjectConfig.id == config_id))
+                if config is None:
+                    raise Exception(f"Project config with id {config_id} not found")
+                return ProjectConfigGetSchema(**config.to_dict())
+        except Exception as e:
+            logger.error({"message": "Failed to get project config", "error": str(e)})
+            raise e
+
+    async def update(self, config_id: uuid.UUID, u: ProjectConfigUpdateSchema) -> ProjectConfigGetSchema:
+        try:
+            async with self._db.get_session() as session:
+                config = await session.scalar(
+                    select(ProjectConfig).where(
+                        ProjectConfig.id == config_id
+                    )
+                )
+
+                if config is None:
+                    raise Exception(
+                        f"Project config with id {config_id} not found"
+                    )
+
+                update_data = u.model_dump(exclude_unset=True)
+
+                for field, value in update_data.items():
+                    setattr(config, field, value)
+
+                await session.commit()
+                await session.refresh(config)
+
+            return ProjectConfigGetSchema.model_validate(config)
+        except Exception as e:
+            logger.error({"message": "Failed to update project config", "error": str(e)})
+            raise e
+
+    async def delete(self, config_id: uuid.UUID) -> bool:
+        try:
+            async with self._db.get_session() as session:
+                config = await session.scalar(select(ProjectConfig).where(ProjectConfig.id == config_id))
+                if config is None:
+                    raise Exception(f"Project config with id {config_id} not found")
+                await session.delete(config)
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error({"message": "Failed to delete project config", "error": str(e)})
+            raise e
