@@ -39,9 +39,18 @@ class ProjectRepo:
                     project_metadata=data.project_metadata
                 )
                 session.add(project)
+
+                # We must flush to push the project to the DB so the config can reference it
+                await session.flush() 
+
                 await self.graph_db.create(project.id, readable_id, data.name, data.description)
-                await ProjectConfigRepo(self.org_id, project.id).create(data.config)
+
+                # Passing the active session to the ConfigRepo
+                await ProjectConfigRepo(self.org_id, project.id).create(data.config, session=session)
+
+                # Commit EVERYTHING in one atomic transaction
                 await session.commit()
+
                 return ProjectGetSchema(**project.to_dict())
         except Exception as e:
             logger.error({"message": "Failed to create project", "error": str(e)})

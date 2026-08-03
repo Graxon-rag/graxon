@@ -65,9 +65,6 @@ class ProjectConfigModelsSchema(BaseModel):
 
 
 class ProjectConfigCreateSchema(ProjectConfigModelsSchema):
-    project_id: uuid.UUID = Field(
-        description="The project id of the config",
-    )
 
     graph_db_enable: bool = Field(
         description="Whether graph database is enabled",
@@ -162,6 +159,9 @@ class ProjectConfigGetSchema(
 ):
     id: uuid.UUID = Field(
         description="The id of the config",
+    )
+    project_id: uuid.UUID = Field(
+        description="The project id of the config",
     )
 
     created_at: datetime.datetime = Field(

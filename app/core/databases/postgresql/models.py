@@ -50,7 +50,7 @@ class Project(Base):
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
-    project_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default={})
+    project_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True, default={})
 
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(

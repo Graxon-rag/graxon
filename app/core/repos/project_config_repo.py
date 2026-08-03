@@ -12,19 +12,25 @@ class ProjectConfigRepo:
         self.org_id = org_id
         self.project_id = project_id
 
-    async def create(self, p: ProjectConfigCreateSchema) -> ProjectConfigGetSchema:
+    async def create(self, p: ProjectConfigCreateSchema, session=None) -> ProjectConfigGetSchema:
         try:
-            async with self._db.get_session() as session:
-                config = ProjectConfig(**p.model_dump())
-                session.add(config)
-                await session.commit()
-                get_result = await self.get(config.id)
-                if get_result is None:
-                    raise Exception(f"Project config with id {config.id} not found")
-                return get_result
+            # If a session is passed in, use it. Otherwise, create a new one.
+            if session:
+                return await self._execute_create(session, p)
+            else:
+                async with self._db.get_session() as new_session:
+                    return await self._execute_create(new_session, p)
         except Exception as e:
             logger.error({"message": "Failed to create project config", "error": str(e)})
             raise e
+
+    async def _execute_create(self, session, p: ProjectConfigCreateSchema):
+        config = ProjectConfig(project_id=self.project_id, **p.model_dump())
+        session.add(config)
+
+        # Flush instead of commit so the parent transaction still controls the final commit
+        await session.flush() 
+        return ProjectConfigGetSchema(**config.to_dict())
 
     async def get_by_project(self) -> ProjectConfigGetSchema | None:
         try:
