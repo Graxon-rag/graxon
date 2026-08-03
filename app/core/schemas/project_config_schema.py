@@ -4,99 +4,162 @@ import datetime
 import uuid
 
 
-class ProjectConfigBaseSchema(BaseModel):
+class ProjectConfigModelsSchema(BaseModel):
+    llm_model_id: uuid.UUID = Field(
+        description="The LLM model id",
+    )
+
+    llm_model_credential_id: uuid.UUID = Field(
+        description="The LLM model credential id",
+    )
+
+    sparse_text_model_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The sparse text model id",
+    )
+
+    sparse_text_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The sparse text model credential id",
+    )
+
+    reranker_model_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The reranker model id",
+    )
+
+    reranker_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The reranker model credential id",
+    )
+
+    ocr_model_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The OCR model id",
+    )
+
+    ocr_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The OCR model credential id",
+    )
+
+    audio_model_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The audio model id",
+    )
+
+    audio_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The audio model credential id",
+    )
+
+    video_model_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The video model id",
+    )
+
+    video_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The video model credential id",
+    )
+
+
+class ProjectConfigCreateSchema(ProjectConfigModelsSchema):
     project_id: uuid.UUID = Field(
         description="The project id of the config",
     )
 
     graph_db_enable: bool = Field(
-        description="The graph db enable of the config",
-    )
-
-    reranker_enable: bool = Field(
-        description="The reranker enable of the config",
+        description="Whether graph database is enabled",
     )
 
     sparse_embedding_enable: bool = Field(
-        description="The sparse embedding enable of the config",
-    )
-
-    llm_tag_extraction_enable: bool = Field(
-        description="The llm tag extraction enable of the config",
-    )
-
-    llm_model_id: uuid.UUID = Field(
-        description="The llm model id of the config",
-    )
-
-    llm_model_credential_id: uuid.UUID = Field(
-        description="The llm model credential id of the config",
+        description="Whether sparse embedding is enabled",
     )
 
     embedding_model_id: uuid.UUID = Field(
-        description="The embedding model id of the config",
+        description="The embedding model id",
     )
 
     embedding_model_credential_id: uuid.UUID = Field(
-        description="The embedding model credential id of the config",
+        description="The embedding model credential id",
     )
 
-    ocr_model_id: Optional[uuid.UUID] = Field(
-        default=None,
-        description="The ocr model id of the config",
+    llm_tag_extraction_enable: bool = Field(
+        description="Whether LLM tag extraction is enabled",
     )
 
-    ocr_model_credential_id: Optional[uuid.UUID] = Field(
+
+class ProjectConfigUpdateSchema(BaseModel):
+    llm_model_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The ocr model credential id of the config",
+        description="The LLM model id",
+    )
+
+    llm_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The LLM model credential id",
     )
 
     sparse_text_model_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The sparse text model id of the config",
+        description="The sparse text model id",
     )
 
     sparse_text_model_credential_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The sparse text model credential id of the config",
+        description="The sparse text model credential id",
     )
 
     reranker_model_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The reranker model id of the config",
+        description="The reranker model id",
     )
 
     reranker_model_credential_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The reranker model credential id of the config",
+        description="The reranker model credential id",
+    )
+
+    ocr_model_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The OCR model id",
+    )
+
+    ocr_model_credential_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="The OCR model credential id",
     )
 
     audio_model_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The audio model id of the config",
+        description="The audio model id",
     )
 
     audio_model_credential_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The audio model credential id of the config",
+        description="The audio model credential id",
     )
 
     video_model_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The video model id of the config",
+        description="The video model id",
     )
 
     video_model_credential_id: Optional[uuid.UUID] = Field(
         default=None,
-        description="The video model credential id of the config",
+        description="The video model credential id",
+    )
+
+    llm_tag_extraction_enable: Optional[bool] = Field(
+        default=None,
+        description="Whether LLM tag extraction is enabled",
     )
 
 
-class ProjectConfigCreateSchema(ProjectConfigBaseSchema):
-    pass
-
-
-class ProjectConfigGetSchema(ProjectConfigBaseSchema):
+class ProjectConfigGetSchema(
+    ProjectConfigCreateSchema
+):
     id: uuid.UUID = Field(
         description="The id of the config",
     )
