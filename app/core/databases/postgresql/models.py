@@ -1,4 +1,4 @@
-from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON
+from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON, Boolean
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
@@ -50,12 +50,7 @@ class Project(Base):
     org_id: Mapped[str] = mapped_column(ForeignKey("organizations.id", ondelete="CASCADE"), nullable=False, index=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str] = mapped_column(String(255), nullable=False)
-    llm_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("llm_models.id", ondelete="RESTRICT"), nullable=False)
-    embedding_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("embedding_models.id", ondelete="RESTRICT"), nullable=False)
-    sparse_text_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sparse_text_models.id", ondelete="RESTRICT"), nullable=False)
-    reranker_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reranker_models.id", ondelete="RESTRICT"), nullable=False)
-    llm_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=False)
-    embedding_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=False)
+    project_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=False, default={})
 
     # Timestamp
     created_at: Mapped[datetime.datetime] = mapped_column(
@@ -75,13 +70,87 @@ class Project(Base):
             "org_id": self.org_id,
             "readable_id": self.readable_id,
             "name": self.name,
-            "llm_model_id": self.llm_model_id,
-            "embedding_model_id": self.embedding_model_id,
-            "sparse_text_model_id": self.sparse_text_model_id,
-            "reranker_model_id": self.reranker_model_id,
-            "llm_model_credential_id": self.llm_model_credential_id,
-            "embedding_model_credential_id": self.embedding_model_credential_id,
             "description": self.description,
+            "project_metadata": self.project_metadata,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class ProjectConfig(Base):
+    __tablename__ = PGTables.PROJECT_CONFIG_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("projects.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    # Enable flags
+    graph_db_enable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    reranker_enable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    sparse_embedding_enable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    llm_tag_extraction_enable: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # LLM Mandatory
+    llm_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("llm_models.id", ondelete="RESTRICT"), nullable=False)
+    llm_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=False)
+
+    # Embedding Mandatory
+    embedding_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("embedding_models.id", ondelete="RESTRICT"), nullable=False)
+    embedding_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=False)
+
+    # OCR Optional
+    ocr_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("ocr_models.id", ondelete="RESTRICT"), nullable=True)
+    ocr_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=True)
+
+    # Sparse Optional
+    sparse_text_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("sparse_text_models.id", ondelete="RESTRICT"), nullable=True)
+    sparse_text_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=True)
+
+    # Reranker Optional
+    reranker_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("reranker_models.id", ondelete="RESTRICT"), nullable=True)
+    reranker_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=True)
+
+    # Audio Optional
+    audio_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("audio_models.id", ondelete="RESTRICT"), nullable=True)
+    audio_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=True)
+
+    # Video Optional
+    video_model_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("video_models.id", ondelete="RESTRICT"), nullable=True)
+    video_model_credential_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("model_credentials.id", ondelete="RESTRICT"), nullable=True)
+
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+        )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "graph_db_enable": self.graph_db_enable,
+            "reranker_enable": self.reranker_enable,
+            "sparse_embedding_enable": self.sparse_embedding_enable,
+            "llm_tag_extraction_enable": self.llm_tag_extraction_enable,
+            "llm_model_id": self.llm_model_id,
+            "llm_model_credential_id": self.llm_model_credential_id,
+            "embedding_model_id": self.embedding_model_id,
+            "embedding_model_credential_id": self.embedding_model_credential_id,
+            "ocr_model_id": self.ocr_model_id,
+            "ocr_model_credential_id": self.ocr_model_credential_id,
+            "sparse_text_model_id": self.sparse_text_model_id,
+            "sparse_text_model_credential_id": self.sparse_text_model_credential_id,
+            "reranker_model_id": self.reranker_model_id,
+            "reranker_model_credential_id": self.reranker_model_credential_id,
+            "audio_model_id": self.audio_model_id,
+            "audio_model_credential_id": self.audio_model_credential_id,
+            "video_model_id": self.video_model_id,
+            "video_model_credential_id": self.video_model_credential_id,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
