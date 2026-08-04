@@ -2,7 +2,7 @@
   "deepgram": [
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 3",
       "provider": "deepgram",
       "model_name": "Nova-3",
       "model_id": "nova-3",
@@ -11,7 +11,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 3 General",
       "provider": "deepgram",
       "model_name": "Nova-3 General",
       "model_id": "nova-3-general",
@@ -20,7 +20,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 3 Medical",
       "provider": "deepgram",
       "model_name": "Nova-3 Medical",
       "model_id": "nova-3-medical",
@@ -29,7 +29,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 2",
       "provider": "deepgram",
       "model_name": "Nova-2",
       "model_id": "nova-2",
@@ -38,7 +38,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 2 General",
       "provider": "deepgram",
       "model_name": "Nova-2 General",
       "model_id": "nova-2-general",
@@ -47,7 +47,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 2 Meeting",
       "provider": "deepgram",
       "model_name": "Nova-2 Meeting",
       "model_id": "nova-2-meeting",
@@ -56,7 +56,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Deepgram",
+      "name": "Deepgram Nova 2 Finance",
       "provider": "deepgram",
       "model_name": "Nova-2 Finance",
       "model_id": "nova-2-finance",
@@ -67,7 +67,7 @@
   "gladia": [
     {
       "org_id": "dev",
-      "name": "Gladia",
+      "name": "Gladia Solaria 3",
       "provider": "gladia",
       "model_name": "Solaria-3",
       "model_id": "solaria-3",
@@ -78,7 +78,7 @@
   "assemblyai": [
     {
       "org_id": "dev",
-      "name": "AssemblyAI",
+      "name": "AssemblyAI Best",
       "provider": "assemblyai",
       "model_name": "Best",
       "model_id": "best",
@@ -87,7 +87,7 @@
     },
     {
       "org_id": "dev",
-      "name": "AssemblyAI",
+      "name": "AssemblyAI Nano",
       "provider": "assemblyai",
       "model_name": "Nano",
       "model_id": "nano",
@@ -96,7 +96,7 @@
     },
     {
       "org_id": "dev",
-      "name": "AssemblyAI",
+      "name": "AssemblyAI SLAM 1",
       "provider": "assemblyai",
       "model_name": "SLAM-1",
       "model_id": "slam-1",
@@ -105,7 +105,7 @@
     },
     {
       "org_id": "dev",
-      "name": "AssemblyAI",
+      "name": "AssemblyAI Universal",
       "provider": "assemblyai",
       "model_name": "Universal",
       "model_id": "universal",
@@ -116,7 +116,7 @@
   "groq": [
     {
       "org_id": "dev",
-      "name": "Groq",
+      "name": "Groq Whisper Large V3",
       "provider": "groq",
       "model_name": "Whisper Large V3",
       "model_id": "whisper-large-v3",
@@ -125,7 +125,7 @@
     },
     {
       "org_id": "dev",
-      "name": "Groq",
+      "name": "Groq Whisper Large V3 Turbo",
       "provider": "groq",
       "model_name": "Whisper Large V3 Turbo",
       "model_id": "whisper-large-v3-turbo",
@@ -136,7 +136,7 @@
   "elevenlabs": [
     {
       "org_id": "dev",
-      "name": "ElevenLabs",
+      "name": "ElevenLabs Scribe V2",
       "provider": "elevenlabs",
       "model_name": "Scribe V2",
       "model_id": "scribe_v2",
@@ -145,7 +145,7 @@
     },
     {
       "org_id": "dev",
-      "name": "ElevenLabs",
+      "name": "ElevenLabs Scribe V1",
       "provider": "elevenlabs",
       "model_name": "Scribe V1",
       "model_id": "scribe_v1",
