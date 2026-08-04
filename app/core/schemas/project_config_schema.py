@@ -1,3 +1,11 @@
+from .sparse_text_model_schema import SparseTextModelGetSchema
+from .model_credential_schema import ModelCredentialGetSchema
+from .embedding_model_schema import EmbeddingModelGetSchema
+from .video_model_schema import VideoModelGetSchema
+from .audio_model_schema import AudioModelGetSchema
+from .ocr_model_schema import OCRModelGetSchema
+from .llm_model_schema import LLMModelGetSchema
+from .reranker_schema import ReRankerGetSchema
 from pydantic import BaseModel, Field
 from typing import Optional
 import datetime
@@ -80,6 +88,10 @@ class ProjectConfigCreateSchema(ProjectConfigModelsSchema):
 
     embedding_model_credential_id: uuid.UUID = Field(
         description="The embedding model credential id",
+    )
+
+    reranker_enable: bool = Field(
+        description="Whether reranker is enabled",
     )
 
     llm_tag_extraction_enable: bool = Field(
@@ -167,6 +179,35 @@ class ProjectConfigGetSchema(
     created_at: datetime.datetime = Field(
         description="The created at of the config",
     )
+
+    updated_at: datetime.datetime = Field(
+        description="The updated at of the config",
+    )
+
+
+class ProjectConfigDetailGetSchema(BaseModel):
+    id: uuid.UUID
+    project_id: uuid.UUID
+    llm_model: Optional[LLMModelGetSchema] = None
+    embedding_model: Optional[EmbeddingModelGetSchema] = None
+    reranker_model: Optional[ReRankerGetSchema] = None
+    sparse_text_model: Optional[SparseTextModelGetSchema] = None
+    reranker_model: Optional[ReRankerGetSchema] = None
+    ocr_model: Optional[OCRModelGetSchema] = None
+    audio_model: Optional[AudioModelGetSchema] = None
+    video_model: Optional[VideoModelGetSchema] = None
+
+    llm_model_credential: Optional[ModelCredentialGetSchema] = None
+    embedding_model_credential: Optional[ModelCredentialGetSchema] = None
+    sparse_text_model_credential: Optional[ModelCredentialGetSchema] = None
+    reranker_model_credential: Optional[ModelCredentialGetSchema] = None
+    ocr_model_credential: Optional[ModelCredentialGetSchema] = None
+    audio_model_credential: Optional[ModelCredentialGetSchema] = None
+    video_model_credential: Optional[ModelCredentialGetSchema] = None
+
+    created_at: datetime.datetime = Field(
+            description="The created at of the config",
+        )
 
     updated_at: datetime.datetime = Field(
         description="The updated at of the config",

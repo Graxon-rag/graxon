@@ -72,12 +72,13 @@ class ProjectRepo:
             raise e
 
     async def get_project_details(self, project_id: uuid.UUID) -> ProjectDetailSchema | None:
+        raise NotImplementedError
         try:
             project = await self.get(project_id)
             if project is None:
                 raise Exception(f"Project with id {project_id} not found")
-            project_details = await ProjectHelper(self.org_id).get_project_details(project)
-            return project_details
+            # project_details = await ProjectHelper(self.org_id).get_project_details(project)
+            # return project_details
         except Exception as e:
             logger.error({"message": "Failed to get project details", "error": str(e)})
             raise e

@@ -1,4 +1,4 @@
-from ..schemas.project_config_schema import ProjectConfigCreateSchema, ProjectConfigGetSchema, ProjectConfigUpdateSchema
+from ..schemas.project_config_schema import ProjectConfigCreateSchema, ProjectConfigGetSchema, ProjectConfigUpdateSchema, ProjectConfigDetailGetSchema
 from ..services.project_config_service import ProjectConfigService
 from app.utils.logger import logger
 import uuid
@@ -18,6 +18,13 @@ class ProjectConfigHandler:
     async def get_by_project(self) -> ProjectConfigGetSchema | None:
         try:
             return await self._service.get_by_project()
+        except Exception as e:
+            logger.error({"message": "Failed to get project config", "error": str(e)})
+            raise e
+
+    async def get_with_details_by_project(self) -> ProjectConfigDetailGetSchema | None:
+        try:
+            return await self._service.get_with_details_by_project()
         except Exception as e:
             logger.error({"message": "Failed to get project config", "error": str(e)})
             raise e

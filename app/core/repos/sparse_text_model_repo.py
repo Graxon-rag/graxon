@@ -43,6 +43,17 @@ class SparseTextModelRepo:
             logger.error({"message": "Failed to create sparse text model", "error": str(e)})
             raise e
 
+    async def get(self, sparse_text_model_id: uuid.UUID) -> SparseTextModelGetSchema | None:
+        try:
+            async with self.db.get_session() as session:
+                sparse_text_model = await session.get(SparseTextModel, sparse_text_model_id)
+                if sparse_text_model is None:
+                    return None
+                return SparseTextModelGetSchema(**sparse_text_model.to_dict())
+        except Exception as e:
+            logger.error({"message": "Failed to get sparse text model", "error": str(e)})
+            raise e
+
     async def get_all_sparse_text_models(self) -> list[SparseTextModelGetSchema]:
         try:
             async with self.db.get_session() as session:
