@@ -1,7 +1,6 @@
 {
   "datalab": [
     {
-      "org_id": "dev",
       "name": "Datalab Latest",
       "provider": "datalab",
       "model_name": "Latest",
@@ -12,7 +11,6 @@
   ],
   "mistral": [
     {
-      "org_id": "dev",
       "name": "Mistral OCR 4",
       "provider": "mistral",
       "model_name": "OCR 4",
@@ -21,7 +19,6 @@
       "model_metadata": {}
     },
     {
-      "org_id": "dev",
       "name": "Mistral OCR 3",
       "provider": "mistral",
       "model_name": "OCR 3",
@@ -30,7 +27,6 @@
       "model_metadata": {}
     },
     {
-      "org_id": "dev",
       "name": "Mistral Latest",
       "provider": "mistral",
       "model_name": "OCR Latest",
@@ -41,7 +37,6 @@
   ],
   "llamaparse": [
     {
-      "org_id": "dev",
       "name": "Llamaparse Latest",
       "provider": "llamaparse",
       "model_name": "Latest",

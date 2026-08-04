@@ -1,7 +1,6 @@
 {
   "twelvelabs": [
     {
-      "org_id": "dev",
       "name": "TwelveLabs Pegasus 1.2",
       "provider": "twelvelabs",
       "model_name": "Pegasus 1.2",
@@ -10,7 +9,6 @@
       "model_metadata": {}
     },
     {
-      "org_id": "dev",
       "name": "TwelveLabs Pegasus 1.5",
       "provider": "twelvelabs",
       "model_name": "Pegasus 1.5",
@@ -21,7 +19,6 @@
   ],
   "gemini": [
     {
-      "org_id": "dev",
       "name": "Google Gemini 3.5 Flash",
       "provider": "gemini",
       "model_name": "Gemini 3.5 Flash",
@@ -30,7 +27,6 @@
       "model_metadata": {}
     },
     {
-      "org_id": "dev",
       "name": "Google Gemini 3.5 Pro",
       "provider": "gemini",
       "model_name": "Gemini 3.5 Pro",
@@ -39,7 +35,6 @@
       "model_metadata": {}
     },
     {
-      "org_id": "dev",
       "name": "Google Gemini 2.5 Flash",
       "provider": "gemini",
       "model_name": "Gemini 2.5 Flash",
@@ -48,7 +43,6 @@
       "model_metadata": {}
     },
     {
-      "org_id": "dev",
       "name": "Google Gemini 2.5 Pro",
       "provider": "gemini",
       "model_name": "Gemini 2.5 Pro",

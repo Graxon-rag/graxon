@@ -1,9 +1,10 @@
 from ..schemas.org_schema import OrgCreateSchema, OrgGetSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Organization
-from ..neo4j.org import GN4jOrg
-from ..libs.org_lib import OrgLib
 from app.utils.logger import logger
+from ..data.seed import seed_models
+from ..libs.org_lib import OrgLib
+from ..neo4j.org import GN4jOrg
 from sqlalchemy import select
 
 
@@ -30,8 +31,14 @@ class OrgRepo:
                     name=data.name,
                     description=data.description
                 )
+
                 session.add(org)
+                await session.flush()  # flush so that org exists for forign key
+
                 await self.neo4j_org.create(id, data.name, data.description)
+
+                await seed_models(org.id, session)
+
                 await session.commit()
                 return OrgGetSchema(**org.to_dict())
         except Exception as e:

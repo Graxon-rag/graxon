@@ -1,7 +1,6 @@
 {
   "local": [
     {
-      "org_id": "dev",
       "name": "MiniLM L6 v2",
       "provider_type": "local",
       "provider": "xenova",
@@ -12,7 +11,6 @@
       "size_in_gb": 0.08
     },
     {
-      "org_id": "dev",
       "name": "MiniLM L12 v2",
       "provider_type": "local",
       "provider": "xenova",
@@ -23,7 +21,6 @@
       "size_in_gb": 0.12
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker Tiny EN",
       "provider_type": "local",
       "provider": "jina",
@@ -34,7 +31,6 @@
       "size_in_gb": 0.13
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker Turbo EN",
       "provider_type": "local",
       "provider": "jina",
@@ -45,7 +41,6 @@
       "size_in_gb": 0.15
     },
     {
-      "org_id": "dev",
       "name": "BGE Reranker Base",
       "provider_type": "local",
       "provider": "baai",
@@ -56,7 +51,6 @@
       "size_in_gb": 1.04
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker v2 Multilingual",
       "provider_type": "local",
       "provider": "jina",
@@ -69,7 +63,6 @@
   ],
   "cloud": [
     {
-      "org_id": "dev",
       "name": "Rerank V4.0 Pro",
       "provider_type": "cloud",
       "provider": "cohere",
@@ -80,7 +73,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Rerank V4.0 Fast",
       "provider_type": "cloud",
       "provider": "cohere",
@@ -91,7 +83,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Rerank V3.5",
       "provider_type": "cloud",
       "provider": "cohere",
@@ -102,7 +93,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Rerank English V3.0",
       "provider_type": "cloud",
       "provider": "cohere",
@@ -113,7 +103,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Rerank Multilingual V3.0",
       "provider_type": "cloud",
       "provider": "cohere",
@@ -125,7 +114,6 @@
     },
 
     {
-      "org_id": "dev",
       "name": "Rerank 2.5",
       "provider_type": "cloud",
       "provider": "voyage",
@@ -138,7 +126,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Rerank 2.5 Lite",
       "provider_type": "cloud",
       "provider": "voyage",
@@ -152,7 +139,6 @@
     },
 
     {
-      "org_id": "dev",
       "name": "Jina Reranker V3.5",
       "provider_type": "cloud",
       "provider": "jina",
@@ -177,7 +163,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker V3",
       "provider_type": "cloud",
       "provider": "jina",
@@ -202,7 +187,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker M0",
       "provider_type": "cloud",
       "provider": "jina",
@@ -228,7 +212,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker V2 Base Multilingual",
       "provider_type": "cloud",
       "provider": "jina",
@@ -256,7 +239,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker V1 Tiny EN",
       "provider_type": "cloud",
       "provider": "jina",
@@ -284,7 +266,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker V1 Turbo EN",
       "provider_type": "cloud",
       "provider": "jina",
@@ -310,7 +291,6 @@
       "size_in_gb": null
     },
     {
-      "org_id": "dev",
       "name": "Jina Reranker V1 Base EN",
       "provider_type": "cloud",
       "provider": "jina",
