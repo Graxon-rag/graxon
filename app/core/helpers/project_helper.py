@@ -65,7 +65,7 @@ class ProjectConfigHelper:
 
     async def get_project_config_detail(self, pc: ProjectConfigGetSchema) -> ProjectConfigDetailGetSchema:
         try:
-            pcd: ProjectConfigDetailGetSchema = ProjectConfigDetailGetSchema(id=pc.id, project_id=pc.project_id, created_at=pc.created_at, updated_at=pc.updated_at)
+            pcd: ProjectConfigDetailGetSchema = ProjectConfigDetailGetSchema(id=pc.id, project_id=pc.project_id, graph_db_enable=pc.graph_db_enable, sparse_embedding_enable=pc.sparse_embedding_enable, llm_tag_extraction_enable=pc.llm_tag_extraction_enable, reranker_enable=pc.reranker_enable, created_at=pc.created_at, updated_at=pc.updated_at)
 
             llm_model_id = pc.llm_model_id
             embedding_model_id = pc.embedding_model_id

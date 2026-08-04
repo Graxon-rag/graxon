@@ -164,6 +164,10 @@ class ProjectConfigUpdateSchema(BaseModel):
         default=None,
         description="Whether LLM tag extraction is enabled",
     )
+    reranker_enable: Optional[bool] = Field(
+        default=None,
+        description="Whether reranker is enabled",
+    )
 
 
 class ProjectConfigGetSchema(
@@ -188,6 +192,12 @@ class ProjectConfigGetSchema(
 class ProjectConfigDetailGetSchema(BaseModel):
     id: uuid.UUID
     project_id: uuid.UUID
+
+    graph_db_enable: bool
+    sparse_embedding_enable: bool
+    llm_tag_extraction_enable: bool
+    reranker_enable: bool
+
     llm_model: Optional[LLMModelGetSchema] = None
     embedding_model: Optional[EmbeddingModelGetSchema] = None
     reranker_model: Optional[ReRankerGetSchema] = None
