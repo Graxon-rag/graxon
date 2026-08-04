@@ -3,10 +3,10 @@ from .model_credential_schema import ModelCredentialGetSchema
 from .embedding_model_schema import EmbeddingModelGetSchema
 from .video_model_schema import VideoModelGetSchema
 from .audio_model_schema import AudioModelGetSchema
+from pydantic import BaseModel, Field, ConfigDict
 from .ocr_model_schema import OCRModelGetSchema
 from .llm_model_schema import LLMModelGetSchema
 from .reranker_schema import ReRankerGetSchema
-from pydantic import BaseModel, Field
 from typing import Optional
 import datetime
 import uuid
@@ -187,6 +187,8 @@ class ProjectConfigGetSchema(
     updated_at: datetime.datetime = Field(
         description="The updated at of the config",
     )
+
+    model_config = ConfigDict(from_attributes=True)
 
 
 class ProjectConfigDetailGetSchema(BaseModel):

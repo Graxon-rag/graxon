@@ -76,7 +76,7 @@ class ProjectConfigRepo:
                 await session.commit()
                 await session.refresh(config)
 
-            return ProjectConfigGetSchema.model_validate(config)
+                return ProjectConfigGetSchema.model_validate(config)
         except Exception as e:
             logger.error({"message": "Failed to update project config", "error": str(e)})
             raise e
