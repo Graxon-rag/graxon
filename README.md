@@ -14,6 +14,8 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Architecture](#architecture)
 - [Infrastructure](#infrastructure)
 - [Data Model](#data-model)
+- [Supported Formats](#supported-formats)
+- [Chunking Engine](#chunking-engine)
 - [Ingestion Pipeline](#ingestion-pipeline)
 - [Lexical Engine](#lexical-engine)
 - [Resilient Ingestion & Checkpointing](#resilient-ingestion--checkpointing)
@@ -132,6 +134,32 @@ All edges carry a **weight** for ranked graph traversal during retrieval.
 <br/>
 
 !["graph1.png"](./img/graph1.png)
+
+---
+
+## Supported Formats
+
+| Category         | Formats                                          |
+| ---------------- | ------------------------------------------------ |
+| Structured       | CSV, Excel, JSON, HTML, XML, YAML, Code and more |
+| Text             | TXT, Markdown, PPT, Docs and more                |
+| Media (Document) | PDF, Images                                      |
+| Media (Audio)    | Audio files                                      |
+| Media (Video)    | Video files                                      |
+
+---
+
+## Chunking Engine
+
+A multi-format document chunking pipeline that transforms raw files into **semantically meaningful RAG chunks**.
+
+Instead of blindly splitting every file into fixed-size chunks, each file format is routed through a processing strategy suited to its content — structured tabular data, plain text, PDFs/images, audio, and video are all handled differently before converging into a unified chunk + storage layer.
+
+#### [Read more about chunking engine](md/chunking_engine.md)
+
+<br/>
+
+## !["chunking_engine.png"](./img/chunking_engine.png)
 
 ---
 
