@@ -1,4 +1,42 @@
-# Graxon
+<div align="center">
+
+  <a href="https://www.graxonrag.com/">
+    <img src="img/graxon-logo.png" alt="Graxon Logo" width="400">
+  </a>
+  <h1 style="font-size: 46px;">Graxon</h1>
+
+  <br>
+  <br>
+
+  <!-- Badges -->
+  <a href="https://github.com/Graxon-rag/graxon/stargazers">
+    <img src="https://img.shields.io/github/stars/Graxon-rag/graxon?style=flat-square&logo=github&color=0969da" alt="GitHub stars">
+  </a>
+  <a href="https://pypi.org/project/graxon/">
+    <img src="https://img.shields.io/pypi/v/graxon?style=flat-square&logo=pypi&color=blue" alt="PyPI version">
+  </a>
+  <a href="https://github.com/Graxon-rag/python">
+    <img src="https://img.shields.io/badge/Python-SDK-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python SDK">
+  </a>
+  <a href="https://www.linkedin.com/company/115924256">
+    <img src="https://img.shields.io/badge/LinkedIn-Follow-0A66C2?style=flat-square&logo=linkedin" alt="LinkedIn Follow">
+  </a>
+  <a href="https://www.youtube.com/@graxonrag">
+    <img src="https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=flat-square&logo=youtube" alt="YouTube Subscribe">
+  </a>
+
+  <br>
+  <br>
+
+[**Website**](https://www.graxonrag.com/) &nbsp;|&nbsp;
+[**Documentation**](https://www.graxonrag.com/docs) &nbsp;|&nbsp;
+[**API Reference**](https://www.graxonrag.com/docs/api-reference) &nbsp;|&nbsp;
+[**Python SDK**](https://github.com/Graxon-rag/python) &nbsp;|&nbsp;
+[**Examples**](https://github.com/Graxon-rag/python-examples)
+
+</div>
+
+<br>
 
 > **First Open-Source Hybrid RAG to eliminate hallucinations through a persistent Knowledge Graph layer.**
 
@@ -6,9 +44,19 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 
 ---
 
+## 🌟 Why Graxon?
+
+- **Eliminate Hallucinations:** Ground your AI responses in a persistent, traceable Knowledge Graph.
+- **Hybrid Retrieval:** Leverage the best of both dense (vector) and sparse search methodologies.
+- **Built for Scale:** Designed to handle complex queries across multiple organizations, diverse projects, and massive document stores.
+- **Developer Friendly:** Comprehensive [API](https://www.graxonrag.com/docs/api-reference) and robust [Python SDK](https://github.com/Graxon-rag/python) to get you building quickly.
+
+---
+
 ## Table of Contents
 
 - [Overview](#overview)
+- [Quickstart](#-quickstart)
 - [Images](#images)
 - [Videos](#videos)
 - [Architecture](#architecture)
@@ -26,6 +74,7 @@ Graxon combines dense vector search, sparse retrieval, and a structured Knowledg
 - [Execution Choices](#execution-choices)
 - [Swagger](#swagger)
 - [Docker Hub](#docker-hub)
+- [Connect with Us](#-connect-with-us)
 
 ---
 
@@ -40,6 +89,33 @@ Traditional RAG systems rely purely on vector similarity, which can retrieve pla
 - **Multi-Document** — fine-grained document management
 - **Hybrid Retrieval** — dense vectors + sparse BM25 + graph traversal
 - **Hallucination Reduction** — graph-grounded answers anchored to structured knowledge
+
+---
+
+## 🚀 Quickstart
+
+### Installation
+
+You can easily install the Graxon Python SDK via pip:
+
+```bash
+pip install graxon
+```
+
+### Examples
+
+Check out our [Python Examples Repository](https://github.com/Graxon-rag/python-examples) to see Graxon in action, or dive into the official [Documentation](https://www.graxonrag.com/docs) to set up your first Knowledge Graph powered RAG pipeline.
+
+### 🔗 Key Links & Resources
+
+- 🌐 Main Site: [graxonrag.com](https://www.graxonrag.com)
+
+- 📚 Docs: [graxonrag.com/docs](https://www.graxonrag.com/docs)
+
+- ⚙️ API Reference: [graxonrag.com/docs/api-reference](https://www.graxonrag.com/docs/api-reference)
+
+- 📜 Python SDK: [graxon-python](https://github.com/Graxon-rag/python)
+- 🐍 PyPI: [graxon](https://pypi.org/project/graxon/)
 
 ---
 
@@ -716,3 +792,15 @@ Then restart the server.
 ```py
 spacy download en_core_web_sm
 ```
+
+---
+
+## 🤝 Connect with Us
+
+Stay up to date with the latest features, tutorials, and community highlights!
+
+- Follow us on [LinkedIn](https://www.linkedin.com/company/115924256/)
+
+- Subscribe to our [YouTube Channel](https://www.youtube.com/@graxonrag) for tutorials and deep dives.
+
+- Star us on [GitHub](https://github.com/Graxon-rag/graxon) to support open-source development!
