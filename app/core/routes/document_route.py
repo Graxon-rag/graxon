@@ -192,7 +192,11 @@ async def get_document_signed_url(org_id: str, project_id: uuid.UUID, bucket: st
             key=key
         )
         handler = DocumentHandler(org_id=org_id, project_id=project_id)
-        return await handler.get_document_signed_url(document)
+        result = await handler.get_document_signed_url(document)
+        if not result:
+            logger.error({"message": "Failed to get document signed url", "result": result})
+            return error_response("Failed to get document signed url", HTTP_404_NOT_FOUND)
+        return success_response(data={"signed_url": result})
     except Exception as e:
         logger.error({"message": "Failed to get document signed url", "error": str(e)})
         raise HTTPException(
