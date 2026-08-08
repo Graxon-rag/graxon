@@ -24,6 +24,10 @@ class DocumentUploadSchema(BaseModel):
         default=None,
         description="The file size of the document",
     )
+    is_ocr_needed: bool = Field(
+        default=False,
+        description="True if OCR is needed",
+    )
 
 
 class DocumentUploadResponseSchema(BaseModel):
@@ -49,6 +53,11 @@ class DocumentUploadResponseSchema(BaseModel):
 
     signed_url: str = Field(
         description="The signed url of the document",
+    )
+
+    is_ocr_needed: bool = Field(
+        default=False,
+        description="True if OCR is needed",
     )
 
 
@@ -92,6 +101,7 @@ class DocumentCreateSchema(BaseModel):
     key: str = Field(
         description="The key of the document",
     )
+
     size: int | None = Field(
         default=None,
         description="The file size of the document",
@@ -99,6 +109,11 @@ class DocumentCreateSchema(BaseModel):
 
     status: DocumentStatus = Field(
         description="The status of the document",
+    )
+
+    is_ocr_needed: bool = Field(
+        default=False,
+        description="True if OCR is needed",
     )
 
 
@@ -134,6 +149,11 @@ class DocumentGetSchema(BaseModel):
 
     status: DocumentStatus = Field(
         description="The status of the document",
+    )
+
+    is_ocr_needed: bool = Field(
+        default=False,
+        description="True if OCR is needed",
     )
 
     created_at: datetime.datetime = Field(
@@ -179,4 +199,5 @@ class CompleteMultipartUploadSchema(BaseModel):
     key: str
     file_name: str
     size: int | None = None
+    is_ocr_needed: bool = False
     parts: list[DocumentMultipartUploadPartSchema]

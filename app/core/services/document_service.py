@@ -143,7 +143,8 @@ class DocumentService:
                 bucket=self.org_id,
                 key=key,
                 size=document.size,
-                status=DocumentStatus.PENDING
+                status=DocumentStatus.PENDING,
+                is_ocr_needed=document.is_ocr_needed
             )
 
             await self._repo.create(doc_create_schema)

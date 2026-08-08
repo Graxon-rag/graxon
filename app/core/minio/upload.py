@@ -76,8 +76,10 @@ class MinioUploadClient:
             logger.error({"message": "Failed to get multipart presigned url", "error": str(e)})
             raise e
 
-    async def complete_multipart_upload(self, document_id: uuid.UUID, upload_id: str, key: str, file_name: str, size: int | None, parts: list[DocumentMultipartUploadPartSchema]):
+    async def complete_multipart_upload(self, document_id: uuid.UUID, upload_id: str, key: str, file_name: str, size: int | None, parts: list[DocumentMultipartUploadPartSchema], is_ocr_needed: bool = False):
         try:
+            logger.info({"message": "Completing multipart upload", "document_id": document_id, "upload_id": upload_id, "key": key, "file_name": file_name, "size": size, "parts": parts, "is_ocr_needed": is_ocr_needed})
+
             m_parts: list[CompletedPartTypeDef] = []
 
             # S3 requires parts to be sorted by PartNumber
@@ -113,7 +115,8 @@ class MinioUploadClient:
                     id=document_id,
                     name=file_name,
                     type=file_type,
-                    size=size
+                    size=size,
+                    is_ocr_needed=is_ocr_needed
                     ),
                     key=key
                 )

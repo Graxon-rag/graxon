@@ -65,6 +65,7 @@ async def multipart_upload_complete(org_id: str, project_id: uuid.UUID, document
             key=body.key,
             file_name=body.file_name,
             size=body.size,
+            is_ocr_needed=body.is_ocr_needed,
             parts=body.parts
         )
         if not result:
