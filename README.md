@@ -18,6 +18,13 @@
   <a href="https://github.com/Graxon-rag/python">
     <img src="https://img.shields.io/badge/Python-SDK-3776AB?style=flat-square&logo=python&logoColor=white" alt="Python SDK">
   </a>
+
+<a href="https://www.npmjs.com/package/graxon">
+  <img src="https://img.shields.io/npm/v/graxon?style=flat-square&logo=npm&color=CB3837" alt="npm version">
+</a>
+<a href="https://github.com/Graxon-rag/js">
+  <img src="https://img.shields.io/badge/JavaScript--TypeScript-SDK-F7DF1E?style=flat-square&logo=javascript&logoColor=black" alt="JavaScript TypeScript SDK">
+</a>
   <a href="https://www.linkedin.com/company/115924256">
     <img src="https://img.shields.io/badge/LinkedIn-Follow-0A66C2?style=flat-square&logo=linkedin" alt="LinkedIn Follow">
   </a>
@@ -32,7 +39,9 @@
 [**Documentation**](https://www.graxonrag.com/docs) &nbsp;|&nbsp;
 [**API Reference**](https://www.graxonrag.com/docs/api-reference) &nbsp;|&nbsp;
 [**Python SDK**](https://github.com/Graxon-rag/python) &nbsp;|&nbsp;
-[**Examples**](https://github.com/Graxon-rag/python-examples)
+[**Javascript SDK**](https://github.com/Graxon-rag/js) &nbsp;|&nbsp;
+[**Python Examples**](https://github.com/Graxon-rag/python-examples)&nbsp;|&nbsp;
+[**Javascript Examples**](https://github.com/Graxon-rag/js-examples)
 
 </div>
 
@@ -94,28 +103,61 @@ Traditional RAG systems rely purely on vector similarity, which can retrieve pla
 
 ## 🚀 Quickstart
 
-### Installation
+### Python
 
-You can easily install the Graxon Python SDK via pip:
+Install the Graxon Python SDK using pip:
 
 ```bash
 pip install graxon
 ```
 
-### Examples
+Check out the [Python Examples Repository](https://github.com/Graxon-rag/python-examples) for complete examples and end-to-end use cases.
 
-Check out our [Python Examples Repository](https://github.com/Graxon-rag/python-examples) to see Graxon in action, or dive into the official [Documentation](https://www.graxonrag.com/docs) to set up your first Knowledge Graph powered RAG pipeline.
+**Python SDK:**  
+https://github.com/Graxon-rag/python
 
-### 🔗 Key Links & Resources
+**PyPI:**  
+https://pypi.org/project/graxon/
 
-- 🌐 Main Site: [graxonrag.com](https://www.graxonrag.com)
+---
 
-- 📚 Docs: [graxonrag.com/docs](https://www.graxonrag.com/docs)
+### JavaScript / TypeScript
 
-- ⚙️ API Reference: [graxonrag.com/docs/api-reference](https://www.graxonrag.com/docs/api-reference)
+Install the Graxon JavaScript SDK using your preferred package manager.
 
-- 📜 Python SDK: [graxon-python](https://github.com/Graxon-rag/python)
-- 🐍 PyPI: [graxon](https://pypi.org/project/graxon/)
+#### Bun
+
+```bash
+bun add graxon
+```
+
+#### npm
+
+```bash
+npm install graxon
+```
+
+#### yarn
+
+```bash
+yarn add graxon
+```
+
+#### pnpm
+
+```bash
+pnpm add graxon
+```
+
+The JavaScript SDK supports modern JavaScript and TypeScript applications and is designed to work seamlessly with **Bun**.
+
+Check out the [JavaScript Examples Repository](https://github.com/Graxon-rag/js-examples) for complete examples and end-to-end use cases.
+
+**JavaScript SDK:**  
+https://github.com/Graxon-rag/javascript
+
+**npm:**  
+https://www.npmjs.com/package/graxon
 
 ---
 
