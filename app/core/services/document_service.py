@@ -1,6 +1,7 @@
 from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema
 from ..services.project_service import ProjectService
 from ..rabbitmq.producer import GMQDocumentProducer
+from ..helpers.process_helper import ProcessHelper
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
 from ..repos.document_repo import DocumentRepo
@@ -64,9 +65,10 @@ class DocumentService:
             is_model_check_passed = await self._model_helper.check_model_check(document.name)
             if not is_model_check_passed:
                 raise Exception("Model check failed")
-            document = await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
             try:
-                # await GMQDocumentProducer.publish_to_processing_exchange(document)
+                process_params = await ProcessHelper.get_process_params(document)
+                await GMQDocumentProducer.publish_to_processing_exchange(process_params)
+                await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
                 print("Document submitted for processing", document)
             except Exception as e:
                 await self._repo.change_document_status(document_id, DocumentStatus.PENDING)
