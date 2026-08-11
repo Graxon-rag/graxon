@@ -1,11 +1,12 @@
-from app.utils.logger import logger
-from fastapi import UploadFile
 from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema
 from ..services.project_service import ProjectService
-from ..repos.document_repo import DocumentRepo
 from ..rabbitmq.producer import GMQDocumentProducer
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
+from ..repos.document_repo import DocumentRepo
+from ..helpers.model_helper import ModelHelper
+from app.utils.logger import logger
+from fastapi import UploadFile
 from ..libs.id import IDLibs
 import uuid
 
@@ -13,9 +14,11 @@ import uuid
 class DocumentService:
     def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
+        self.project_id = project_id
         self._project_service = ProjectService(org_id=self.org_id)
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=project_id)
         self._repo = DocumentRepo(org_id=self.org_id, project_id=project_id)
+        self._model_helper = ModelHelper(org_id=self.org_id, project_id=project_id)
 
     async def handle_document_upload(self, data: DocumentUploadSchema, file: UploadFile) -> DocumentUploadResponseSchema:
         try:
@@ -55,6 +58,12 @@ class DocumentService:
 
     async def submit_process_document(self, document_id: uuid.UUID) -> bool:
         try:
+            document = await self._repo.get(document_id)
+            if document is None:
+                raise Exception(f"Document with id {document_id} not found")
+            is_model_check_passed = await self._model_helper.check_model_check(document.name)
+            if not is_model_check_passed:
+                raise Exception("Model check failed")
             document = await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
             try:
                 # await GMQDocumentProducer.publish_to_processing_exchange(document)

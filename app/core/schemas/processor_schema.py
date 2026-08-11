@@ -4,6 +4,7 @@ from pydantic import BaseModel, Field
 from app.config.env import Env
 from enum import Enum
 import uuid
+import os
 
 
 class OCRProcessor(str, Enum):
@@ -39,6 +40,65 @@ class FileType(str, Enum):
     IMAGE = "image"
 
     VIDEO = "video"
+
+
+EXTENSION_MAP = {
+    "txt": FileType.TEXT, "log": FileType.TEXT,
+
+    "json": FileType.JSON,
+
+    "pdf": FileType.PDF,
+
+    "md": FileType.MARKDOWN, "markdown": FileType.MARKDOWN,
+
+    "doc": FileType.DOC, "docs": FileType.DOC, "docx": FileType.DOC,
+    "dox": FileType.DOC, "doxs": FileType.DOC, "dot": FileType.DOC,
+    "dotx": FileType.DOC, "rtf": FileType.DOC, "odt": FileType.DOC,
+
+    "ppt": FileType.PPT, "ppts": FileType.PPT, "pptx": FileType.PPT,
+    "pps": FileType.PPT, "ppsx": FileType.PPT, "pot": FileType.PPT,
+    "potx": FileType.PPT, "odp": FileType.PPT,
+
+    "xls": FileType.EXCEL, "xlsx": FileType.EXCEL, "xlsm": FileType.EXCEL,
+    "xlt": FileType.EXCEL, "xltx": FileType.EXCEL, "ods": FileType.EXCEL,
+
+    "html": FileType.HTML, "htm": FileType.HTML, "xhtml": FileType.HTML,
+
+    "csv": FileType.CSV, "tsv": FileType.CSV,
+
+    "xml": FileType.XML,
+
+    "yaml": FileType.YAML, "yml": FileType.YAML,
+
+    "py": FileType.CODE, "js": FileType.CODE, "ts": FileType.CODE,
+    "jsx": FileType.CODE, "tsx": FileType.CODE, "java": FileType.CODE,
+    "c": FileType.CODE, "cpp": FileType.CODE, "h": FileType.CODE,
+    "hpp": FileType.CODE, "cs": FileType.CODE, "go": FileType.CODE,
+    "rb": FileType.CODE, "php": FileType.CODE, "rs": FileType.CODE,
+    "swift": FileType.CODE, "kt": FileType.CODE, "sh": FileType.CODE,
+    "sql": FileType.CODE,
+
+    "mp3": FileType.AUDIO, "wav": FileType.AUDIO, "ogg": FileType.AUDIO,
+    "flac": FileType.AUDIO, "aac": FileType.AUDIO, "m4a": FileType.AUDIO,
+    "wma": FileType.AUDIO,
+
+    "jpg": FileType.IMAGE, "jpeg": FileType.IMAGE, "png": FileType.IMAGE,
+    "gif": FileType.IMAGE, "bmp": FileType.IMAGE, "svg": FileType.IMAGE,
+    "webp": FileType.IMAGE, "tiff": FileType.IMAGE, "ico": FileType.IMAGE,
+
+    "mp4": FileType.VIDEO, "avi": FileType.VIDEO, "mov": FileType.VIDEO,
+    "mkv": FileType.VIDEO, "wmv": FileType.VIDEO, "flv": FileType.VIDEO,
+    "webm": FileType.VIDEO, "m4v": FileType.VIDEO, "3gp": FileType.VIDEO,
+}
+
+
+def get_file_type(filename: str) -> FileType | None:
+    """
+    Takes a filename (e.g. 'report.docx') and returns the matching FileType.
+    Returns None if the extension isn't recognized.
+    """
+    ext = os.path.splitext(filename)[1].lstrip(".").lower()
+    return EXTENSION_MAP.get(ext)
 
 
 class TxtProcessParams(BaseModel):

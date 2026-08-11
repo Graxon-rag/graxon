@@ -1,13 +1,12 @@
-from ..schemas.project_schema import ProjectDetailSchema, ProjectGetSchema, ProjectDetailMetadata
 from ..schemas.project_config_schema import ProjectConfigDetailGetSchema, ProjectConfigGetSchema
-from ..services.embedding_model_service import EmbeddingModelService
-from ..services.llm_model_service import LLMModelService
-from ..services.reranker_service import ReRankerService
-from ..services.model_credential_service import ModelCredentialService
 from ..services.sparse_text_model_service import SparseTextModelService
-from ..services.ocr_model_service import OCRModelService
+from ..services.model_credential_service import ModelCredentialService
+from ..services.embedding_model_service import EmbeddingModelService
 from ..services.audio_model_service import AudioModelService
 from ..services.video_model_service import VideoModelService
+from ..services.llm_model_service import LLMModelService
+from ..services.ocr_model_service import OCRModelService
+from ..services.reranker_service import ReRankerService
 from app.utils.logger import logger
 import uuid
 
