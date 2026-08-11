@@ -199,7 +199,7 @@ class RMQProcessorHelper:
             "chunk_number": data.file_chunk_number,
             "rag_chunk_start_index": data.rag_chunk_start_index,
             "max_chunk_size_mb": data.max_chunk_size_mb,
-            "rag_chunk_size_mb": data.rag_chunk_size_mb,
+            "rag_chunk_size": data.rag_chunk_size,
             "rag_chunk_overlap": data.rag_chunk_overlap,
             "tail_carry_chars": data.tail_carry_chars
         }
