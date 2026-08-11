@@ -3,88 +3,10 @@ from langchain_core.documents import Document
 from app.utils.logger import logger
 from .processor import Processor
 from app.config.env import Env
-from typing import List, Tuple, Optional
+from typing import List, Tuple
 import aiofiles
 import chardet
 import os
-
-
-# Maps file extensions to LangChain Language enum
-EXTENSION_TO_LANGUAGE: dict[str, Language] = {
-    # Python
-    ".py": Language.PYTHON,
-    # JavaScript / TypeScript
-    ".js": Language.JS,
-    ".jsx": Language.JS,
-    ".ts": Language.TS,
-    ".tsx": Language.TS,
-    # Golang
-    ".go": Language.GO,
-    # Rust
-    ".rs": Language.RUST,
-    # C / C++
-    ".c": Language.C,
-    ".h": Language.C,
-    ".cpp": Language.CPP,
-    ".cc": Language.CPP,
-    ".cxx": Language.CPP,
-    ".hpp": Language.CPP,
-    # C#
-    ".cs": Language.CSHARP,
-    # HTML
-    ".html": Language.HTML,
-    ".htm": Language.HTML,
-    # Ruby
-    ".rb": Language.RUBY,
-    # Java
-    ".java": Language.JAVA,
-    # Kotlin
-    ".kt": Language.KOTLIN,
-    ".kts": Language.KOTLIN,
-    # Swift
-    ".swift": Language.SWIFT,
-    # Scala
-    ".scala": Language.SCALA,
-    # Markdown (treat as code-like for structured splitting)
-    ".md": Language.MARKDOWN,
-    # Latex
-    ".tex": Language.LATEX,
-    # Sol (Solidity)
-    ".sol": Language.SOL,
-    # Proto
-    ".proto": Language.PROTO,
-    # Lua
-    ".lua": Language.LUA,
-    # Perl
-    ".pl": Language.PERL,
-    ".pm": Language.PERL,
-}
-
-
-def get_language_from_extension(file_path: str) -> Optional[Language]:
-    """
-    Returns the LangChain Language enum for a given file path based on its extension.
-    Returns None if the extension is not recognized as a code file.
-
-    Usage:
-        language = get_language_from_extension("main.py")   # Language.PYTHON
-        language = get_language_from_extension("index.ts")  # Language.TS
-        language = get_language_from_extension("notes.txt") # None
-    """
-    ext = os.path.splitext(file_path)[-1].lower()
-    return EXTENSION_TO_LANGUAGE.get(ext, None)
-
-
-def is_code_file(file_path: str) -> bool:
-    """
-    Returns True if the file extension is a recognized code file.
-
-    Usage:
-        is_code_file("main.py")    # True
-        is_code_file("notes.txt")  # False
-        is_code_file("index.tsx")  # True
-    """
-    return get_language_from_extension(file_path) is not None
 
 
 class CodeProcessor(Processor):
@@ -94,7 +16,7 @@ class CodeProcessor(Processor):
         chunk_number: int,
         rag_chunk_start_index: int,
         language: Language,
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         rag_chunk_size: int = Env.CHUNK_SIZE,
         rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
         tail_carry_chars: int = 500,

@@ -4,6 +4,7 @@ from langchain_core.documents import Document
 from collections import Counter, defaultdict
 from sklearn.cluster import KMeans
 from .processor import Processor
+from app.config.env import Env
 import lxml.etree as etree
 
 
@@ -16,7 +17,7 @@ class XMLProcessor(Processor):
         rag_chunk_start_index: int,             # absolute RAG chunk index to continue from
         record_tag: Optional[str] = None,       # repeating element tag — auto-detected if None
         objects_per_buffer: int = 500,          # max records per batch
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         group_size: int = 10,                   # target records per RAG chunk
         max_group_size: int = 20,               # hard cap — oversized clusters get split
     ):

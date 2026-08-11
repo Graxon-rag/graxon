@@ -1,7 +1,8 @@
-from .code_processor import CodeProcessor, is_code_file, get_language_from_extension
+from .processor_helper import is_code_file, get_language_from_extension
 from .markdown_processor import MarkdownProcessor
 from langchain_text_splitters import Language
 from .excel_processor import ExcelProcessor
+from .code_processor import CodeProcessor
 from .text_processor import TextProcessor
 from .json_processor import JsonProcessor
 from .html_processor import HTMLProcessor
@@ -60,7 +61,7 @@ class ProcessorFactory:
         elif is_code_file(file_path):
             language = get_language_from_extension(file_path)
             if language:
-                return ProcessorFactory._code_file_processor(file_path, file_type, filename, language, **kwargs)
+                return ProcessorFactory._code_file_processor(file_path, file_type, filename, **kwargs)
             else:
                 raise ValueError(f"Unsupported code file type: {file_type}")
 
@@ -300,7 +301,7 @@ class ProcessorFactory:
             chunk_number=chunk_number,
             rag_chunk_start_index=rag_chunk_start_index,
             max_chunk_size_mb=kwargs.get("max_chunk_size_mb", 50),
-            rag_chunk_size=kwargs.get("rag_chunk_size_mb", Env.CHUNK_SIZE),
+            rag_chunk_size=kwargs.get("rag_chunk_size", Env.CHUNK_SIZE),
             rag_chunk_overlap=kwargs.get("rag_chunk_overlap", Env.CHUNK_OVERLAP),
             tail_carry_chars=kwargs.get("tail_carry_chars", 500)
         )

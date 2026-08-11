@@ -14,7 +14,7 @@ class PPTXProcessor(Processor):
         filename: str,
         chunk_number: int,
         rag_chunk_start_index: int,
-        pages_per_batch: int = 20,          # maps directly to slides_per_batch
+        pages_per_batch: int = Env.MAX_PAGES_PER_BATCH,          # maps directly to slides_per_batch
         rag_chunk_size: int = Env.CHUNK_SIZE,
         rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
         # no tail_carry_chars — slides are independent units

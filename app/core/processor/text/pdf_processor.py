@@ -14,7 +14,7 @@ class PDFProcessor(Processor):
         filename: str,
         chunk_number: int,
         rag_chunk_start_index: int,
-        pages_per_batch: int = 20,
+        pages_per_batch: int = Env.MAX_PAGES_PER_BATCH,
         rag_chunk_size: int = Env.CHUNK_SIZE,
         rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
         # carry last N chars of previous batch to patch page boundary cuts

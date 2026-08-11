@@ -4,6 +4,7 @@ from app.config.config import Config
 from app.utils.logger import logger
 from .processor import Processor
 from typing import List, Tuple
+from app.config.env import Env
 from pathlib import Path
 import json
 import re
@@ -62,7 +63,7 @@ class MarkdownProcessor(Processor):
         filename: str,
         chunk_number: int,
         rag_chunk_start_index: int,
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         tokenizer: str = "gpt2",
         cache_dir: str | None = None,
     ):

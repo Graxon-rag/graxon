@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from typing import List, Tuple, Optional
 from sklearn.cluster import KMeans
 from .processor import Processor
+from app.config.env import Env
 import pandas as pd
 import numpy as np
 
@@ -16,7 +17,7 @@ class ExcelProcessor(Processor):
         rag_chunk_start_index: int,            # absolute RAG chunk index to continue from
         sheet: Optional[str | int] = 0,        # sheet name or 0-based index (default: first sheet)
         rows_per_io_buffer: int = 500,         # rows to read from disk at once
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         group_size: int = 10,                  # target rows per RAG chunk
         max_group_size: int = 20,              # hard cap — oversized clusters get split
     ):

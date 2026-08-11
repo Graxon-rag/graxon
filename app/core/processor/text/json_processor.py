@@ -3,6 +3,7 @@ from typing import List, Tuple, Optional, Dict, Any
 from langchain_core.documents import Document
 from sklearn.cluster import KMeans
 from .processor import Processor
+from app.config.env import Env
 import ijson
 import json
 
@@ -15,7 +16,7 @@ class JsonProcessor(Processor):
         start_object: int,                  # 0-based object index to start from
         rag_chunk_start_index: int,         # absolute RAG chunk index to continue from
         objects_per_buffer: int = 500,      # max objects to read per batch
-        max_chunk_size_mb: float = 50,      # hard size cap — stops before breaching
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,      # hard size cap — stops before breaching
         group_size: int = 10,              # target objects per RAG chunk
         max_group_size: int = 20,          # hard cap — oversized clusters get split
     ):

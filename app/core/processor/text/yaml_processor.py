@@ -3,6 +3,7 @@ from typing import List, Tuple, Dict, Optional
 from langchain_core.documents import Document
 from sklearn.cluster import KMeans
 from .processor import Processor
+from app.config.env import Env
 import yaml
 
 
@@ -19,7 +20,7 @@ class YAMLProcessor(Processor):
         start_object: int,
         rag_chunk_start_index: int,
         objects_per_buffer: int = 500,
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         group_size: int = 10,
         max_group_size: int = 20,
         scan_lines: int = 100,

@@ -3,6 +3,7 @@ from langchain_core.documents import Document
 from typing import List, Tuple, Dict
 from sklearn.cluster import KMeans
 from .processor import Processor
+from app.config.env import Env
 import lxml.etree as etree
 
 
@@ -20,7 +21,7 @@ class HTMLProcessor(Processor):
         start_unit: int,                  # 0-based index into extracted units (content blocks + table rows)
         rag_chunk_start_index: int,       # absolute RAG chunk index to continue from
         units_per_buffer: int = 500,      # max units to read per batch
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         group_size: int = 10,             # target units per RAG chunk
         max_group_size: int = 20,         # hard cap — oversized clusters get split
     ):

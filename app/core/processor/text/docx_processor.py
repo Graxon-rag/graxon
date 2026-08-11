@@ -13,7 +13,7 @@ class DOCXProcessor(Processor):
         filename: str,
         chunk_number: int,
         rag_chunk_start_index: int,
-        pages_per_batch: int = 20,          # treated as paragraphs_per_batch for DOCX
+        pages_per_batch: int = Env.MAX_PAGES_PER_BATCH,          # treated as paragraphs_per_batch for DOCX
         rag_chunk_size: int = Env.CHUNK_SIZE,
         rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
         tail_carry_chars: int = 500,

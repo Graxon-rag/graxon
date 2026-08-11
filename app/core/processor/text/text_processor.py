@@ -14,7 +14,7 @@ class TextProcessor(Processor):
         filename: str,
         chunk_number: int,
         rag_chunk_start_index: int,
-        max_chunk_size_mb: float = 50,
+        max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         # RAG semantic chunking config
         rag_chunk_size: int = Env.CHUNK_SIZE,
         rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
