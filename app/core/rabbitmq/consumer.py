@@ -105,7 +105,7 @@ class GMQDocumentConsumer:
             doc_id=data.doc_id,
             file_type=file_type,
         )
-
+        print("\n**************** $$$$ ******************")
         logger.info({"message": "Processing document", "file_type": file_type, "common_params": cp.model_dump(mode="json", exclude_none=True)})
         match file_type:
             # Audio
@@ -175,3 +175,4 @@ class GMQDocumentConsumer:
                 await RMQProcessorHelper.handle_yaml(cp, data.yaml_params)
             case _:
                 raise ValueError(f"Unsupported file type: {file_type.value.lower()}")
+        print("\n****************** @@@@@ ****************")
