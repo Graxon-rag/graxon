@@ -58,6 +58,8 @@ class Env:
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1500))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 200))
     MAX_CHUNKS: int = int(os.getenv("MAX_CHUNKS", 10000))
+    MAX_CHUNK_SIZE_MB: float = float(os.getenv("MAX_CHUNK_SIZE_MB", 30))
+    MAX_PAGES_PER_BATCH: int = int(os.getenv("MAX_PAGES_PER_BATCH", 20))
 
     # Vector Similar
     GTE_EDGE_VECTOR_SIMILAR_THRESHOLD: float = float(os.getenv("GTE_EDGE_VECTOR_SIMILAR_THRESHOLD", 0.80))
