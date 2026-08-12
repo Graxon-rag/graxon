@@ -36,6 +36,8 @@ class YAMLProcessor(Processor):
         self.scan_lines = scan_lines
         self._structure: Optional[str] = None
 
+        self.objects_processed = 0    # actual number of objects processed for this run
+
     # -------------------------------------------------------------------------
     # Public API — same signature as all other processors
     # -------------------------------------------------------------------------
@@ -53,12 +55,16 @@ class YAMLProcessor(Processor):
 
         Returns:
             documents:           list of Document (one per semantic group)
-            next_object_index:   pass as start_object to the next queue message
+            next_rag_chunk_index:  pass to the next queue message as rag_chunk_start_index
             is_last:             True if this was the final batch
         """
         try:
             self._structure = self._detect_structure()
             records, is_last = self._stream_records()
+
+            # Save the exact number of YAML records that survived the size/count limits
+            self.objects_processed = len(records)
+
             documents = self._cluster_and_build_documents(records)
             return documents, self.rag_chunk_start_index + len(documents), is_last
         except Exception as e:

@@ -33,6 +33,8 @@ class JsonProcessor(Processor):
         self._structure: Optional[str] = None   # "root_array" | "root_object" | "ndjson"
         self._ijson_prefix: Optional[str] = None  # e.g. "item" or "data.item"
 
+        self.objects_processed = 0    # actual number of objects processed for this run
+
     async def process(self) -> Tuple[List[Document], int, bool]:
         """
         Step 1: Auto-detect JSON structure (root array / root object / ndjson)
@@ -44,12 +46,15 @@ class JsonProcessor(Processor):
 
         Returns:
             documents:             list of Document (one per semantic group)
-            next_object_index:     pass as start_object to the next queue message
+            next_rag_chunk_index:  pass to the next queue message as rag_chunk_start_index
             is_last:               True if this was the final batch
         """
         try:
             self._structure, self._ijson_prefix = self._detect_structure()
             objects, total_bytes, is_last = self._stream_objects()
+
+            # Save the exact number of objects that survived the size/count limits
+            self.objects_processed = len(objects)
             documents = self._cluster_and_build_documents(objects)
             return documents, self.rag_chunk_start_index + len(documents), is_last
 
