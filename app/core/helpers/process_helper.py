@@ -1,4 +1,5 @@
 from ..processor.text.processor_helper import get_language_from_extension
+from ..services.project_config_service import ProjectConfigService
 from ..schemas.document_schema import DocumentGetSchema
 from ..helpers.minio_helper import MinioHelper
 from ..schemas import processor_schema as ps
@@ -28,6 +29,10 @@ class ProcessHelper:
             download_path = get_temp_path()
 
             file_path = await MinioHelper(document.org_id, document.project_id).download_file(document.bucket, document.key, download_path, document.name)
+
+            project_config = ProjectConfigService(org_id=document.org_id, project_id=document.project_id).get_with_details_by_project()
+            if project_config is None:
+                raise Exception("Project config not found")
 
             if file_type is ps.FileType.TEXT:
                 pp.txt_params = ps.TxtProcessParams(
@@ -138,7 +143,11 @@ class ProcessHelper:
             elif file_type is ps.FileType.AUDIO:
                 pass
             elif file_type is ps.FileType.IMAGE:
-                pass
+                pp.ocr_params = ps.OCRProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    is_ocr_needed=document.is_ocr_needed
+                )
             elif file_type is ps.FileType.VIDEO:
                 pass
 

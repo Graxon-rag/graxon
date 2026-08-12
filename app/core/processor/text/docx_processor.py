@@ -5,6 +5,7 @@ from app.utils.logger import logger
 from .processor import Processor
 from app.config.env import Env
 from typing import List, Tuple
+import textract
 
 
 class DOCXProcessor(Processor):
@@ -20,12 +21,12 @@ class DOCXProcessor(Processor):
     ):
         self.file_path = file_path
         self.filename = filename
-        self.chunk_number = chunk_number
-        self.rag_chunk_start_index = rag_chunk_start_index
-        self.pages_per_batch = pages_per_batch
-        self.rag_chunk_size = rag_chunk_size
-        self.rag_chunk_overlap = rag_chunk_overlap
-        self.tail_carry_chars = tail_carry_chars
+        self.chunk_number = int(chunk_number)
+        self.rag_chunk_start_index = int(rag_chunk_start_index)
+        self.pages_per_batch = int(pages_per_batch)
+        self.rag_chunk_size = int(rag_chunk_size)
+        self.rag_chunk_overlap = int(rag_chunk_overlap)
+        self.tail_carry_chars = int(tail_carry_chars)
 
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=rag_chunk_size,
@@ -46,18 +47,27 @@ class DOCXProcessor(Processor):
             is_last: True if this was the final batch
         """
         try:
-            docx = DocxDocument(self.file_path)
+            # Handle legacy .doc vs modern .docx
+            if self.file_path.lower().endswith('.doc'):
+                raw_bytes = textract.process(self.file_path)
+                raw_text = raw_bytes.decode('utf-8')
+                # Split by newlines to simulate paragraphs and filter empty ones
+                paragraphs = [p.strip() for p in raw_text.split('\n') if p.strip()]
+            else:
+                docx = DocxDocument(self.file_path)
+                # filter out empty paragraphs
+                paragraphs = [p.text for p in docx.paragraphs if p.text.strip()]
 
-            # filter out empty paragraphs
-            paragraphs = [p.text for p in docx.paragraphs if p.text.strip()]
             total_paragraphs = len(paragraphs)
+
+            # If the file is completely empty
+            if total_paragraphs == 0:
+                return [], self.rag_chunk_start_index, True
 
             para_start = self.chunk_number * self.pages_per_batch
             if para_start >= total_paragraphs:
-                raise ValueError(
-                    f"chunk_number {self.chunk_number} is out of range. "
-                    f"Total paragraphs: {total_paragraphs}, pages_per_batch: {self.pages_per_batch}"
-                )
+                # Instead of throwing an error, gracefully return empty if we over-fetched
+                return [], self.rag_chunk_start_index, True
 
             para_end = min(para_start + self.pages_per_batch, total_paragraphs)
             is_last = para_end >= total_paragraphs
@@ -75,7 +85,7 @@ class DOCXProcessor(Processor):
             return documents, self.rag_chunk_start_index + len(documents), is_last
 
         except Exception as e:
-            logger.error(f"Failed to process DOCX file {self.file_path}. Error: {e}")
+            logger.error(f"Failed to process DOC file {self.file_path}. Error: {e}")
             raise e
 
     def _split_into_rag_chunks(self, raw_text: str, para_start: int) -> List[Document]:

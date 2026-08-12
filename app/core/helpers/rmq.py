@@ -340,6 +340,7 @@ class RMQProcessorHelper:
         })
 
         # TODO: process
+        print(docs)
 
         if not is_last_md_chunk:
             # More chunks remain in THIS markdown file -> keep chunking it.
@@ -421,6 +422,7 @@ class RMQProcessorHelper:
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_docx(cp, data.model_copy(update={
