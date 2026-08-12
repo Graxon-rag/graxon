@@ -240,7 +240,7 @@ class YamlProcessParams(BaseModel):
     scan_lines: Optional[int] = Field(default=100, description="The number of lines to scan for structure.")
 
 
-class ImageProcessParams(BaseModel):
+class OCRProcessParams(BaseModel):
     file_path: str = Field(..., description="The path to the document file.")
     filename: str = Field(..., description="The name of the document file.")
     processor: OCRProcessor = Field(..., description="The OCR service to use.")
@@ -318,7 +318,7 @@ class MarkdownProcessParams(BaseModel):
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
     is_ocr_part: bool = Field(default=False, description="True if this is the last chunk.")
-    ocr_params: Optional[ImageProcessParams] = Field(default=None, description="The OCR params.")
+    ocr_params: Optional[OCRProcessParams] = Field(default=None, description="The OCR params.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
     tokenizer: Optional[str] = Field(default="gpt2", description="The tokenizer to use.")
     cache_dir: Optional[str] = Field(default=None, description="The directory to cache chunks in.")
@@ -342,7 +342,7 @@ class ProcessParams(CommonParams):
     csv_params: Optional[CSVProcessParams] = None
 
     # Image
-    image_params: Optional[ImageProcessParams] = None
+    ocr_params: Optional[OCRProcessParams] = None
 
     # Audio
     audio_params: Optional[AudioProcessParams] = None
