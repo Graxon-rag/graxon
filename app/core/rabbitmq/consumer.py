@@ -116,9 +116,9 @@ class GMQDocumentConsumer:
 
             # Image
             case ps.FileType.IMAGE:
-                if data.image_params is None:
+                if data.ocr_params is None:
                     raise ValueError("Image params is None")
-                await RMQProcessorHelper.handle_image(cp, data.image_params)
+                await RMQProcessorHelper.handle_ocr(cp, data.ocr_params)
 
             # Video
             case ps.FileType.VIDEO:
