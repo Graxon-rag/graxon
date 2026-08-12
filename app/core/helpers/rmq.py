@@ -180,14 +180,14 @@ class RMQProducerHelper:
             ))
 
     @staticmethod
-    async def produce_image(cp: ps.CommonParams, image: ps.ImageProcessParams):
+    async def produce_ocr(cp: ps.CommonParams, image: ps.OCRProcessParams):
         await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
                         file_type=cp.file_type,
                         filename=image.filename,
-                        image_params=image
+                        ocr_params=image
             ))
 
 
@@ -234,13 +234,18 @@ class RMQProcessorHelper:
         processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="json", filename=data.filename, **kwargs)
         docs, next_rag_start_index, is_last = await processor.process()
 
+        # Retrieve the actual objects processed, fallback to objects_per_buffer if not found
+        objects_processed = getattr(processor, 'objects_processed', data.objects_per_buffer or 500)
+        increment = objects_processed if objects_processed > 0 else (data.objects_per_buffer or 500)
+
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_json(cp, data.model_copy(update={
-                "start_object": data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
+                "start_object": data.start_object + increment,  # add objects per buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
@@ -260,13 +265,18 @@ class RMQProcessorHelper:
         processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="xml", filename=data.filename, **kwargs)
         docs, next_rag_start_index, is_last = await processor.process()
 
+        # Retrieve the actual objects processed, fallback to objects_per_buffer if not found
+        objects_processed = getattr(processor, 'objects_processed', data.objects_per_buffer or 500)
+        increment = objects_processed if objects_processed > 0 else (data.objects_per_buffer or 500)
+
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_xml(cp, data.model_copy(update={
-                "start_object": data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
+                "start_object": data.start_object + increment,  # add objects per buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
@@ -289,6 +299,8 @@ class RMQProcessorHelper:
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
+
         if not is_last:
             await RMQProducerHelper.produce_pdf(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
@@ -351,7 +363,7 @@ class RMQProcessorHelper:
             resume_params = data.ocr_params.model_copy(
                 update={"rag_chunk_start_index": next_rag_start_index}
             )
-            await RMQProducerHelper.produce_image(cp, resume_params)
+            await RMQProducerHelper.produce_ocr(cp, resume_params)
             return
 
         if data.is_ocr_part and data.ocr_params is not None and data.ocr_params.is_last_ocr_batch:
@@ -374,13 +386,18 @@ class RMQProcessorHelper:
         processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="yaml", filename=data.filename, **kwargs)
         docs, next_rag_start_index, is_last = await processor.process()
 
+        # Retrieve the actual objects processed, fallback to objects_per_buffer if not found
+        objects_processed = getattr(processor, 'objects_processed', data.objects_per_buffer or 500)
+        increment = objects_processed if objects_processed > 0 else (data.objects_per_buffer or 500)
+
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_yaml(cp, data.model_copy(update={
-                "start_object": data.start_object + (data.objects_per_buffer or 500),  # add objects per buffer
+                "start_object": data.start_object + increment,  # add objects per buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
@@ -491,6 +508,7 @@ class RMQProcessorHelper:
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_ppt(cp, data.model_copy(update={
@@ -565,7 +583,7 @@ class RMQProcessorHelper:
             }))
 
     @staticmethod
-    async def handle_image(cp: ps.CommonParams, data: ps.ImageProcessParams):
+    async def handle_ocr(cp: ps.CommonParams, data: ps.OCRProcessParams):
         ocr_processor_type = data.processor
 
         match ocr_processor_type.value:
@@ -616,7 +634,7 @@ class RMQProcessorHelper:
         # Params needed to resume OCR *after* this batch's markdown is fully
         # chunked. Carried inside the markdown message so handle_md can trigger
         # the next OCR batch once it's done, instead of firing it from here.
-        next_ocr_params = ps.ImageProcessParams(
+        next_ocr_params = ps.OCRProcessParams(
             file_path=data.file_path,
             filename=data.filename,
             processor=ocr_processor_type,
