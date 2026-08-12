@@ -110,7 +110,7 @@ class TxtProcessParams(BaseModel):
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
     rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")
-    tail_carry_chars: Optional[int] = Field(default=500, description="The number of characters to carry over to the next chunk.")
+    tail_carry_chars: Optional[int] = Field(default=Env.TAIL_CARRY_CHARS, description="The number of characters to carry over to the next chunk.")
 
 
 class CodeProcessParams(BaseModel):
@@ -123,7 +123,7 @@ class CodeProcessParams(BaseModel):
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
     rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")
-    tail_carry_chars: Optional[int] = Field(default=500, description="The number of characters to carry over to the next chunk.")
+    tail_carry_chars: Optional[int] = Field(default=Env.TAIL_CARRY_CHARS, description="The number of characters to carry over to the next chunk.")
 
 
 class CSVProcessParams(BaseModel):
@@ -132,10 +132,10 @@ class CSVProcessParams(BaseModel):
     start_row: int = Field(..., description="The start row of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    rows_per_io_buffer: int = Field(..., description="The number of rows to read from disk at once.")
+    rows_per_io_buffer: Optional[int] = Field(default=Env.ROWS_PER_IO_BUFFER, description="The number of rows to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
-    group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
-    max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
+    group_size: Optional[int] = Field(default=Env.GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
+    max_group_size: Optional[int] = Field(default=Env.MAX_GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
 
 
 class DocxProcessParams(BaseModel):
@@ -144,10 +144,11 @@ class DocxProcessParams(BaseModel):
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    pages_per_batch: Optional[float] = Field(default=20, description="The number of pages to read from disk at once.")
+    is_ocr_needed: Optional[bool] = Field(default=False, description="True if OCR is needed.")
+    pages_per_batch: Optional[float] = Field(default=Env.MAX_PAGES_PER_BATCH, description="The number of pages to read from disk at once.")
     rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")
-    tail_carry_chars: Optional[int] = Field(default=500, description="The number of characters to carry over to the next chunk.")
+    tail_carry_chars: Optional[int] = Field(default=Env.TAIL_CARRY_CHARS, description="The number of characters to carry over to the next chunk.")
 
 
 class ExcelProcessParams(BaseModel):
@@ -157,10 +158,10 @@ class ExcelProcessParams(BaseModel):
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
     sheet: Optional[str | int] = Field(default=0, description="The sheet name or 0-based index (default: first sheet).")
-    rows_per_io_buffer: int = Field(..., description="The number of rows to read from disk at once.")
+    rows_per_io_buffer: Optional[int] = Field(default=Env.ROWS_PER_IO_BUFFER, description="The number of rows to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
-    group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
-    max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
+    group_size: Optional[int] = Field(default=Env.GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
+    max_group_size: Optional[int] = Field(default=Env.MAX_GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
 
 
 class HtmlProcessParams(BaseModel):
@@ -169,11 +170,11 @@ class HtmlProcessParams(BaseModel):
     start_unit: int = Field(..., description="The start unit of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    units_per_buffer: Optional[int] = Field(default=0, description="The number of units to read from disk at once.")
-    rows_per_io_buffer: int = Field(..., description="The number of rows to read from disk at once.")
+    units_per_buffer: Optional[int] = Field(default=Env.OBJECTS_PER_BUFFER, description="The number of units to read from disk at once.")
+    rows_per_io_buffer: Optional[int] = Field(default=Env.ROWS_PER_IO_BUFFER, description="The number of rows to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
-    group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
-    max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
+    group_size: Optional[int] = Field(default=Env.GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
+    max_group_size: Optional[int] = Field(default=Env.MAX_GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
 
 
 class JsonProcessParams(BaseModel):
@@ -182,10 +183,10 @@ class JsonProcessParams(BaseModel):
     start_object: int = Field(..., description="The start object of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    objects_per_buffer: Optional[int] = Field(default=500, description="The number of objects to read from disk at once.")
+    objects_per_buffer: Optional[int] = Field(default=Env.OBJECTS_PER_BUFFER, description="The number of objects to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
-    group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
-    max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
+    group_size: Optional[int] = Field(default=Env.GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
+    max_group_size: Optional[int] = Field(default=Env.MAX_GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
 
 
 class PdfProcessParams(BaseModel):
@@ -194,10 +195,11 @@ class PdfProcessParams(BaseModel):
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    pages_per_batch: Optional[int] = Field(default=20, description="The number of pages to read from disk at once.")
+    is_ocr_needed: Optional[bool] = Field(default=False, description="True if OCR is needed.")
+    pages_per_batch: Optional[int] = Field(default=Env.MAX_PAGES_PER_BATCH, description="The number of pages to read from disk at once.")
     rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")
-    tail_carry_chars: Optional[int] = Field(default=500, description="The number of characters to carry over to the next chunk.")
+    tail_carry_chars: Optional[int] = Field(default=Env.TAIL_CARRY_CHARS, description="The number of characters to carry over to the next chunk.")
 
 
 class PptxProcessParams(BaseModel):
@@ -206,7 +208,8 @@ class PptxProcessParams(BaseModel):
     file_chunk_number: int = Field(..., description="The chunk number of the file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    pages_per_batch: Optional[int] = Field(default=20, description="The number of pages to read from disk at once.")
+    is_ocr_needed: Optional[bool] = Field(default=False, description="True if OCR is needed.")
+    pages_per_batch: Optional[int] = Field(default=Env.MAX_PAGES_PER_BATCH, description="The number of pages to read from disk at once.")
     rag_chunk_size: Optional[int] = Field(default=Env.CHUNK_SIZE, description="The size of the RAG chunk.")
     rag_chunk_overlap: Optional[int] = Field(default=Env.CHUNK_OVERLAP, description="The overlap of the RAG chunk.")
 
@@ -218,10 +221,10 @@ class XmlProcessParams(BaseModel):
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
     record_tag: Optional[str] = Field(default=None, description="The repeating element tag.")
-    objects_per_buffer: Optional[int] = Field(default=500, description="The number of objects to read from disk at once.")
+    objects_per_buffer: Optional[int] = Field(default=Env.OBJECTS_PER_BUFFER, description="The number of objects to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
-    group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
-    max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
+    group_size: Optional[int] = Field(default=Env.GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
+    max_group_size: Optional[int] = Field(default=Env.MAX_GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
 
 
 class YamlProcessParams(BaseModel):
@@ -230,10 +233,10 @@ class YamlProcessParams(BaseModel):
     start_object: int = Field(..., description="The start object of the document file.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
-    objects_per_buffer: Optional[int] = Field(default=500, description="The number of objects to read from disk at once.")
+    objects_per_buffer: Optional[int] = Field(default=Env.OBJECTS_PER_BUFFER, description="The number of objects to read from disk at once.")
     max_chunk_size_mb: Optional[float] = Field(default=Env.MAX_CHUNK_SIZE_MB, description="The maximum size of a chunk in MB.")
-    group_size: Optional[int] = Field(default=10, description="The size of the RAG chunk.")
-    max_group_size: Optional[int] = Field(default=20, description="The size of the RAG chunk.")
+    group_size: Optional[int] = Field(default=Env.GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
+    max_group_size: Optional[int] = Field(default=Env.MAX_GROUP_SIZE_FOR_RAG_CHUNK, description="The size of the RAG chunk.")
     scan_lines: Optional[int] = Field(default=100, description="The number of lines to scan for structure.")
 
 
