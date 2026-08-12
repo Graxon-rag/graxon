@@ -39,23 +39,80 @@ class ProcessHelper:
                 )
 
             elif file_type is ps.FileType.PDF:
-                pass
+                pp.pdf_params = ps.PdfProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    file_chunk_number=0,
+                    is_last=False,
+                    is_ocr_needed=document.is_ocr_needed
+                )
             elif file_type is ps.FileType.MARKDOWN:
-                pass
+                pp.md_params = ps.MarkdownProcessParams(
+                    markdown_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    file_chunk_number=0,
+                    is_last=False,
+                )
             elif file_type is ps.FileType.DOC:
-                pass
+                pp.docx_params = ps.DocxProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    file_chunk_number=0,
+                    is_last=False,
+                    is_ocr_needed=document.is_ocr_needed
+                )
             elif file_type is ps.FileType.PPT:
-                pass
+                pp.ppt_params = ps.PptxProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    file_chunk_number=0,
+                    is_last=False,
+                    is_ocr_needed=document.is_ocr_needed
+                )
             elif file_type is ps.FileType.EXCEL:
-                pass
+                pp.excel_params = ps.ExcelProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    start_row=0,
+                    is_last=False,
+                )
             elif file_type is ps.FileType.HTML:
-                pass
+                pp.html_params = ps.HtmlProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    start_unit=0,
+                    is_last=False
+                )
             elif file_type is ps.FileType.JSON:
-                pass
+                pp.json_params = ps.JsonProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    start_object=0,
+                    is_last=False
+                )
             elif file_type is ps.FileType.CSV:
-                pass
+                pp.csv_params = ps.CSVProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    start_row=0,
+                    is_last=False
+                )
             elif file_type is ps.FileType.XML:
-                pass
+                pp.xml_params = ps.XmlProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    rag_chunk_start_index=0,
+                    start_object=0,
+                    is_last=False
+                )
 
             elif file_type is ps.FileType.CODE:
                 language = get_language_from_extension(document.name)
@@ -71,7 +128,13 @@ class ProcessHelper:
                 )
 
             elif file_type is ps.FileType.YAML:
-                pass
+                pp.yaml_params = ps.YamlProcessParams(
+                    file_path=file_path,
+                    filename=document.name,
+                    start_object=0,
+                    rag_chunk_start_index=0,
+                    is_last=False
+                )
             elif file_type is ps.FileType.AUDIO:
                 pass
             elif file_type is ps.FileType.IMAGE:

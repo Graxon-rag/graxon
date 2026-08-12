@@ -5,6 +5,7 @@ from ..processor.audio.model import AudioProviderEnum
 from ..rabbitmq.producer import GMQDocumentProducer
 from ..schemas import processor_schema as ps
 from app.utils.logger import logger
+from app.config.env import Env
 
 
 _AUDIO_PROVIDERS = {
@@ -428,13 +429,18 @@ class RMQProcessorHelper:
         processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="excel", filename=data.filename, **kwargs)
         docs, next_rag_start_index, is_last = await processor.process()
 
+        # Retrieve the actual rows processed, fallback to rows_per_io_buffer if not found
+        rows_processed = getattr(processor, 'rows_processed', data.rows_per_io_buffer or Env.ROWS_PER_IO_BUFFER)
+        increment = rows_processed if rows_processed > 0 else (data.rows_per_io_buffer or Env.ROWS_PER_IO_BUFFER)
+
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_excel(cp, data.model_copy(update={
-                "start_row": data.start_row + data.rows_per_io_buffer,  # adding rows_per_io_buffer
+                "start_row": data.start_row + increment,  # adding rows_per_io_buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
@@ -510,13 +516,17 @@ class RMQProcessorHelper:
         processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="html", filename=data.filename, **kwargs)
         docs, next_rag_start_index, is_last = await processor.process()
 
+        # Retrieve the actual units processed, fallback to units_per_buffer if not found
+        increment = getattr(processor, 'units_processed', data.units_per_buffer or 500)
+
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
         # TODO: Process
+        print(docs)
 
         if not is_last:
             await RMQProducerHelper.produce_html(cp, data.model_copy(update={
-                "start_unit": data.start_unit + (data.units_per_buffer or 500),  # adding units_per_buffer to start_unit
+                "start_unit": data.start_unit + increment,  # adding units_per_buffer to start_unit
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
@@ -537,13 +547,19 @@ class RMQProcessorHelper:
         processor = ProcessorFactory().get_processor(file_path=data.file_path, file_type="csv", filename=data.filename, **kwargs)
         docs, next_rag_start_index, is_last = await processor.process()
 
+        # Safely get the rows_processed attribute from the processor instance
+        # If it's a different processor (like PDF) that doesn't have this attribute, 
+        # it falls back to data.rows_per_io_buffer safely.
+        increment = getattr(processor, 'rows_processed', (data.rows_per_io_buffer or 500))
+
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
+        print(docs)
         # TODO: Process
 
         if not is_last:
             await RMQProducerHelper.produce_csv(cp, data.model_copy(update={
-                "start_row": data.start_row + data.rows_per_io_buffer,  # adding rows_per_io_buffer
+                "start_row": data.start_row + increment,  # adding rows_per_io_buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
