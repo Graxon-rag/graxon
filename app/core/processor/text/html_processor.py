@@ -24,6 +24,7 @@ class HTMLProcessor(Processor):
         max_chunk_size_mb: float = Env.MAX_CHUNK_SIZE_MB,
         group_size: int = 10,             # target units per RAG chunk
         max_group_size: int = 20,         # hard cap — oversized clusters get split
+        **kwargs
     ):
         self.file_path = file_path
         self.filename = filename
@@ -33,6 +34,8 @@ class HTMLProcessor(Processor):
         self.max_chunk_size_bytes = int(max_chunk_size_mb * 1024 * 1024)
         self.group_size = group_size
         self.max_group_size = max_group_size
+
+        self.units_processed = 0  # number of units processed in this run
 
     # -------------------------------------------------------------------------
     # Public API — same signature as all other processors
@@ -57,6 +60,10 @@ class HTMLProcessor(Processor):
         """
         try:
             units, is_last = self._stream_units()
+
+            # Save the exact number of units that survived the size/count limits
+            self.units_processed = len(units)
+
             documents = self._cluster_and_build_documents(units)
             return documents, self.rag_chunk_start_index + len(documents), is_last
         except Exception as e:

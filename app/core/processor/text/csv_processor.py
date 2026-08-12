@@ -28,6 +28,8 @@ class CSVProcessor(Processor):
         self.group_size = group_size
         self.max_group_size = max_group_size
 
+        self.rows_processed = 0  # number of rows processed in this run
+
     async def process(self) -> Tuple[List[Document], int, bool]:
         """
         Step 1: Read up to rows_per_io_buffer rows from disk (e.g. 500 rows)
@@ -42,6 +44,10 @@ class CSVProcessor(Processor):
         """
         try:
             df, is_last = self._read_chunk()
+
+            # Save the state to the instance
+            self.rows_processed = len(df)
+
             documents = self._cluster_and_build_documents(df)
             return documents, self.rag_chunk_start_index + len(documents), is_last
 

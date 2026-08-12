@@ -79,11 +79,11 @@ class ProcessorFactory:
         # # carry last N chars of previous batch to patch page boundary cuts
         # tail_carry_chars: int = 500,
 
-        chunk_number = kwargs.get("chunk_number")
+        chunk_number = kwargs.pop("chunk_number")
         if not chunk_number and chunk_number != 0:
             raise ValueError("chunk_number is required for pdf files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for pdf files")
 
@@ -106,11 +106,11 @@ class ProcessorFactory:
         # group_size: int = 10,              # target objects per RAG chunk
         # max_group_size: int = 20,          # hard cap — oversized clusters get split
 
-        start_object = kwargs.get("start_object")
+        start_object = kwargs.pop("start_object")
         if not start_object and start_object != 0:
             raise ValueError("start_object is required for json files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for json files")
 
@@ -133,11 +133,11 @@ class ProcessorFactory:
         # group_size: int = 10,             # target units per RAG chunk
         # max_group_size: int = 20,         # hard cap — oversized clusters get split
 
-        start_unit = kwargs.get("start_unit")
+        start_unit = kwargs.pop("start_unit")
         if not start_unit and start_unit != 0:
             raise ValueError("start_unit is required for html files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for html files")
 
@@ -161,11 +161,11 @@ class ProcessorFactory:
         # max_group_size: int = 20,
         # scan_lines: int = 100,
 
-        start_object = kwargs.get("start_object")
+        start_object = kwargs.pop("start_object")
         if not start_object and start_object != 0:
             raise ValueError("start_object is required for yaml files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for yaml files")
 
@@ -187,11 +187,11 @@ class ProcessorFactory:
         # rag_chunk_size: int = Env.CHUNK_SIZE,
         # rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
 
-        chunk_number = kwargs.get("chunk_number")
+        chunk_number = kwargs.pop("chunk_number")
         if not chunk_number and chunk_number != 0:
             raise ValueError("chunk_number is required for pptx files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for pptx files")
 
@@ -214,11 +214,11 @@ class ProcessorFactory:
         # rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
         # tail_carry_chars: int = 500,
 
-        chunk_number = kwargs.get("chunk_number")
+        chunk_number = kwargs.pop("chunk_number")
         if not chunk_number and chunk_number != 0:
             raise ValueError("chunk_number is required for docx files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for docx files")
 
@@ -242,11 +242,11 @@ class ProcessorFactory:
         # group_size: int = 10,                   # target records per RAG chunk
         # max_group_size: int = 20,               # hard cap — oversized clusters get split
 
-        start_object = kwargs.get("start_object")
+        start_object = kwargs.pop("start_object")
         if not start_object and start_object != 0:
             raise ValueError("start_object is required for xml files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for xml files")
 
@@ -269,11 +269,11 @@ class ProcessorFactory:
         # group_size: int = 10,             # target rows per RAG chunk
         # max_group_size: int = 20,         # oversized clusters get split at this threshold
 
-        start_row = kwargs.get("start_row")
+        start_row = kwargs.pop("start_row")
         if not start_row and start_row != 0:
             raise ValueError("start_row is required for csv files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for csv files")
 
@@ -287,11 +287,11 @@ class ProcessorFactory:
 
     @staticmethod
     def _text_file_processor(file_path: str, file_type: str, filename: str, **kwargs: Any) -> Processor:
-        chunk_number = kwargs.get("chunk_number")
+        chunk_number = kwargs.pop("chunk_number")
         if not chunk_number and chunk_number != 0:
             raise ValueError("chunk_number is required for text files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for text files")
 
@@ -308,11 +308,11 @@ class ProcessorFactory:
 
     @staticmethod
     def _markdown_file_processor(file_path: str, file_type: str, filename: str, **kwargs: Any) -> Processor:
-        chunk_number = kwargs.get("chunk_number")
+        chunk_number = kwargs.pop("chunk_number")
         if not chunk_number and chunk_number != 0:
             raise ValueError("chunk_number is required for markdown files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for markdown files")
 
@@ -328,11 +328,11 @@ class ProcessorFactory:
 
     @staticmethod
     def _code_file_processor(file_path: str, file_type: str, filename: str, language: Language, **kwargs: Any) -> Processor:
-        chunk_number = kwargs.get("chunk_number")
+        chunk_number = kwargs.pop("chunk_number")
         if not chunk_number and chunk_number != 0:
             raise ValueError("chunk_number is required for code files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for code files")
 
@@ -360,11 +360,11 @@ class ProcessorFactory:
         # group_size: int = 10,                  # target rows per RAG chunk
         # max_group_size: int = 20, 
 
-        start_row = kwargs.get("start_row")
+        start_row = kwargs.pop("start_row")
         if not start_row and start_row != 0:
             raise ValueError("start_row is required for code files")
 
-        rag_chunk_start_index = kwargs.get("rag_chunk_start_index")
+        rag_chunk_start_index = kwargs.pop("rag_chunk_start_index")
         if not rag_chunk_start_index and rag_chunk_start_index != 0:
             raise ValueError("rag_chunk_start_index is required for code files")
 
