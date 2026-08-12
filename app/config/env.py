@@ -60,6 +60,11 @@ class Env:
     MAX_CHUNKS: int = int(os.getenv("MAX_CHUNKS", 10000))
     MAX_CHUNK_SIZE_MB: float = float(os.getenv("MAX_CHUNK_SIZE_MB", 30))
     MAX_PAGES_PER_BATCH: int = int(os.getenv("MAX_PAGES_PER_BATCH", 20))
+    TAIL_CARRY_CHARS: int = int(os.getenv("TAIL_CARRY_CHARS", 500))
+    GROUP_SIZE_FOR_RAG_CHUNK: int = int(os.getenv("GROUP_SIZE_FOR_RAG_CHUNK", 10))
+    MAX_GROUP_SIZE_FOR_RAG_CHUNK: int = int(os.getenv("MAX_GROUP_SIZE_FOR_RAG_CHUNK", 200))
+    OBJECTS_PER_BUFFER: int = int(os.getenv("OBJECTS_PER_BUFFER", 500))
+    ROWS_PER_IO_BUFFER: int = int(os.getenv("ROWS_PER_IO_BUFFER", 500))
 
     # Vector Similar
     GTE_EDGE_VECTOR_SIMILAR_THRESHOLD: float = float(os.getenv("GTE_EDGE_VECTOR_SIMILAR_THRESHOLD", 0.80))
