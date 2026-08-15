@@ -255,7 +255,11 @@ class MarkdownProcessor(Processor):
 
         if has_separator:
             candidate_headers = split_row(lines[0])
-            looks_fake = any(self._looks_like_data_value(h) for h in candidate_headers[1:])
+            non_empty = sum(1 for h in candidate_headers[1:] if h)
+            looks_fake = (
+                any(self._looks_like_data_value(h) for h in candidate_headers[1:])
+                or non_empty == 0
+            )
             if looks_fake:
                 body_lines = [lines[0]] + lines[2:]
             else:
