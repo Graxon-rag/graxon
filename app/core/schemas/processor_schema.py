@@ -246,7 +246,7 @@ class OCRProcessParams(BaseModel):
     processor: OCRProcessor = Field(..., description="The OCR service to use.")
     api_key: str = Field(..., description="The API key for the OCR service.")
     start_page: int = Field(..., description="The start page of the document file.")
-    max_pages_per_chunk: int = Field(..., description="The maximum number of pages per chunk.")
+    max_pages_per_chunk: Optional[int] = Field(default=Env.MAX_PAGES_PER_BATCH, description="The maximum number of pages per chunk.")
     is_last_ocr_batch: bool = Field(..., description="True if this is the last chunk.")
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     timeout: float = Field(default=60 * 10, description="The timeout for the OCR service.")

@@ -34,8 +34,8 @@ class ProjectHelper:
     #         embedding_model = await embedding_model_service.get_embedding_model(embedding_model_id)
     #         sparse_text_model = await sparse_text_model_service.get_sparse_text_model(sparse_text_model_id)
     #         reranker = await reranker_service.get_reranker(reranker_model_id)
-    #         llm_model_credential = await model_credential_service.get_model_credential(llm_model_credential_id)
-    #         embedding_model_credential = await model_credential_service.get_model_credential(embedding_model_credential_id)
+    #         llm_model_credential = await model_credential_service.get_model_credential(llm_model_credential_id, is_external_call)
+    #         embedding_model_credential = await model_credential_service.get_model_credential(embedding_model_credential_id, is_external_call)
 
     #         return ProjectDetailSchema(
     #             name=project.name,
@@ -62,7 +62,7 @@ class ProjectConfigHelper:
         self.org_id = org_id
         self.project_id = project_id
 
-    async def get_project_config_detail(self, pc: ProjectConfigGetSchema) -> ProjectConfigDetailGetSchema:
+    async def get_project_config_detail(self, pc: ProjectConfigGetSchema, is_external_call: bool = True) -> ProjectConfigDetailGetSchema:
         try:
             pcd: ProjectConfigDetailGetSchema = ProjectConfigDetailGetSchema(id=pc.id, project_id=pc.project_id, graph_db_enable=pc.graph_db_enable, sparse_embedding_enable=pc.sparse_embedding_enable, llm_tag_extraction_enable=pc.llm_tag_extraction_enable, reranker_enable=pc.reranker_enable, created_at=pc.created_at, updated_at=pc.updated_at)
 
@@ -73,7 +73,7 @@ class ProjectConfigHelper:
                 llm_model_service = LLMModelService(self.org_id)
                 llm_model = await llm_model_service.get_llm_model(llm_model_id)
                 llm_model_credential_service = ModelCredentialService(self.org_id)
-                llm_model_credential = await llm_model_credential_service.get_model_credential(pc.llm_model_credential_id)
+                llm_model_credential = await llm_model_credential_service.get_model_credential(pc.llm_model_credential_id, is_external_call)
 
                 pcd.llm_model = llm_model
                 pcd.llm_model_credential = llm_model_credential
@@ -82,7 +82,7 @@ class ProjectConfigHelper:
                 embedding_model_service = EmbeddingModelService(self.org_id)
                 embedding_model = await embedding_model_service.get_embedding_model(embedding_model_id)
                 embedding_model_credential_service = ModelCredentialService(self.org_id)
-                embedding_model_credential = await embedding_model_credential_service.get_model_credential(pc.embedding_model_credential_id)
+                embedding_model_credential = await embedding_model_credential_service.get_model_credential(pc.embedding_model_credential_id, is_external_call)
 
                 pcd.embedding_model = embedding_model
                 pcd.embedding_model_credential = embedding_model_credential
@@ -94,7 +94,7 @@ class ProjectConfigHelper:
 
                 if pc.sparse_text_model_credential_id:
                     sparse_text_model_credential_service = ModelCredentialService(self.org_id)
-                    sparse_text_model_credential = await sparse_text_model_credential_service.get_model_credential(pc.sparse_text_model_credential_id)
+                    sparse_text_model_credential = await sparse_text_model_credential_service.get_model_credential(pc.sparse_text_model_credential_id, is_external_call)
                     pcd.sparse_text_model_credential = sparse_text_model_credential
 
             if pc.reranker_enable and pc.reranker_model_id:
@@ -104,7 +104,7 @@ class ProjectConfigHelper:
 
                 if pc.reranker_model_credential_id:
                     reranker_model_credential_service = ModelCredentialService(self.org_id)
-                    reranker_model_credential = await reranker_model_credential_service.get_model_credential(pc.reranker_model_credential_id)
+                    reranker_model_credential = await reranker_model_credential_service.get_model_credential(pc.reranker_model_credential_id, is_external_call)
                     pcd.reranker_model_credential = reranker_model_credential
 
             if pc.ocr_model_id:
@@ -114,7 +114,7 @@ class ProjectConfigHelper:
 
                 if pc.ocr_model_credential_id:
                     ocr_model_credential_service = ModelCredentialService(self.org_id)
-                    ocr_model_credential = await ocr_model_credential_service.get_model_credential(pc.ocr_model_credential_id)
+                    ocr_model_credential = await ocr_model_credential_service.get_model_credential(pc.ocr_model_credential_id, is_external_call)
                     pcd.ocr_model_credential = ocr_model_credential
 
             if pc.audio_model_id:
@@ -124,7 +124,7 @@ class ProjectConfigHelper:
 
                 if pc.audio_model_credential_id:
                     audio_model_credential_service = ModelCredentialService(self.org_id)
-                    audio_model_credential = await audio_model_credential_service.get_model_credential(pc.audio_model_credential_id)
+                    audio_model_credential = await audio_model_credential_service.get_model_credential(pc.audio_model_credential_id, is_external_call)
                     pcd.audio_model_credential = audio_model_credential
 
             if pc.video_model_id:
@@ -134,7 +134,7 @@ class ProjectConfigHelper:
 
                 if pc.video_model_credential_id:
                     video_model_credential_service = ModelCredentialService(self.org_id)
-                    video_model_credential = await video_model_credential_service.get_model_credential(pc.video_model_credential_id)
+                    video_model_credential = await video_model_credential_service.get_model_credential(pc.video_model_credential_id, is_external_call)
                     pcd.video_model_credential = video_model_credential
 
             return pcd

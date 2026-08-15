@@ -23,13 +23,13 @@ class ProjectConfigService:
             logger.error({"message": "Failed to get project config", "error": str(e)})
             raise e
 
-    async def get_with_details_by_project(self) -> ProjectConfigDetailGetSchema | None:
+    async def get_with_details_by_project(self, is_external_call: bool = True) -> ProjectConfigDetailGetSchema | None:
         try:
             pc = await self._repo.get_by_project()
             if pc is None:
                 return None
             pc_helper = ProjectConfigHelper(self._repo.org_id, self._repo.project_id)
-            return await pc_helper.get_project_config_detail(pc)
+            return await pc_helper.get_project_config_detail(pc, is_external_call)
         except Exception as e:
             logger.error({"message": "Failed to get project config", "error": str(e)})
             raise e

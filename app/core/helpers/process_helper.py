@@ -1,6 +1,7 @@
 from ..processor.text.processor_helper import get_language_from_extension
 from ..services.project_config_service import ProjectConfigService
 from ..schemas.document_schema import DocumentGetSchema
+from ..schemas.processor_schema import OCRProcessor
 from ..helpers.minio_helper import MinioHelper
 from ..schemas import processor_schema as ps
 from .temp_helper import get_temp_path
@@ -30,7 +31,7 @@ class ProcessHelper:
 
             file_path = await MinioHelper(document.org_id, document.project_id).download_file(document.bucket, document.key, download_path, document.name)
 
-            project_config = ProjectConfigService(org_id=document.org_id, project_id=document.project_id).get_with_details_by_project()
+            project_config = await ProjectConfigService(org_id=document.org_id, project_id=document.project_id).get_with_details_by_project(is_external_call=False)
             if project_config is None:
                 raise Exception("Project config not found")
 
@@ -140,14 +141,37 @@ class ProcessHelper:
                     rag_chunk_start_index=0,
                     is_last=False
                 )
+
             elif file_type is ps.FileType.AUDIO:
                 pass
+
             elif file_type is ps.FileType.IMAGE:
+                ocr_model = project_config.ocr_model
+                if ocr_model is None:
+                    raise Exception("OCR model not configured for project")
+                ocr_model_credential = project_config.ocr_model_credential
+                if ocr_model_credential is None:
+                    raise Exception("OCR model credential not configured for project")
+
+                if ocr_model.provider == "datalab":
+                    processor = OCRProcessor.DATALAB
+                elif ocr_model.provider == "mistral":
+                    processor = OCRProcessor.MISTRAl
+                elif ocr_model.provider == "llamaparse":
+                    processor = OCRProcessor.LAMMAPARSE
+                else:
+                    raise Exception("OCR model provider not supported")
                 pp.ocr_params = ps.OCRProcessParams(
                     file_path=file_path,
                     filename=document.name,
-                    is_ocr_needed=document.is_ocr_needed
+                    processor=processor,
+                    api_key=ocr_model_credential.api_key,
+                    start_page=0,
+                    is_last_ocr_batch=False,
+                    rag_chunk_start_index=0,
+                    file_chunk_number=0
                 )
+
             elif file_type is ps.FileType.VIDEO:
                 pass
 
