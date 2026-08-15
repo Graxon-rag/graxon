@@ -1,4 +1,4 @@
-from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema, DocumentListSchema
+from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema, DocumentListSchema, DocumentQueryParams
 from ..services.document_service import DocumentService
 from app.utils.logger import logger
 from fastapi import UploadFile
@@ -17,9 +17,9 @@ class DocumentHandler:
             logger.error({"message": "Failed to upload document", "error": str(e)})
             raise e
 
-    async def get_all(self, page: int = 1, limit: int = 10) -> DocumentListSchema:
+    async def get_all(self, params: DocumentQueryParams) -> DocumentListSchema:
         try:
-            return await self.service.get_all(page, limit)
+            return await self.service.get_all(params)
         except Exception as e:
             logger.error({"message": "Failed to get documents", "error": str(e)})
             raise e

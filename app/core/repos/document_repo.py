@@ -1,4 +1,4 @@
-from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema, DocumentListSchema, PaginationSchema
+from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema, DocumentListSchema, PaginationSchema, DocumentQueryParams
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
 from app.constants.document import DocumentStatus
@@ -60,29 +60,70 @@ class DocumentRepo:
             logger.error({"message": "Failed to create document", "error": str(e)})
             raise e
 
-    async def get_all(self, page: int = 1, limit: int = 10) -> DocumentListSchema:
+    async def get_all(self, params: DocumentQueryParams) -> DocumentListSchema:
         try:
             async with self.db.get_session() as session:
                 stmt = select(Document)
                 count_stmt = select(func.count()).select_from(Document)
 
-                # Apply filters FIRST to both queries
                 filters = [
                     Document.org_id == self.org_id,
                     Document.project_id == self.project_id,
                 ]
+
+                # Status Filter
+                if params.status:
+                    filters.append(Document.status == params.status.upper())
+
+                # Case-Insensitive Name Search
+                if params.name:
+                    filters.append(Document.name.ilike(f"%{params.name.strip()}%"))
+
+                # Type / Category Filter
+                if params.type:
+                    ext_clean = params.type.lstrip(".").lower()
+                    filters.append(Document.type.ilike(ext_clean))
+                elif params.types:
+                    clean_types = [t.lstrip(".").lower() for t in params.types]
+                    filters.append(func.lower(Document.type).in_(clean_types))
+
+                # Size Filter with Operator
+                if params.size is not None:
+                    if params.size_op == ">":
+                        filters.append(Document.size > params.size)
+                    elif params.size_op == "<":
+                        filters.append(Document.size < params.size)
+                    else:
+                        filters.append(Document.size == params.size)
+
+                # Apply WHERE clauses
                 stmt = stmt.where(*filters)
                 count_stmt = count_stmt.where(*filters)
 
-                # Calculate total_count & total_pages with filtered data
+                # Calculate Total Pages
                 total_count = await session.scalar(count_stmt) or 0
-                total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+                total_pages = math.ceil(total_count / params.limit) if total_count > 0 else 1
 
-                # Apply pagination and ordering to the records query
-                offset = (page - 1) * limit
-                stmt = stmt.order_by(Document.created_at.desc()).offset(offset).limit(limit)
+                sort_by_val = params.sort_by.value if params.sort_by else "created_at"
+                sort_order_val = params.sort_order.value if params.sort_order else "desc"
 
-                # Fetch documents
+                # Map to SQL column
+                sort_column_map = {
+                    "created_at": Document.created_at,
+                    "updated_at": Document.updated_at,
+                    "name": Document.name,
+                    "size": Document.size,
+                }
+                col = sort_column_map.get(sort_by_val, Document.created_at)
+
+                # Apply ordering safely
+                order_clause = col.asc() if sort_order_val == "asc" else col.desc()
+                stmt = stmt.order_by(order_clause)
+
+                # Pagination Offset
+                offset = (params.page - 1) * params.limit
+                stmt = stmt.offset(offset).limit(params.limit)
+
                 pg_result = await session.execute(stmt)
                 result_list = list(pg_result.scalars().all())
 
@@ -90,8 +131,8 @@ class DocumentRepo:
                     data=[DocumentGetSchema(**doc.to_dict()) for doc in result_list],
                     pagination=PaginationSchema(
                         total_pages=total_pages,
-                        current_page=page,
-                        current_limit=limit,
+                        current_page=params.page,
+                        current_limit=params.limit,
                     ),
                 )
         except Exception as e:

@@ -2,8 +2,9 @@ from app.constants.document import DocumentStatus
 from .common_schema import PaginationSchema
 from pydantic import BaseModel, Field
 from typing import Optional
-import uuid
+from enum import Enum
 import datetime
+import uuid
 
 
 class DocumentUploadSchema(BaseModel):
@@ -164,6 +165,37 @@ class DocumentGetSchema(BaseModel):
     updated_at: datetime.datetime = Field(
         description="The updated at of the document",
     )
+
+
+class SortField(str, Enum):
+    CREATED_AT = "created_at"
+    UPDATED_AT = "updated_at"
+    NAME = "name"
+    SIZE = "size"
+
+
+class SortOrder(str, Enum):
+    ASC = "asc"
+    DESC = "desc"
+
+
+class SizeOp(str, Enum):
+    GT = ">"
+    LT = "<"
+    EQ = "="
+
+
+class DocumentQueryParams(BaseModel):
+    page: int = Field(default=1, ge=1)
+    limit: int = Field(default=10, ge=1, le=100)
+    status: Optional[str] = None
+    name: Optional[str] = None
+    type: Optional[str] = None  # Specific extension like "pdf", "png", "py"
+    types: Optional[list[str]] = None  # Category group like [".pdf", ".doc"]
+    size: Optional[int] = None  # Size in bytes
+    size_op: Optional[SizeOp] = SizeOp.EQ
+    sort_by: SortField = SortField.CREATED_AT  # No Optional[]
+    sort_order: SortOrder = SortOrder.DESC     # No Optional[]
 
 
 class DocumentListSchema(BaseModel):

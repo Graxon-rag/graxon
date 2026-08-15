@@ -1,6 +1,6 @@
-from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, CompleteMultipartUploadSchema, PresignedUrlRequestSchema
+from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, CompleteMultipartUploadSchema, PresignedUrlRequestSchema, DocumentQueryParams
 from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUEST, HTTP_404_NOT_FOUND)
-from fastapi import HTTPException, APIRouter, File, UploadFile, Query, Body
+from fastapi import HTTPException, APIRouter, File, UploadFile, Query, Body, Depends
 from app.utils.response_util import success_response, error_response
 from ..handlers.document_handler import DocumentHandler
 from ..libs.document_lib import DocumentLibs
@@ -131,10 +131,10 @@ async def upload_document(org_id: str, project_id: uuid.UUID, document_id: uuid.
 
 
 @router.get("/{org_id}/projects/{project_id}/get/all")
-async def get_all_documents(org_id: str, project_id: uuid.UUID, page: int = Query(1, description="Page number"), limit: int = Query(10, description="Limit")):
+async def get_all_documents(org_id: str, project_id: uuid.UUID, params: DocumentQueryParams = Depends(),):
     try:
         handler = DocumentHandler(org_id=org_id, project_id=project_id)
-        result = await handler.get_all(page, limit)
+        result = await handler.get_all(params)
         if not result:
             logger.error({"message": "Failed to get all documents", "result": result})
             return error_response("Failed to get all documents", HTTP_404_NOT_FOUND)

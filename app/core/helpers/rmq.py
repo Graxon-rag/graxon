@@ -720,6 +720,7 @@ class RMQProcessorHelper:
         docs, next_rag_start_index, is_last = await processor.process()
 
         # TODO: process docs
+        print(docs)
 
         if not is_last:
             # every provider-specific field is already on `data` and unchanged

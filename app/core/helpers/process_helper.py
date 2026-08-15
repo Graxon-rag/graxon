@@ -1,8 +1,8 @@
 from ..processor.text.processor_helper import get_language_from_extension
 from ..schemas.project_config_schema import ProjectConfigDetailGetSchema
+from ..schemas.processor_schema import OCRProcessor, AudioProcessor
 from ..services.project_config_service import ProjectConfigService
 from ..schemas.document_schema import DocumentGetSchema
-from ..schemas.processor_schema import OCRProcessor
 from ..helpers.minio_helper import MinioHelper
 from ..schemas import processor_schema as ps
 from .temp_helper import get_temp_path
@@ -46,6 +46,41 @@ class ProcessHelper:
             is_last_ocr_batch=False,
             rag_chunk_start_index=0,
             file_chunk_number=0,
+        )
+
+    @staticmethod
+    async def _build_audio_params(
+        file_path: str,
+        filename: str,
+        project_config: ProjectConfigDetailGetSchema
+    ) -> ps.AudioProcessParams:
+        audio_model = project_config.audio_model
+        if audio_model is None:
+            raise Exception("Audio model not configured for project")
+        if project_config.audio_model_credential is None:
+            raise Exception("Audio model credential not configured for project")
+
+        if audio_model.provider == "assemblyai":
+            processor = AudioProcessor.ASSEMBLYAI
+        elif audio_model.provider == "deepgram":
+            processor = AudioProcessor.DEEPGRAM
+        elif audio_model.provider == "gladia":
+            processor = AudioProcessor.GLADIA
+        elif audio_model.provider == "groq":
+            processor = AudioProcessor.GROQ
+        elif audio_model.provider == "elevenlabs":
+            processor = AudioProcessor.ELEVENLABS
+        else:
+            raise Exception("Audio model provider not supported")
+
+        return ps.AudioProcessParams(
+            file_path=file_path,
+            filename=filename,
+            processor=processor,
+            api_key=project_config.audio_model_credential.api_key,
+            file_chunk_number=0,
+            rag_chunk_start_index=0,
+            is_last=False
         )
 
     @staticmethod
@@ -196,7 +231,11 @@ class ProcessHelper:
                 )
 
             elif file_type is ps.FileType.AUDIO:
-                pass
+                pp.audio_params = await ProcessHelper._build_audio_params(
+                    file_path=file_path,
+                    filename=document.name,
+                    project_config=project_config
+                )
 
             elif file_type is ps.FileType.IMAGE:
                 pp.ocr_params = await ProcessHelper._build_ocr_params(
