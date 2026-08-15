@@ -67,7 +67,7 @@ class AssemblyAudioProcessor(AudioProcessor):
             is_last:               True if this was the final audio segment
         """
         # --- Level 1: slice audio ---
-        audio_slice_path, is_last = self._slice_audio()
+        audio_slice_path, is_last = await asyncio.to_thread(self._slice_audio)
 
         # --- Level 2: transcribe + normalize ---
         transcript = await self._transcribe(audio_slice_path)

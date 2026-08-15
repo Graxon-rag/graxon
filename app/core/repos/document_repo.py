@@ -9,6 +9,7 @@ from ..qdrant.delete import QDrantCleaner
 from ..neo4j.chunk import GN4jChunk
 from app.utils.logger import logger
 from sqlalchemy import select, func
+from datetime import datetime
 import uuid
 import math
 
@@ -226,6 +227,7 @@ class DocumentRepo:
                 logger.info({"message": "Changing document status", "document_id": document_id, "status": status})
 
                 document.status = status
+                document.updated_at = datetime.now()
                 await session.commit()
                 return DocumentGetSchema(**document.to_dict())
         except Exception as e:

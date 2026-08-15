@@ -7,6 +7,7 @@ from app.utils.logger import logger
 from .base import AudioProcessor
 from pydub import AudioSegment
 from pathlib import Path
+import asyncio
 
 
 GLADIA_TEMP_DIR = Path("temp/audio/gladia")
@@ -64,7 +65,7 @@ class GladiaAudioProcessor(AudioProcessor):
             next_rag_chunk_index:  pass as rag_chunk_start_index to next message
             is_last:               True if this was the final audio segment
         """
-        audio_slice_path, is_last = self._slice_audio()
+        audio_slice_path, is_last = await asyncio.to_thread(self._slice_audio)
         transcript = await self._transcribe(audio_slice_path)
         documents = build_documents(transcript, self.filename, self.file_chunk_number, self.rag_chunk_start_index, self.max_time_per_rag_chunk_ms, self.max_words_per_rag_chunk, self.diarization, str(self.file_path))
         return documents, self.rag_chunk_start_index + len(documents), is_last
