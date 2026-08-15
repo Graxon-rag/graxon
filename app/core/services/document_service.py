@@ -1,4 +1,4 @@
-from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema
+from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema, DocumentListSchema
 from ..services.project_service import ProjectService
 from ..rabbitmq.producer import GMQDocumentProducer
 from ..helpers.process_helper import ProcessHelper
@@ -29,9 +29,9 @@ class DocumentService:
             logger.error({"message": "Failed to upload document", "error": str(e)})
             raise e
 
-    async def get_all(self) -> list[DocumentGetSchema]:
+    async def get_all(self, page: int = 1, limit: int = 10) -> DocumentListSchema:
         try:
-            return await self._repo.get_all()
+            return await self._repo.get_all(page, limit)
         except Exception as e:
             logger.error({"message": "Failed to get documents", "error": str(e)})
             raise e

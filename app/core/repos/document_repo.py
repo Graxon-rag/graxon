@@ -1,4 +1,4 @@
-from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema
+from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema, DocumentListSchema, PaginationSchema
 from ..databases.postgresql.client import GPostgresqlClient
 from ..databases.postgresql.models import Document
 from app.constants.document import DocumentStatus
@@ -8,8 +8,9 @@ from ..neo4j.document import GN4jDocument
 from ..qdrant.delete import QDrantCleaner
 from ..neo4j.chunk import GN4jChunk
 from app.utils.logger import logger
-from sqlalchemy import select
+from sqlalchemy import select, func
 import uuid
+import math
 
 
 class DocumentRepo:
@@ -59,16 +60,40 @@ class DocumentRepo:
             logger.error({"message": "Failed to create document", "error": str(e)})
             raise e
 
-    async def get_all(self) -> list[DocumentGetSchema]:
+    async def get_all(self, page: int = 1, limit: int = 10) -> DocumentListSchema:
         try:
             async with self.db.get_session() as session:
                 stmt = select(Document)
-                stmt = stmt.where(Document.org_id == self.org_id)
-                stmt = stmt.where(Document.project_id == self.project_id)
-                stmt = stmt.order_by(Document.created_at.desc())
+                count_stmt = select(func.count()).select_from(Document)
+
+                # Apply filters FIRST to both queries
+                filters = [
+                    Document.org_id == self.org_id,
+                    Document.project_id == self.project_id,
+                ]
+                stmt = stmt.where(*filters)
+                count_stmt = count_stmt.where(*filters)
+
+                # Calculate total_count & total_pages with filtered data
+                total_count = await session.scalar(count_stmt) or 0
+                total_pages = math.ceil(total_count / limit) if total_count > 0 else 1
+
+                # Apply pagination and ordering to the records query
+                offset = (page - 1) * limit
+                stmt = stmt.order_by(Document.created_at.desc()).offset(offset).limit(limit)
+
+                # Fetch documents
                 pg_result = await session.execute(stmt)
                 result_list = list(pg_result.scalars().all())
-                return [DocumentGetSchema(**doc.to_dict()) for doc in result_list]
+
+                return DocumentListSchema(
+                    data=[DocumentGetSchema(**doc.to_dict()) for doc in result_list],
+                    pagination=PaginationSchema(
+                        total_pages=total_pages,
+                        current_page=page,
+                        current_limit=limit,
+                    ),
+                )
         except Exception as e:
             logger.error({"message": "Failed to get documents", "error": str(e)})
             raise e

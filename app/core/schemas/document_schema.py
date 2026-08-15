@@ -1,5 +1,7 @@
-from pydantic import BaseModel, Field
 from app.constants.document import DocumentStatus
+from .common_schema import PaginationSchema
+from pydantic import BaseModel, Field
+from typing import Optional
 import uuid
 import datetime
 
@@ -162,6 +164,11 @@ class DocumentGetSchema(BaseModel):
     updated_at: datetime.datetime = Field(
         description="The updated at of the document",
     )
+
+
+class DocumentListSchema(BaseModel):
+    data: list[DocumentGetSchema]
+    pagination: Optional[PaginationSchema] = None
 
 
 class DocumentStatusMQSchema(BaseModel):

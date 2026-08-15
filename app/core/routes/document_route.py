@@ -131,15 +131,14 @@ async def upload_document(org_id: str, project_id: uuid.UUID, document_id: uuid.
 
 
 @router.get("/{org_id}/projects/{project_id}/get/all")
-async def get_all_documents(org_id: str, project_id: uuid.UUID):
+async def get_all_documents(org_id: str, project_id: uuid.UUID, page: int = Query(1, description="Page number"), limit: int = Query(10, description="Limit")):
     try:
         handler = DocumentHandler(org_id=org_id, project_id=project_id)
-        result = await handler.get_all()
+        result = await handler.get_all(page, limit)
         if not result:
             logger.error({"message": "Failed to get all documents", "result": result})
             return error_response("Failed to get all documents", HTTP_404_NOT_FOUND)
-        result_list = [r.model_dump(mode="json") for r in result]
-        return success_response(data={"data": result_list})
+        return success_response(data={"data": result.model_dump(mode="json")})
     except Exception as e:
         logger.error({"message": "Failed to get all documents", "error": str(e)})
         raise HTTPException(
