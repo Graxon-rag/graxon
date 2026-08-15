@@ -1,8 +1,10 @@
 from ..processor.ocr.processor_factory import OcrProcessorFactory, ProcessorEnum as ocr_enum
 from ..processor.audio.processor_factory import AudioProcessorFactory
 from ..processor.text.processor_factory import ProcessorFactory
+from ..schemas.document_schema import DocumentStatusMQSchema
 from ..processor.audio.model import AudioProviderEnum
 from ..rabbitmq.producer import GMQDocumentProducer
+from app.constants.document import DocumentStatus
 from ..schemas import processor_schema as ps
 from app.utils.logger import logger
 from app.config.env import Env
@@ -190,6 +192,15 @@ class RMQProducerHelper:
                         ocr_params=image
             ))
 
+    @staticmethod
+    async def produce_status(cp: ps.CommonParams):
+        await GMQDocumentProducer.publish_to_status_exchange(DocumentStatusMQSchema(
+            org_id=cp.org_id,
+            project_id=cp.project_id,
+            id=cp.doc_id,
+            status=DocumentStatus.PROCESSED
+        ))
+
 
 class RMQProcessorHelper:
     @staticmethod
@@ -218,6 +229,8 @@ class RMQProcessorHelper:
                 "is_last": is_last,
 
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_json(cp: ps.CommonParams, data: ps.JsonProcessParams):
@@ -249,6 +262,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_xml(cp: ps.CommonParams, data: ps.XmlProcessParams):
@@ -280,6 +295,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_pdf(cp: ps.CommonParams, data: ps.PdfProcessParams):
@@ -307,6 +324,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_markdown(cp: ps.CommonParams, data: ps.MarkdownProcessParams):
@@ -358,6 +377,10 @@ class RMQProcessorHelper:
             ))
             return
 
+        elif data.is_ocr_part is False:
+            await RMQProducerHelper.produce_status(cp)
+            return
+
         # This markdown file's chunks are exhausted. If it was produced as part
         # of an OCR pipeline and there are more pages left to OCR, resume OCR.
         if data.is_ocr_part and data.ocr_params is not None and not data.ocr_params.is_last_ocr_batch:
@@ -368,8 +391,7 @@ class RMQProcessorHelper:
             return
 
         if data.is_ocr_part and data.ocr_params is not None and data.ocr_params.is_last_ocr_batch:
-            # TODO: status update
-            pass
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_yaml(cp: ps.CommonParams, data: ps.YamlProcessParams):
@@ -402,6 +424,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_docx(cp: ps.CommonParams, data: ps.DocxProcessParams):
@@ -430,6 +454,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_excel(cp: ps.CommonParams, data: ps.ExcelProcessParams):
@@ -463,6 +489,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_code(cp: ps.CommonParams, data: ps.CodeProcessParams):
@@ -491,6 +519,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_ppt(cp: ps.CommonParams, data: ps.PptxProcessParams):
@@ -518,6 +548,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_html(cp: ps.CommonParams, data: ps.HtmlProcessParams):
@@ -550,6 +582,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_csv(cp: ps.CommonParams, data: ps.CSVProcessParams):
@@ -583,6 +617,8 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
     async def handle_ocr(cp: ps.CommonParams, data: ps.OCRProcessParams):
@@ -693,3 +729,5 @@ class RMQProcessorHelper:
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last,
             }))
+        else:
+            await RMQProducerHelper.produce_status(cp)

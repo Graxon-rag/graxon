@@ -1,3 +1,4 @@
+from ...schemas.processor_schema import get_file_type, FileType
 from app.providers.ocr.mistral import MistralOCR
 from .base import IMAGE_MIME_TYPES, OCRProcessor
 from mistralai.client.models import File
@@ -6,6 +7,7 @@ from app.utils.logger import logger
 from typing import Tuple
 from pathlib import Path
 import mimetypes
+import asyncio
 
 
 # Where all temp files live
@@ -58,11 +60,46 @@ class MistralOCRProcessor(OCRProcessor):
             is_last:        True = no more pages remain, this was the final batch
         """
         logger.info(f"Processing via Mistral {self.filename}")
+        file_type = get_file_type(self.filename)
 
         if self._is_image:
             return await self._process_image()
-        else:
-            return await self._process_pdf()
+        if file_type == FileType.DOC or file_type == FileType.PPT:
+            self.file_path = await self._convert_to_pdf(self.file_path)
+
+        return await self._process_pdf()
+
+    # -------------------------------------------------------------------------
+    # DOC/PPT — convert to PDF before OCR
+    # -------------------------------------------------------------------------
+
+    async def _convert_to_pdf(self, src: Path) -> Path:
+        """
+        Converts a .doc/.docx/.ppt/.pptx file to PDF via LibreOffice headless,
+        writing the result into MISTRAL_TEMP_DIR. Returns the converted path.
+        """
+        logger.info(f"Converting {src.name} to PDF via LibreOffice")
+
+        proc = await asyncio.create_subprocess_exec(
+            "libreoffice", "--headless", "--convert-to", "pdf",
+            "--outdir", str(MISTRAL_TEMP_DIR), str(src),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"LibreOffice conversion failed for {src}: {stderr.decode(errors='ignore')}"
+            )
+
+        converted = MISTRAL_TEMP_DIR / f"{src.stem}.pdf"
+        if not converted.exists():
+            raise RuntimeError(
+                f"LibreOffice reported success but output PDF not found: {converted}"
+            )
+
+        return converted
 
     # -------------------------------------------------------------------------
     # Image — process entire file in one shot

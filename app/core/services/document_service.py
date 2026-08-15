@@ -67,11 +67,12 @@ class DocumentService:
                 raise Exception("Model check failed")
             try:
                 process_params = await ProcessHelper.get_process_params(document)
-                await GMQDocumentProducer.publish_to_processing_exchange(process_params)
                 await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
+                await GMQDocumentProducer.publish_to_processing_exchange(process_params)
+                await self._repo.change_document_status(document_id, DocumentStatus.PROCESSING)
                 print("Document submitted for processing", document)
             except Exception as e:
-                await self._repo.change_document_status(document_id, DocumentStatus.PENDING)
+                await self._repo.change_document_status(document_id, DocumentStatus.FAILED)
                 raise e
             return True
         except Exception as e:
