@@ -107,6 +107,27 @@ class GMQDocumentConsumer:
         )
         print("\n**************** $$$$ ******************")
         logger.info({"message": "Processing document", "file_type": file_type, "common_params": cp.model_dump(mode="json", exclude_none=True)})
+
+        # IMPORTANT: route on which params field is actually populated on
+        # THIS message, not on file_type alone. file_type reflects the
+        # *original* document and stays fixed across the whole pipeline —
+        # e.g. an image (or a PDF/DOC/PPT with is_ocr_needed=True) keeps
+        # file_type=IMAGE/PDF/DOC/PPT even once it's mid-OCR and emitting
+        # md_params or ocr_params messages instead of its "native" params.
+        # These two checks MUST come before the file_type match below,
+        # otherwise those messages get routed into the wrong case and hit
+        # a "params is None" error even though the params object exists,
+        # just under a different field.
+        if data.md_params is not None:
+            await RMQProcessorHelper.handle_markdown(cp, data.md_params)
+            print("\n****************** @@@@@ ****************")
+            return
+
+        if data.ocr_params is not None:
+            await RMQProcessorHelper.handle_ocr(cp, data.ocr_params)
+            print("\n****************** @@@@@ ****************")
+            return
+
         match file_type:
             # Audio
             case ps.FileType.AUDIO:
@@ -116,9 +137,8 @@ class GMQDocumentConsumer:
 
             # Image
             case ps.FileType.IMAGE:
-                if data.ocr_params is None:
-                    raise ValueError("Image params is None")
-                await RMQProcessorHelper.handle_ocr(cp, data.ocr_params)
+                # Should have been handled by the ocr_params check above.
+                raise ValueError("Image params is None")
 
             # Video
             case ps.FileType.VIDEO:
@@ -137,22 +157,34 @@ class GMQDocumentConsumer:
                 if data.json_params is None:
                     raise ValueError("JSON params is None")
                 await RMQProcessorHelper.handle_json(cp, data.json_params)
-            case ps.FileType.PDF:
-                if data.pdf_params is None:
-                    raise ValueError("PDF params is None")
-                await RMQProcessorHelper.handle_pdf(cp, data.pdf_params)
             case ps.FileType.MARKDOWN:
                 if data.md_params is None:
                     raise ValueError("Markdown params is None")
                 await RMQProcessorHelper.handle_markdown(cp, data.md_params)
+            case ps.FileType.PDF:
+                if data.pdf_params is not None:
+                    await RMQProcessorHelper.handle_pdf(cp, data.pdf_params)
+                else:
+                    # is_ocr_needed=True case should have been caught by the
+                    # ocr_params/md_params checks above; if we're here, both
+                    # were missing too.
+                    raise ValueError("PDF params is None")
             case ps.FileType.DOC:
-                if data.docx_params is None:
+                if data.docx_params is not None:
+                    await RMQProcessorHelper.handle_docx(cp, data.docx_params)
+                else:
+                    # is_ocr_needed=True case should have been caught by the
+                    # ocr_params/md_params checks above; if we're here, both
+                    # were missing too.
                     raise ValueError("Docx params is None")
-                await RMQProcessorHelper.handle_docx(cp, data.docx_params)
             case ps.FileType.PPT:
-                if data.ppt_params is None:
+                if data.ppt_params is not None:
+                    await RMQProcessorHelper.handle_ppt(cp, data.ppt_params)
+                else:
+                    # is_ocr_needed=True case should have been caught by the
+                    # ocr_params/md_params checks above; if we're here, both
+                    # were missing too.
                     raise ValueError("PPT params is None")
-                await RMQProcessorHelper.handle_ppt(cp, data.ppt_params)
             case ps.FileType.EXCEL:
                 if data.excel_params is None:
                     raise ValueError("Excel params is None")
