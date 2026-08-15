@@ -1,10 +1,13 @@
+from ...schemas.processor_schema import get_file_type, FileType
 from app.providers.ocr.datalabio import DatalabOCR
 from .base import IMAGE_MIME_TYPES, OCRProcessor
 from datalab_sdk.models import ConversionResult
 from pypdf import PdfReader, PdfWriter
+from app.utils.logger import logger
 from typing import Tuple
 from pathlib import Path
 import mimetypes
+import asyncio
 
 
 # Where all temp files live
@@ -49,10 +52,16 @@ class DatalabOCRProcessor(OCRProcessor):
             next_page:  pass as start_page to next queue message (PDF only, 0 for images)
             is_last:    True = no more pages remain
         """
+        logger.info(f"Processing via Datalab {self.filename}")
+
+        file_type = get_file_type(self.filename)
+
         if self._is_image:
             return await self._process_image()
-        else:
-            return await self._process_pdf()
+        if file_type == FileType.DOC or file_type == FileType.PPT:
+            self.file_path = await self._convert_to_pdf(self.file_path)
+
+        return await self._process_pdf()
 
     # -------------------------------------------------------------------------
     # Image — single shot, no splitting needed
@@ -134,6 +143,38 @@ class DatalabOCRProcessor(OCRProcessor):
         )
 
         return md_path, end_page, is_last
+
+    # -------------------------------------------------------------------------
+    # DOC/PPT — convert to PDF before OCR
+    # -------------------------------------------------------------------------
+
+    async def _convert_to_pdf(self, src: Path) -> Path:
+        """
+        Converts a .doc/.docx/.ppt/.pptx file to PDF via LibreOffice headless,
+        writing the result into DATALAB_TEMP_DIR. Returns the converted path.
+        """
+        logger.info(f"Converting {src.name} to PDF via LibreOffice")
+
+        proc = await asyncio.create_subprocess_exec(
+            "libreoffice", "--headless", "--convert-to", "pdf",
+            "--outdir", str(DATALAB_TEMP_DIR), str(src),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"LibreOffice conversion failed for {src}: {stderr.decode(errors='ignore')}"
+            )
+
+        converted = DATALAB_TEMP_DIR / f"{src.stem}.pdf"
+        if not converted.exists():
+            raise RuntimeError(
+                f"LibreOffice reported success but output PDF not found: {converted}"
+            )
+
+        return converted
 
     # -------------------------------------------------------------------------
     # Datalab convert — handles both result types from the SDK

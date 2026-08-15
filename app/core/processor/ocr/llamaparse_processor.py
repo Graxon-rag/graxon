@@ -1,4 +1,5 @@
 from llama_cloud.types.parsing_get_response import MarkdownPageMarkdownResultPage
+from ...schemas.processor_schema import get_file_type, FileType
 from app.providers.ocr.llamaparse import LlamaParseOCR
 from .base import IMAGE_MIME_TYPES, OCRProcessor
 from pypdf import PdfReader, PdfWriter
@@ -49,10 +50,14 @@ class LlamaCloudOCRProcessor(OCRProcessor):
     async def process(self) -> Tuple[Path, int, bool]:
         logger.info(f"Processing via LlamaCloud {self.filename}")
 
+        file_type = get_file_type(self.filename)
+
         if self._is_image:
             return await self._process_image()
-        else:
-            return await self._process_pdf()
+        if file_type == FileType.DOC or file_type == FileType.PPT:
+            self.file_path = await self._convert_to_pdf(self.file_path)
+
+        return await self._process_pdf()
 
     # -------------------------------------------------------------------------
     # Image — single-shot parse (no splitting)
@@ -115,6 +120,38 @@ class LlamaCloudOCRProcessor(OCRProcessor):
         )
 
         return md_path, end_page, is_last
+
+    # -------------------------------------------------------------------------
+    # DOC/PPT — convert to PDF before OCR
+    # -------------------------------------------------------------------------
+
+    async def _convert_to_pdf(self, src: Path) -> Path:
+        """
+        Converts a .doc/.docx/.ppt/.pptx file to PDF via LibreOffice headless,
+        writing the result into LLAMA_TEMP_DIR. Returns the converted path.
+        """
+        logger.info(f"Converting {src.name} to PDF via LibreOffice")
+
+        proc = await asyncio.create_subprocess_exec(
+            "libreoffice", "--headless", "--convert-to", "pdf",
+            "--outdir", str(LLAMA_TEMP_DIR), str(src),
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"LibreOffice conversion failed for {src}: {stderr.decode(errors='ignore')}"
+            )
+
+        converted = LLAMA_TEMP_DIR / f"{src.stem}.pdf"
+        if not converted.exists():
+            raise RuntimeError(
+                f"LibreOffice reported success but output PDF not found: {converted}"
+            )
+
+        return converted
 
     # -------------------------------------------------------------------------
     # LlamaCloud upload → parse → poll → extract markdown
