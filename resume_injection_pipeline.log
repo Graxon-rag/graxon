@@ -1,0 +1,74 @@
+
+{"timestamp": "2026-08-15 14:31:41", "level": "INFO", "filename": "consumer.py", "lineno": 55, "function": "_on_document_processing_message", "message": "{'message': 'Received message', 'retry_count': 0, 'document': {'org_id': 'test', 'project_id': 'ba512d16-bbfa-459b-b684-32e8996fd08c', 'doc_id': '4af95705-0db2-4f02-a5c0-1a6953784cfa', 'file_type': 'pdf', 'filename': 'test_pdf_file.pdf', 'ocr_params': {'file_path': '/tmp/graxon/b6670647-8a83-47f9-938f-f56aa9c41b02/test_pdf_file.pdf', 'filename': 'test_pdf_file.pdf', 'processor': 'mistral', 'api_key': 'xxxxxxxxxxxxxxxx', 'start_page': 54, 'max_pages_per_chunk': 2, 'is_last_ocr_batch': False, 'rag_chunk_start_index': 610, 'timeout': 600.0, 'file_chunk_number': 0, 'max_chunk_size_mb': 0.2, 'llama_tier': 'agentic', 'llama_version': 'latest', 'llama_poll_interval': 2.0, 'kwargs': {}}}}"}
+
+{"timestamp": "2026-08-15 14:31:41", "level": "INFO", "filename": "consumer.py", "lineno": 109, "function": "_process_document", "message": "{'message': 'Processing document', 'file_type': <FileType.PDF: 'pdf'>, 'common_params': {'org_id': 'test', 'project_id': 'ba512d16-bbfa-459b-b684-32e8996fd08c', 'doc_id': '4af95705-0db2-4f02-a5c0-1a6953784cfa', 'file_type': 'pdf'}}"}
+{"timestamp": "2026-08-15 14:31:41", "level": "INFO", "filename": "mistral_processor.py", "lineno": 60, "function": "process", "message": "Processing via Mistral test_pdf_file.pdf"}
+{"timestamp": "2026-08-15 14:31:41", "level": "INFO", "filename": "mistral_processor.py", "lineno": 174, "function": "_upload_and_ocr", "message": "Uploading test_pdf_file_pages_54_55.pdf to Mistral"}
+{"timestamp": "2026-08-15 14:31:42", "level": "INFO", "filename": "mistral_processor.py", "lineno": 187, "function": "_upload_and_ocr", "message": "Running Mistral OCR on f8935d2c-07ee-4c9a-9464-882ffe3ccc51"}
+{"timestamp": "2026-08-15 14:31:43", "level": "ERROR", "filename": "consumer.py", "lineno": 69, "function": "_on_document_processing_message", "message": "Failed to process message, sending nack \u2192 DLX: API error occurred: Status 400. Body: {\"object\":\"error\",\"message\":\"File 'f8935d2c-07ee-4c9a-9464-882ffe3ccc51' could not be found or may have expired.\",\"type\":\"invalid_request_file\",\"param\":null,\"code\":\"3310\",\"raw_status_code\":400}"}
+Exception in callback _task_done(<Task finishe...ad Request]>)>) at /home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/aio_pika/tools.py:45
+handle: <Handle _task_done(<Task finishe...ad Request]>)>) at /home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/aio_pika/tools.py:45>
+Traceback (most recent call last):
+  File "/usr/lib/python3.12/asyncio/events.py", line 88, in _run
+    self._context.run(self._callback, *self._args)
+  File "/home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/aio_pika/tools.py", line 49, in _task_done
+    raise exc
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/rabbitmq/consumer.py", line 71, in _on_document_processing_message
+    raise e
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/rabbitmq/consumer.py", line 65, in _on_document_processing_message
+    await self._process_document(data)
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/rabbitmq/consumer.py", line 127, in _process_document
+    await RMQProcessorHelper.handle_ocr(cp, data.ocr_params)
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/helpers/rmq.py", line 625, in handle_ocr
+    md_path, next_page, is_last_ocr_batch = await processor.process()
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/processor/ocr/mistral_processor.py", line 65, in process
+    return await self._process_pdf()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/processor/ocr/mistral_processor.py", line 145, in _process_pdf
+    markdown = await self._upload_and_ocr(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/processor/ocr/mistral_processor.py", line 189, in _upload_and_ocr
+    result = await client.ocr.process_async(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/mistralai/client/ocr.py", line 295, in process_async
+    raise errors.SDKError("API error occurred", http_res, http_res_text)
+mistralai.client.errors.sdkerror.SDKError: API error occurred: Status 400. Body: {"object":"error","message":"File 'f8935d2c-07ee-4c9a-9464-882ffe3ccc51' could not be found or may have expired.","type":"invalid_request_file","param":null,"code":"3310","raw_status_code":400}
+Task exception was never retrieved
+future: <Task finished name='Task-992' coro=<consumer() done, defined at /home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/aio_pika/queue.py:44> exception=SDKError(message='API error occurred: Status 400. Body: {"object":"error","message":"File \'f8935d2c-07ee-4c9a-9464-882ffe3ccc51\' could not be found or may have expired.","type":"invalid_request_file","param":null,"code":"3310","raw_status_code":400}', status_code=400, body='{"object":"error","message":"File \'f8935d2c-07ee-4c9a-9464-882ffe3ccc51\' could not be found or may have expired.","type":"invalid_request_file","param":null,"code":"3310","raw_status_code":400}', headers=Headers({'date': 'Sat, 15 Aug 2026 09:01:43 GMT', 'content-type': 'application/json', 'content-length': '193', 'connection': 'keep-alive', 'x-content-type-options': 'nosniff', 'mistral-correlation-id': '01a004a7-d428-7c56-b0d5-7e1accc0dcc5', 'x-kong-request-id': '01a004a7-d428-7c56-b0d5-7e1accc0dcc5', 'x-envoy-upstream-service-time': '155', 'server': 'cloudflare', 'access-control-allow-origin': '*', 'x-kong-upstream-latency': '156', 'x-kong-proxy-latency': '23', 'strict-transport-security': 'max-age=15552000; includeSubDomains; preload', 'cf-cache-status': 'DYNAMIC', 'cf-ray': 'a2b704262f8e3c07-BLR', 'alt-svc': 'h3=":443"; ma=86400'}), raw_response=<Response [400 Bad Request]>)>
+Traceback (most recent call last):
+  File "/home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/aio_pika/queue.py", line 51, in consumer
+    return await create_task(callback, message)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/rabbitmq/consumer.py", line 71, in _on_document_processing_message
+    raise e
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/rabbitmq/consumer.py", line 65, in _on_document_processing_message
+    await self._process_document(data)
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/rabbitmq/consumer.py", line 127, in _process_document
+    await RMQProcessorHelper.handle_ocr(cp, data.ocr_params)
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/helpers/rmq.py", line 625, in handle_ocr
+    md_path, next_page, is_last_ocr_batch = await processor.process()
+                                            ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/processor/ocr/mistral_processor.py", line 65, in process
+    return await self._process_pdf()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/processor/ocr/mistral_processor.py", line 145, in _process_pdf
+    markdown = await self._upload_and_ocr(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/app/core/processor/ocr/mistral_processor.py", line 189, in _upload_and_ocr
+    result = await client.ocr.process_async(
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/avvk/Graxon/Graxon/graxon/.venv/lib/python3.12/site-packages/mistralai/client/ocr.py", line 295, in process_async
+    raise errors.SDKError("API error occurred", http_res, http_res_text)
+mistralai.client.errors.sdkerror.SDKError: API error occurred: Status 400. Body: {"object":"error","message":"File 'f8935d2c-07ee-4c9a-9464-882ffe3ccc51' could not be found or may have expired.","type":"invalid_request_file","param":null,"code":"3310","raw_status_code":400}
+{"timestamp": "2026-08-15 14:32:43", "level": "INFO", "filename": "consumer.py", "lineno": 55, "function": "_on_document_processing_message", "message": "{'message': 'Received message', 'retry_count': 1, 'document': {'org_id': 'test', 'project_id': 'ba512d16-bbfa-459b-b684-32e8996fd08c', 'doc_id': '4af95705-0db2-4f02-a5c0-1a6953784cfa', 'file_type': 'pdf', 'filename': 'test_pdf_file.pdf', 'ocr_params': {'file_path': '/tmp/graxon/b6670647-8a83-47f9-938f-f56aa9c41b02/test_pdf_file.pdf', 'filename': 'test_pdf_file.pdf', 'processor': 'mistral', 'api_key': 'xxxxxxxxxxxxxxxx', 'start_page': 54, 'max_pages_per_chunk': 2, 'is_last_ocr_batch': False, 'rag_chunk_start_index': 610, 'timeout': 600.0, 'file_chunk_number': 0, 'max_chunk_size_mb': 0.2, 'llama_tier': 'agentic', 'llama_version': 'latest', 'llama_poll_interval': 2.0, 'kwargs': {}}}}"}
+
+{"timestamp": "2026-08-15 14:32:43", "level": "INFO", "filename": "consumer.py", "lineno": 109, "function": "_process_document", "message": "{'message': 'Processing document', 'file_type': <FileType.PDF: 'pdf'>, 'common_params': {'org_id': 'test', 'project_id': 'ba512d16-bbfa-459b-b684-32e8996fd08c', 'doc_id': '4af95705-0db2-4f02-a5c0-1a6953784cfa', 'file_type': 'pdf'}}"}
+{"timestamp": "2026-08-15 14:32:43", "level": "INFO", "filename": "mistral_processor.py", "lineno": 60, "function": "process", "message": "Processing via Mistral test_pdf_file.pdf"}
+{"timestamp": "2026-08-15 14:32:43", "level": "INFO", "filename": "mistral_processor.py", "lineno": 174, "function": "_upload_and_ocr", "message": "Uploading test_pdf_file_pages_54_55.pdf to Mistral"}
+{"timestamp": "2026-08-15 14:32:43", "level": "INFO", "filename": "mistral_processor.py", "lineno": 187, "function": "_upload_and_ocr", "message": "Running Mistral OCR on f8935d2c-07ee-4c9a-9464-882ffe3ccc51"}
+{"timestamp": "2026-08-15 14:32:47", "level": "INFO", "filename": "rmq.py", "lineno": 627, "function": "handle_ocr", "message": "{'message': 'OCR batch complete', 'doc_id': UUID('4af95705-0db2-4f02-a5c0-1a6953784cfa'), 'start_page': 54, 'next_page': 56, 'is_last_ocr_batch': False, 'md_path': 'temp/mistral/test_pdf_file_pages_54_55.md'}"}
+{"timestamp": "2026-08-15 14:32:47", "level": "INFO", "filename": "producer.py", "lineno": 42, "function": "publish_to_processing_exchange", "message": "{'message': 'Sending message to exchange', 'routing_key': 'graxon_document_processing_routing_key', 'document_id': UUID('4af95705-0db2-4f02-a5c0-1a6953784cfa'), 'data': {'org_id': 'test', 'project_id': UUID('ba512d16-bbfa-459b-b684-32e8996fd08c'), 'doc_id': UUID('4af95705-0db2-4f02-a5c0-1a6953784cfa'), 'file_type': <FileType.PDF: 'pdf'>, 'filename': 'test_pdf_file_pages_54_55.md', 'md_params': {'markdown_path': 'temp/mistral/test_pdf_file_pages_54_55.md', 'filename': 'test_pdf_file_pages_54_55.md', 'file_chunk_number': 0, 'rag_chunk_start_index': 610, 'is_last': False, 'is_ocr_part': True, 'ocr_params': {'file_path': '/tmp/graxon/b6670647-8a83-47f9-938f-f56aa9c41b02/test_pdf_file.pdf', 'filename': 'test_pdf_file.pdf', 'processor': <OCRProcessor.MISTRAl: 'mistral'>, 'api_key': 'xxxxxxxxxxxxxxxx', 'start_page': 56, 'max_pages_per_chunk': 2, 'is_last_ocr_batch': False, 'rag_chunk_start_index': 610, 'timeout': 600.0, 'file_chunk_number': 0, 'max_chunk_size_mb': 0.2, 'llama_tier': 'agentic', 'llama_version': 'latest', 'llama_poll_interval': 2.0, 'kwargs': {}}, 'max_chunk_size_mb': 0.2, 'tokenizer': 'gpt2'}}}"}
+{"timestamp": "2026-08-15 14:32:47", "level": "INFO", "filename": "producer.py", "lineno": 46, "function": "publish_to_processing_exchange", "message": "{'message': 'Message sent to exchange', 'routing_key': 'graxon_document_processing_routing_key', 'document_id': UUID('4af95705-0db2-4f02-a5c0-1a6953784cfa')}"}
+
+{"timestamp": "2026-08-15 14:32:47", "level": "INFO", "filename": "consumer.py", "lineno": 55, "function": "_on_document_processing_message", "message": "{'message': 'Received message', 'retry_count': 0, 'document': {'org_id': 'test', 'project_id': 'ba512d16-bbfa-459b-b684-32e8996fd08c', 'doc_id': '4af95705-0db2-4f02-a5c0-1a6953784cfa', 'file_type': 'pdf', 'filename': 'test_pdf_file_pages_54_55.md', 'md_params': {'markdown_path': 'temp/mistral/test_pdf_file_pages_54_55.md', 'filename': 'test_pdf_file_pages_54_55.md', 'file_chunk_number': 0, 'rag_chunk_start_index': 610, 'is_last': False, 'is_ocr_part': True, 'ocr_params': {'file_path': '/tmp/graxon/b6670647-8a83-47f9-938f-f56aa9c41b02/test_pdf_file.pdf', 'filename': 'test_pdf_file.pdf', 'processor': 'mistral', 'api_key': 'xxxxxxxxxxxxxxxx', 'start_page': 56, 'max_pages_per_chunk': 2, 'is_last_ocr_batch': False, 'rag_chunk_start_index': 610, 'timeout': 600.0, 'file_chunk_number': 0, 'max_chunk_size_mb': 0.2, 'llama_tier': 'agentic', 'llama_version': 'latest', 'llama_poll_interval': 2.0, 'kwargs': {}}, 'max_chunk_size_mb': 0.2, 'tokenizer': 'gpt2'}}}"}
