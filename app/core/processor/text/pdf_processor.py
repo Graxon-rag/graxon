@@ -11,12 +11,7 @@ import re
 
 
 class PDFProcessor(Processor):
-    # CID pattern regex for unmapped font characters from pdfminer/pdfplumber
     _CID_PATTERN = re.compile(r"\(cid\s*:\s*\d+\s*\)")
-
-    # CJK scripts (Han, Hiragana, Katakana, Hangul) do not separate words with
-    # spaces, so a geometric gap between their glyphs must not become one.
-    _CJK_PATTERN = re.compile(r"[ᄀ-ᇿ぀-ヿ㄰-㆏㐀-䶿一-鿿가-힯豈-﫿]|[\U00020000-\U0002fa1f]")
 
     def __init__(self,
         file_path: str,
@@ -26,8 +21,10 @@ class PDFProcessor(Processor):
         pages_per_batch: int = Env.MAX_PAGES_PER_BATCH,
         rag_chunk_size: int = Env.CHUNK_SIZE,
         rag_chunk_overlap: int = Env.CHUNK_OVERLAP,
-        # carry last N chars of previous batch to patch page boundary cuts
         tail_carry_chars: int = 500,
+        # tables larger than this get split by the normal splitter too,
+        # instead of being force-kept as one giant chunk
+        max_table_chunk_chars: int = 4000,
     ):
         self.file_path = file_path
         self.filename = filename
@@ -37,23 +34,21 @@ class PDFProcessor(Processor):
         self.rag_chunk_size = rag_chunk_size
         self.rag_chunk_overlap = rag_chunk_overlap
         self.tail_carry_chars = tail_carry_chars
+        self.max_table_chunk_chars = max_table_chunk_chars
 
         self.splitter = RecursiveCharacterTextSplitter(
             chunk_size=rag_chunk_size,
             chunk_overlap=rag_chunk_overlap,
             separators=["\n\n", "\n", ".", " ", ""],
         )
+        # only used for oversized tables, keep row boundaries intact
+        self.table_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=rag_chunk_size,
+            chunk_overlap=0,
+            separators=["\n", " ", ""],
+        )
 
     async def process(self) -> Tuple[List[Document], int, bool]:
-        """
-        Reads pages_per_batch pages starting from chunk_number * pages_per_batch.
-        Carries tail from previous batch to avoid cutting prose at page boundaries.
-
-        Returns:
-            documents: list of Document
-            next_rag_chunk_start_index: pass this to next queue message
-            is_last: True if this was the final batch
-        """
         try:
             return await asyncio.to_thread(self._process_sync)
         except Exception as e:
@@ -74,31 +69,29 @@ class PDFProcessor(Processor):
             page_end = min(page_start + self.pages_per_batch, total_pages)
             is_last = page_end >= total_pages
 
-            # carry last page of previous batch to patch boundary cuts
             tail_text = ""
             if page_start > 0:
-                prev_page_text = self._extract_page_text(pdf.pages[page_start - 1])
-                tail_text = prev_page_text[-self.tail_carry_chars:]
+                prev_text, _ = self._extract_page(pdf.pages[page_start - 1])
+                tail_text = prev_text[-self.tail_carry_chars:]
 
-            # extract text from current batch of pages
             batch_text = ""
+            batch_tables: List[Tuple[int, str]] = []  # (page_number, markdown)
             for page_num in range(page_start, page_end):
-                batch_text += self._extract_page_text(pdf.pages[page_num])
+                page_text, page_tables = self._extract_page(pdf.pages[page_num])
+                batch_text += page_text
+                for md in page_tables:
+                    batch_tables.append((page_num, md))
 
         raw_text = tail_text + batch_text
-        documents = self._split_into_rag_chunks(raw_text, page_start)
+        documents = self._build_documents(raw_text, batch_tables, page_start)
 
         return documents, self.rag_chunk_start_index + len(documents), is_last
 
-    def _extract_page_text(self, page) -> str:
+    def _extract_page(self, page) -> Tuple[str, List[str]]:
         """
-        Extract clean text from a single pdfplumber page
-        text-quality logic: filter invisible/white "color" chars,
-        recover missing inter-word spaces from character geometry, and skip
-        pages whose text layer is garbled (broken CID mapping or subset
-        fonts silently mapping CJK glyphs to ASCII).
-
-        Images are not processed yet -- just flagged for the future OCR pass.
+        Returns (prose_text, table_markdowns) for a single page.
+        Table regions are excluded from prose_text so content isn't
+        duplicated/garbled by the char-level text extraction.
         """
         if page.images:
             logger.warning(
@@ -107,6 +100,35 @@ class PDFProcessor(Processor):
                 f"yet (OCR pass pending)."
             )
 
+        table_mds: List[str] = []
+        table_bboxes = []
+        try:
+            found_tables = page.find_tables()
+        except Exception as e:
+            logger.warning(
+                f"{self.filename}: table detection failed on page "
+                f"{page.page_number}: {e}"
+            )
+            found_tables = []
+
+        for t in found_tables:
+            try:
+                rows = t.extract()
+            except Exception as e:
+                logger.warning(
+                    f"{self.filename}: failed to extract a table on page "
+                    f"{page.page_number}: {e}"
+                )
+                continue
+            md = self._table_to_markdown(rows)
+            if md:
+                table_mds.append(md)
+                table_bboxes.append(t.bbox)  # (x0, top, x1, bottom)
+
+        prose_text = self._extract_prose_text(page, table_bboxes)
+        return prose_text, table_mds
+
+    def _extract_prose_text(self, page, table_bboxes) -> str:
         try:
             chars = [c for c in page.dedupe_chars().chars if self._has_color(c)]
         except Exception as e:
@@ -119,49 +141,116 @@ class PDFProcessor(Processor):
         if not chars:
             return ""
 
-        # Strategy 1: PUA / unmapped CID characters -> genuine garbage
+        # drop chars that fall inside a detected table's bbox so table
+        # content isn't duplicated (once as markdown, once as raw prose)
+        if table_bboxes:
+            chars = [c for c in chars if not self._in_any_bbox(c, table_bboxes)]
+            if not chars:
+                return ""
+
         sample = chars if len(chars) <= 200 else chars[:200]
         sample_text = "".join(c.get("text", "") for c in sample)
         if self._is_garbled_text(sample_text, threshold=0.3):
             logger.warning(
                 f"{self.filename}: page {page.page_number} text layer looks "
-                f"garbled (unmapped/PUA characters); skipping extraction for "
-                f"this page (OCR pass pending)."
+                f"garbled; skipping extraction for this page (OCR pass pending)."
             )
             return ""
 
-        # Strategy 2: font-encoding garbling -- subset fonts mapping CJK
-        # glyphs onto ASCII codepoints, producing punctuation-only text
         if self._is_garbled_by_font_encoding(chars):
             logger.warning(
                 f"{self.filename}: page {page.page_number} has font-encoding "
-                f"garbling (subset fonts, no CJK output); skipping extraction "
-                f"for this page (OCR pass pending)."
+                f"garbling; skipping extraction for this page (OCR pass pending)."
             )
             return ""
 
         self._insert_word_spaces(chars)
         return "".join(c["text"] for c in chars)
 
-    def _split_into_rag_chunks(self, raw_text: str, page_start: int) -> List[Document]:
-        texts = self.splitter.split_text(raw_text)
+    @staticmethod
+    def _in_any_bbox(c, bboxes) -> bool:
+        cx0, ctop, cx1, cbottom = c["x0"], c["top"], c["x1"], c["bottom"]
+        for (x0, top, x1, bottom) in bboxes:
+            if cx0 >= x0 - 1 and cx1 <= x1 + 1 and ctop >= top - 1 and cbottom <= bottom + 1:
+                return True
+        return False
 
-        documents = []
-        for i, text in enumerate(texts):
+    @staticmethod
+    def _table_to_markdown(rows: List[List]) -> str:
+        """Convert pdfplumber's raw row/cell extraction into a markdown table."""
+        # drop fully-empty rows
+        rows = [r for r in rows if any((cell or "").strip() for cell in r)]
+        if not rows:
+            return ""
+
+        def clean(cell):
+            return re.sub(r"\s+", " ", (cell or "").strip()).replace("|", "\\|")
+
+        header, *body = rows
+        header_cells = [clean(c) for c in header]
+        col_count = len(header_cells)
+
+        lines = [
+            "| " + " | ".join(header_cells) + " |",
+            "| " + " | ".join(["---"] * col_count) + " |",
+        ]
+        for row in body:
+            cells = [clean(c) for c in row]
+            # pad/truncate ragged rows to header width
+            if len(cells) < col_count:
+                cells += [""] * (col_count - len(cells))
+            elif len(cells) > col_count:
+                cells = cells[:col_count]
+            lines.append("| " + " | ".join(cells) + " |")
+
+        return "\n".join(lines)
+
+    def _build_documents(
+        self, raw_text: str, batch_tables: List[Tuple[int, str]], page_start: int
+    ) -> List[Document]:
+        documents: List[Document] = []
+
+        # 1. prose text -> normal recursive-split chunks
+        texts = self.splitter.split_text(raw_text)
+        for text in texts:
+            documents.append(self._make_document(text, page_start, is_table=False))
+
+        # 2. tables -> atomic chunks (own chunk each), split only if oversized
+        for page_num, md in batch_tables:
+            if len(md) <= self.max_table_chunk_chars:
+                documents.append(
+                    self._make_document(md, page_num, is_table=True)
+                )
+            else:
+                logger.warning(
+                    f"{self.filename}: table on page {page_num + 1} exceeds "
+                    f"{self.max_table_chunk_chars} chars, splitting it."
+                )
+                for part in self.table_splitter.split_text(md):
+                    documents.append(
+                        self._make_document(part, page_num, is_table=True)
+                    )
+
+        # re-stamp sequential absolute indices / ids now that final order is known
+        for i, doc in enumerate(documents):
             absolute_index = self.rag_chunk_start_index + i
-            doc = Document(
-                id=f"{self.filename}-{absolute_index}",
-                page_content=text,
-                metadata={
-                    "source": self.file_path,
-                    "file_chunk_number": self.chunk_number,
-                    "rag_chunk_number": absolute_index,
-                    "page_number": page_start,       # which page batch this came from
-                },
-            )
-            documents.append(doc)
+            doc.id = f"{self.filename}-{absolute_index}"
+            doc.metadata["rag_chunk_number"] = absolute_index
 
         return documents
+
+    def _make_document(self, text: str, page_number: int, is_table: bool) -> Document:
+        return Document(
+            id="",  # stamped in _build_documents
+            page_content=text,
+            metadata={
+                "source": self.file_path,
+                "file_chunk_number": self.chunk_number,
+                "rag_chunk_number": -1,  # stamped in _build_documents
+                "page_number": page_number,
+                "content_type": "table" if is_table else "text",
+            },
+        )
 
     @staticmethod
     def _has_color(o):
@@ -176,7 +265,6 @@ class PDFProcessor(Processor):
 
     @classmethod
     def _insert_word_spaces(cls, chars, gap_ratio=0.25):
-        """Recover missing spaces from character geometry (mutates in place)."""
         widths = [c["width"] for c in chars if c["text"] and c["text"].strip()]
         mean_w = sum(widths) / len(widths) if widths else 0
         if mean_w <= 0:
@@ -185,8 +273,6 @@ class PDFProcessor(Processor):
             if (
                 cur["text"] and nxt["text"]
                 and cur["text"].strip() and nxt["text"].strip()
-                and not cls._CJK_PATTERN.search(cur["text"])
-                and not cls._CJK_PATTERN.search(nxt["text"])
                 and nxt["x0"] - cur["x1"] > mean_w * gap_ratio
             ):
                 cur["text"] += " "
