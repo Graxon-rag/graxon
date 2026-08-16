@@ -1,4 +1,4 @@
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 from enum import Enum
 import datetime
@@ -62,7 +62,7 @@ class WebhookEventEnum(str, Enum):
     DOCUMENT_FAILED = "document.failed"
 
 
-class WebhookSendParams(BaseModel):
+class WebhookEventParams(BaseModel):
     id: uuid.UUID = Field(
         default_factory=uuid.uuid4,
         description="The id of the event object",
@@ -72,4 +72,12 @@ class WebhookSendParams(BaseModel):
     created_at: datetime.datetime = Field(
         default_factory=datetime.datetime.now,
         description="The created at of the event object",
+    )
+
+
+class WebhookSendParams(BaseModel):
+    event_data: WebhookEventParams
+    webhooks: List[WebhookGetSchema] = Field(
+        default=[],
+        description="The list of webhooks to send the event to",
     )

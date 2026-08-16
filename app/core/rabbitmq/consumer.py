@@ -1,5 +1,7 @@
-from ..schemas.document_schema import DocumentGetSchema, DocumentStatusMQSchema
+from ..schemas.document_schema import DocumentStatusMQSchema
+from ..helpers.webhook_helper import WebhookConsumerHelper
 from ..services.document_service import DocumentService
+from ..schemas.webhook_schema import WebhookSendParams
 from app.constants.document import DocumentStatus
 from aio_pika.abc import AbstractIncomingMessage
 from ..helpers.rmq import RMQProcessorHelper
@@ -37,10 +39,9 @@ class GMQWebhookConsumer:
                     await message.ack()  # ack to drop it permanently, not reject/nack
                     return
 
-                # body = message.body.decode()
-                # doc_status = DocumentStatusMQSchema.model_validate_json(body)
-                # service = DocumentService(org_id=doc_status.org_id, project_id=doc_status.project_id)
-                # await service.change_document_status(doc_status.id, doc_status.status)
+                body = message.body.decode()
+                webhook_data = WebhookSendParams.model_validate_json(body)
+                await WebhookConsumerHelper().handle_webhook_send(webhook_data)
 
                 await message.ack()  # We are done with the message
             except Exception as e:

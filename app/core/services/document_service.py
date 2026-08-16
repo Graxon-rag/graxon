@@ -1,7 +1,10 @@
 from ..schemas.document_schema import DocumentUploadSchema, DocumentGetSignedUrlSchema, DocumentUploadResponseSchema, DocumentCreateSchema, DocumentGetSchema, DocumentListSchema, DocumentQueryParams
+from ..schemas.webhook_schema import WebhookSendParams, WebhookEventParams, WebhookEventEnum
 from ..services.project_service import ProjectService
+from ..services.webhook_service import WebhookService
 from ..rabbitmq.producer import GMQDocumentProducer
 from ..helpers.process_helper import ProcessHelper
+from ..rabbitmq.producer import GMQWebhookProducer
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
 from ..repos.document_repo import DocumentRepo
@@ -9,6 +12,7 @@ from ..helpers.model_helper import ModelHelper
 from app.utils.logger import logger
 from fastapi import UploadFile
 from ..libs.id import IDLibs
+from typing import Dict, Any
 import uuid
 
 
@@ -20,6 +24,7 @@ class DocumentService:
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=project_id)
         self._repo = DocumentRepo(org_id=self.org_id, project_id=project_id)
         self._model_helper = ModelHelper(org_id=self.org_id, project_id=project_id)
+        self._webhook_service = WebhookService(org_id=self.org_id, project_id=project_id)
 
     async def handle_document_upload(self, data: DocumentUploadSchema, file: UploadFile) -> DocumentUploadResponseSchema:
         try:
@@ -65,11 +70,15 @@ class DocumentService:
             is_model_check_passed = await self._model_helper.check_model_check(document.name)
             if not is_model_check_passed:
                 raise Exception("Model check failed")
+            dict_data = {"org_id": self.org_id, "project_id": str(document.project_id), "document_id": str(document_id)}
+
             try:
                 process_params = await ProcessHelper.get_process_params(document)
                 await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)
+                await self._send_webhook(WebhookEventEnum.DOCUMENT_QUEUED, dict_data)
                 await GMQDocumentProducer.publish_to_processing_exchange(process_params)
                 await self._repo.change_document_status(document_id, DocumentStatus.PROCESSING)
+                await self._send_webhook(WebhookEventEnum.DOCUMENT_PROCESSING, dict_data)
                 print("Document submitted for processing", document)
             except Exception as e:
                 await self._repo.change_document_status(document_id, DocumentStatus.FAILED)
@@ -81,7 +90,19 @@ class DocumentService:
 
     async def change_document_status(self, document_id: uuid.UUID, status: DocumentStatus):
         try:
-            return await self._repo.change_document_status(document_id, status)
+            result = await self._repo.change_document_status(document_id, status)
+            if status == DocumentStatus.FAILED:
+                event = WebhookEventEnum.DOCUMENT_FAILED
+            elif status == DocumentStatus.PROCESSED:
+                event = WebhookEventEnum.DOCUMENT_PROCESSED
+            elif status == DocumentStatus.PROCESSING:
+                event = WebhookEventEnum.DOCUMENT_PROCESSING
+            elif status == DocumentStatus.QUEUED:
+                event = WebhookEventEnum.DOCUMENT_QUEUED
+            else:
+                event = WebhookEventEnum.DOCUMENT_PENDING
+            await self._send_webhook(event, {"org_id": self.org_id, "project_id": str(self.project_id), "document_id": str(document_id)})
+            return result
         except Exception as e:
             logger.error({"message": "Failed to change document status", "error": str(e)})
             raise e
@@ -124,6 +145,8 @@ class DocumentService:
                 size=file.size,
                 signed_url=signed_url
             )
+
+            await self._send_webhook(WebhookEventEnum.DOCUMENT_PENDING, result.model_dump(mode="json"))
 
             return result
 
@@ -170,8 +193,22 @@ class DocumentService:
                 signed_url=signed_url
             )
 
+            await self._send_webhook(WebhookEventEnum.DOCUMENT_PENDING, result.model_dump(mode="json"))
+
             return result
 
         except Exception as e:
             logger.error({"message": "Failed to upload document", "error": str(e)})
             raise e
+
+    async def _send_webhook(self, event: WebhookEventEnum, data: Dict[str, Any]):
+        try:
+            webhooks = await self._webhook_service.list()
+            webhook_event = WebhookEventParams(
+                event=event,
+                data=data,
+            )
+            await GMQWebhookProducer.publish_to_webhook_exchange(WebhookSendParams(event_data=webhook_event, webhooks=webhooks))
+
+        except Exception as e:
+            logger.error({"message": "Failed to publish webhook", "error": str(e)})
