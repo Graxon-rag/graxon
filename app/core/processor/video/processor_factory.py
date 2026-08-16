@@ -1,4 +1,5 @@
 from .twelvelabs_processor import TwelveLabsVideoProcessor
+from .gemini_processor import GeminiVideoProcessor
 from .base import VideoProcessor
 from enum import Enum
 
@@ -26,6 +27,6 @@ class VideoProcessorFactory:
         if processor == VideoProcessorEnum.TWELVELABS:
             return TwelveLabsVideoProcessor(file_path=file_path, filename=filename, api_key=api_key, file_chunk_number=file_chunk_number, rag_chunk_start_index=rag_chunk_start_index, timeout=timeout, **kwargs)
         elif processor == VideoProcessorEnum.GEMINI:
-            raise NotImplementedError
+            return GeminiVideoProcessor(file_path=file_path, filename=filename, api_key=api_key, file_chunk_number=file_chunk_number, rag_chunk_start_index=rag_chunk_start_index, timeout=timeout, **kwargs)
         else:
             raise ValueError(f"Unknown video processor: {processor}")

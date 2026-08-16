@@ -66,9 +66,9 @@ class Env:
     OBJECTS_PER_BUFFER: int = int(os.getenv("OBJECTS_PER_BUFFER", 500))
     ROWS_PER_IO_BUFFER: int = int(os.getenv("ROWS_PER_IO_BUFFER", 500))
 
-    VIDEO_SEGMENT_DURATION_MINUTES: float = int(os.getenv("VIDEO_SEGMENT_DURATION_MINUTES", 10.0))
-    VIDEO_OVERLAP_MINUTES: float = int(os.getenv("VIDEO_OVERLAP_MINUTES", 1.0))
-    VIDEO_MAX_DURATION_PER_RAG_CHUNK: float = int(os.getenv("VIDEO_MAX_DURATION_PER_RAG_CHUNK", 2.0))
+    VIDEO_SEGMENT_DURATION_MINUTES: float = float(os.getenv("VIDEO_SEGMENT_DURATION_MINUTES", 10.0))
+    VIDEO_OVERLAP_MINUTES: float = float(os.getenv("VIDEO_OVERLAP_MINUTES", 1.0))
+    VIDEO_MAX_DURATION_PER_RAG_CHUNK: float = float(os.getenv("VIDEO_MAX_DURATION_PER_RAG_CHUNK", 2.0))
     VIDEO_MAX_WORDS_PER_RAG_CHUNK: int = int(os.getenv("VIDEO_MAX_WORDS_PER_RAG_CHUNK", 300))
 
     # Text Similar
