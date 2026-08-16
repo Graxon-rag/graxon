@@ -3,9 +3,10 @@ from starlette.status import (HTTP_500_INTERNAL_SERVER_ERROR, HTTP_400_BAD_REQUE
 from fastapi import HTTPException, APIRouter, File, UploadFile, Query, Body, Depends
 from app.utils.response_util import success_response, error_response
 from ..handlers.document_handler import DocumentHandler
-from ..libs.document_lib import DocumentLibs
 from ..minio.upload import MinioUploadClient
+from ..libs.document_lib import DocumentLibs
 from app.utils.logger import logger
+from typing import Optional
 import uuid
 
 router = APIRouter(
@@ -131,8 +132,10 @@ async def upload_document(org_id: str, project_id: uuid.UUID, document_id: uuid.
 
 
 @router.get("/{org_id}/projects/{project_id}/get/all")
-async def get_all_documents(org_id: str, project_id: uuid.UUID, params: DocumentQueryParams = Depends(),):
+async def get_all_documents(org_id: str, project_id: uuid.UUID, params: DocumentQueryParams = Depends(), types: Optional[list[str]] = Query(default=None)):
     try:
+        if types:
+            params.types = types
         handler = DocumentHandler(org_id=org_id, project_id=project_id)
         result = await handler.get_all(params)
         if not result:

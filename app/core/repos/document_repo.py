@@ -63,6 +63,7 @@ class DocumentRepo:
 
     async def get_all(self, params: DocumentQueryParams) -> DocumentListSchema:
         try:
+            logger.info(f"Received params: {params.model_dump()}")
             async with self.db.get_session() as session:
                 stmt = select(Document)
                 count_stmt = select(func.count()).select_from(Document)
@@ -83,10 +84,18 @@ class DocumentRepo:
                 # Type / Category Filter
                 if params.type:
                     ext_clean = params.type.lstrip(".").lower()
-                    filters.append(Document.type.ilike(ext_clean))
+                    filters.append(func.lower(Document.type) == ext_clean)
                 elif params.types:
-                    clean_types = [t.lstrip(".").lower() for t in params.types]
-                    filters.append(func.lower(Document.type).in_(clean_types))
+                    # Flatten if types were passed as comma-separated strings or list
+                    clean_types = []
+                    for item in params.types:
+                        for ext in item.split(","):
+                            cleaned = ext.strip().lstrip(".").lower()
+                            if cleaned:
+                                clean_types.append(cleaned)
+
+                    if clean_types:
+                        filters.append(func.lower(Document.type).in_(clean_types))
 
                 # Size Filter with Operator
                 if params.size is not None:

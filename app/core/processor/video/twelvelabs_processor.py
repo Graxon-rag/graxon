@@ -8,9 +8,9 @@ from twelvelabs.types import (
 from app.providers.video.twelvelabs import TwelveLabsVideoProvider
 from langchain_core.documents import Document
 from typing import List, Tuple, Optional, Dict
+from app.utils.logger import logger
 from .base import VideoProcessor
 from pathlib import Path
-import subprocess
 import asyncio
 import json
 
@@ -37,7 +37,17 @@ SEGMENT_FIELDS = [
     SegmentField(
         name="transcript",
         type="string",
-        description="Verbatim spoken words and dialogue during this segment, or empty string if no speech.",
+        description=(
+            "Verbatim words spoken OR sung during THIS SEGMENT'S TIME WINDOW ONLY "
+            "(from this segment's start_time to its end_time). Include song lyrics, "
+            "rap, chanting, and other vocalized words, not just conversational dialogue. "
+            "Do NOT include words from earlier or later segments, and do NOT repeat "
+            "lyrics/dialogue already captured in a previous segment — only transcribe "
+            "the portion of audio that plays specifically during this segment's own "
+            "time range. If a song or speech spans multiple segments, split the words "
+            "across segments according to when they are actually heard. "
+            "Empty string if no speech or singing occurs in this segment."
+        ),
     ),
     SegmentField(
         name="detailed_description",
@@ -80,7 +90,10 @@ SEGMENT_FIELDS = [
     SegmentField(
         name="has_speech",
         type="string",
-        description="'true' if there is spoken dialogue in this segment, 'false' if silent or music only.",
+        description=(
+            "'true' if there are spoken words OR sung lyrics/vocals during this "
+            "segment's own time window, 'false' if silent or instrumental-only music."
+        ),
     ),
 ]
 
@@ -146,7 +159,8 @@ class TwelveLabsVideoProcessor(VideoProcessor):
     async def process(self) -> Tuple[List[Document], int, bool]:
         """
         Level 1: Slice video file into 12-min clip (10 core + 1 overlap each side)
-                 using pydub. Each chunk is a separate small upload — no full-file upload.
+                 using ffmpeg (run via asyncio subprocess, non-blocking).
+                 Each chunk is a separate small upload — no full-file upload.
                  Saved to temp/{stem}_chunk_{n}.mp4
 
         Level 2: Upload slice to TwelveLabs, wait for asset ready,
@@ -156,7 +170,9 @@ class TwelveLabsVideoProcessor(VideoProcessor):
                  Group segments into RAG chunks by dual guard:
                    - accumulated duration >= max_duration_per_rag_chunk_sec
                    - accumulated word count >= max_words_per_rag_chunk
-                 Each group → one Document.
+                 Each group → one Document. Transcript de-duplicated across
+                 consecutive segments to guard against model smearing full
+                 song lyrics into a single segment.
 
         Returns:
             documents:             list of Document (one per RAG chunk + overview if chunk 0)
@@ -164,14 +180,17 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             is_last:               True if this was the final video slice
         """
         # --- Level 1: slice video ---
+        logger.info({"message": "Slicing video", "file_chunk_number": self.file_chunk_number, "filename": self.filename})
         slice_path, core_start_sec, core_end_sec, offset_sec, is_last = await self._slice_video()
 
         # --- Level 2: upload slice + analyze ---
+        logger.info({"message": "Uploading chunk", "file_chunk_number": self.file_chunk_number, "filename": self.filename})
         asset_id = await self._upload_slice(slice_path)
         seg_task, overview_task = await self._create_analysis_tasks(
             asset_id=asset_id,
             include_overview=(self.file_chunk_number == 0),
         )
+        logger.info({"message": "Waiting for analysis", "file_chunk_number": self.file_chunk_number, "filename": self.filename})
         seg_task, overview_task = await asyncio.gather(
             self._poll_task(seg_task.task_id),
             self._poll_task(overview_task.task_id) if overview_task else asyncio.sleep(0),
@@ -189,7 +208,25 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             core_duration_sec=self.chunk_duration_sec,
             offset_sec=offset_sec,
         )
+        logger.info(
+            {
+                "message": "Filtered segments",
+                "file_chunk_number": self.file_chunk_number,
+                "filename": self.filename,
+                "num_segments": len(core_segments),
+            }
+        )
+        # --- Guard against transcript smearing/duplication across segments ---
+        core_segments = self._dedupe_transcript_across_segments(core_segments)
 
+        logger.info(
+            {
+                "message": "Deduped segments",
+                "file_chunk_number": self.file_chunk_number,
+                "filename": self.filename,
+                "num_segments": len(core_segments),
+            }
+        )
         # --- Level 3: build RAG chunk documents ---
         documents = self._build_documents(core_segments)
 
@@ -206,11 +243,34 @@ class TwelveLabsVideoProcessor(VideoProcessor):
         return documents, self.rag_chunk_start_index + len(documents), is_last
 
     # -------------------------------------------------------------------------
-    # Level 1 — Video slicing with pydub
+    # Level 1 — Video slicing (async subprocess — does not block the event loop)
     # -------------------------------------------------------------------------
 
+    async def _run_subprocess(self, cmd: List[str]) -> Tuple[bytes, bytes]:
+        """
+        Runs a command via asyncio.create_subprocess_exec so the event loop
+        stays free while ffmpeg/ffprobe run (these can take real wall-clock
+        time on large files — a plain subprocess.run() call would block
+        every other coroutine, including other chunks' uploads/polling,
+        for the duration).
+        """
+        proc = await asyncio.create_subprocess_exec(
+            *cmd,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.PIPE,
+        )
+        stdout, stderr = await proc.communicate()
+
+        if proc.returncode != 0:
+            raise RuntimeError(
+                f"Command failed ({proc.returncode}): {' '.join(cmd)}\n"
+                f"stderr: {stderr.decode(errors='replace')}"
+            )
+
+        return stdout, stderr
+
     async def _get_video_duration(self, file_path: Path) -> float:
-        """Uses ffprobe to get the exact duration of the video in seconds."""
+        """Uses ffprobe (async) to get the exact duration of the video in seconds."""
         cmd = [
             "ffprobe",
             "-v", "error",
@@ -218,8 +278,8 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             "-of", "default=noprint_wrappers=1:nokey=1",
             str(file_path)
         ]
-        result = subprocess.run(cmd, capture_output=True, text=True, check=True)
-        return float(result.stdout.strip())
+        stdout, _ = await self._run_subprocess(cmd)
+        return float(stdout.decode().strip())
 
     async def _slice_video(self) -> Tuple[Path, float, float, float, bool]:
         """
@@ -255,7 +315,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
 
         slice_path = TWELVELABS_TEMP_DIR / f"{self.file_path.stem}_chunk_{self.file_chunk_number}.mp4"
 
-        # Fast-seek by placing -ss before -i. 
+        # Fast-seek by placing -ss before -i.
         # -c copy prevents re-encoding and preserves both video/audio streams losslessly.
         cmd = [
             "ffmpeg", "-y",
@@ -266,7 +326,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             str(slice_path)
         ]
 
-        subprocess.run(cmd, capture_output=True, check=True)
+        await self._run_subprocess(cmd)
 
         # offset_sec = where core_start sits in the original file
         # Used to convert slice-relative timestamps → original-file timestamps
@@ -291,11 +351,13 @@ class TwelveLabsVideoProcessor(VideoProcessor):
         Returns asset_id.
         """
         async def progress_callback(progress):
-            print(
-                f"\r  Uploading chunk {self.file_chunk_number}: {progress.percentage:.1f}% "
-                f"({progress.completed_chunks}/{progress.total_chunks} chunks)",
-                end="", flush=True,
-            )
+            logger.info({
+            "message": "Uploading chunk",
+            "file_chunk_number": self.file_chunk_number,
+            "percentage": progress.percentage,
+            "completed_chunks": progress.completed_chunks,
+            "total_chunks": progress.total_chunks,
+        })
         client = await self._client.client()
         result = await client.multipart_upload.upload_file(
             file_path=slice_path,
@@ -305,7 +367,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             progress_callback=progress_callback,
         )
         asset_id = result.asset_id
-        print(f"\nChunk {self.file_chunk_number} uploaded. Asset ID: {asset_id}")
+        logger.info(f"\nChunk {self.file_chunk_number} uploaded. Asset ID: {asset_id}")
 
         # Brief delay — give TwelveLabs a moment to register the asset
         # before polling, otherwise retrieve can 404 immediately after upload
@@ -316,7 +378,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
         while True:
             asset = await client.assets.retrieve(asset_id)
             if asset.status == "ready":
-                print(f"Asset {asset_id} ready.")
+                logger.info(f"Asset {asset_id} ready.")
                 break
             if asset.status == "failed":
                 error = getattr(asset, "error", None)
@@ -324,7 +386,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
                     f"Asset processing failed for chunk {self.file_chunk_number}: "
                     f"asset_id={asset_id}, error={error}"
                 )
-            print(f"  Asset status: {asset.status} — waiting...")
+            logger.info(f"  Asset status: {asset.status} — waiting...")
             await asyncio.sleep(self.poll_interval)
 
         return asset_id
@@ -351,7 +413,10 @@ class TwelveLabsVideoProcessor(VideoProcessor):
                         id="segments",
                         description=(
                             "Segment the video into distinct scenes, topics, or actions. "
-                            "Each segment should cover one coherent topic or scene."
+                            "Each segment should cover one coherent topic or scene. "
+                            "For each segment, only report words spoken or sung during "
+                            "that segment's own start_time/end_time window — never repeat "
+                            "or pre-empt transcript text belonging to another segment."
                         ),
                         fields=SEGMENT_FIELDS,
                     )
@@ -431,6 +496,51 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             adjusted["start_time"] = seg_start - overlap_sec + offset_sec
             adjusted["end_time"] = seg_end - overlap_sec + offset_sec
 
+            result.append(adjusted)
+
+        return result
+
+    # -------------------------------------------------------------------------
+    # Transcript de-duplication (guards against lyric/dialogue smearing)
+    # -------------------------------------------------------------------------
+
+    def _dedupe_transcript_across_segments(self, segments: List[Dict]) -> List[Dict]:
+        """
+        Pegasus segments video by scene/topic, not by lyric or dialogue timing.
+        For continuous audio (songs especially), it can dump a large span of
+        transcript text into one segment, and repeat all or part of that same
+        text in the following segment(s). The tightened field description
+        reduces this, but this is a safety net: if a segment's transcript is
+        (near-)identical to, or fully contained in, the previous segment's
+        transcript, treat it as smeared and clear it rather than keeping a
+        duplicate. If a segment's transcript is a superset that merely
+        *extends* the previous one (previous is a prefix of it), keep only
+        the new tail so words aren't double-counted.
+        """
+        result = []
+        prev_transcript = ""
+
+        for seg in segments:
+            adjusted = dict(seg)
+            meta = dict(adjusted.get("metadata", {}))
+            transcript = (meta.get("transcript") or "").strip()
+
+            if transcript and prev_transcript:
+                if transcript == prev_transcript:
+                    # Exact repeat of the previous segment — smeared, drop it.
+                    transcript = ""
+                elif transcript in prev_transcript:
+                    # Fully contained in what we already captured — drop it.
+                    transcript = ""
+                elif transcript.startswith(prev_transcript):
+                    # Extends the previous transcript — keep only the new part.
+                    transcript = transcript[len(prev_transcript):].strip()
+
+            if transcript:
+                prev_transcript = (seg.get("metadata", {}).get("transcript") or "").strip()
+
+            meta["transcript"] = transcript
+            adjusted["metadata"] = meta
             result.append(adjusted)
 
         return result
@@ -578,7 +688,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             metadata={
                 "source": str(self.file_path),
                 "file_chunk_number": 0,
-                "rag_chunk_number": -1,
+                "rag_chunk_number": 0,  # 0 is reserved for overview
                 "provider": "twelvelabs",
                 "model": self.model_name,
                 "document_type": "overview",

@@ -108,7 +108,7 @@ class ProcessHelper:
             processor=processor,
             api_key=project_config.video_model_credential.api_key,
             file_chunk_number=0,
-            rag_chunk_start_index=1,  # it start from -1 so (-1 +1 = 0)
+            rag_chunk_start_index=1,  # since 0 is reserved for overview
             is_last=False
         )
 

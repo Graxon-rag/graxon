@@ -2,6 +2,7 @@ from app.constants.document import DocumentStatus
 from .common_schema import PaginationSchema
 from pydantic import BaseModel, Field
 from typing import Optional
+from fastapi import Query
 from enum import Enum
 import datetime
 import uuid
@@ -191,7 +192,7 @@ class DocumentQueryParams(BaseModel):
     status: Optional[str] = None
     name: Optional[str] = None
     type: Optional[str] = None  # Specific extension like "pdf", "png", "py"
-    types: Optional[list[str]] = None  # Category group like [".pdf", ".doc"]
+    types: Optional[list[str]] = Query(default=None)  # Category group like [".pdf", ".doc"]
     size: Optional[int] = None  # Size in bytes
     size_op: Optional[SizeOp] = SizeOp.EQ
     sort_by: SortField = SortField.CREATED_AT  # No Optional[]
