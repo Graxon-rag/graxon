@@ -220,9 +220,9 @@ class DocumentInjectGraph:
                     chunk_id=IDLibs.generate_chunk_id(document_id=self.document_readable_id, chunk_number=idx),
                     chunk_number=idx,
                     text=text,
-                    title=chunk.metadata.get("title"),
-                    source=chunk.metadata.get("source"),
-                    page_number=chunk.metadata.get("page"),
+                    # title=chunk.metadata.get("title"),
+                    # source=chunk.metadata.get("source"),
+                    # page_number=chunk.metadata.get("page"),
                 )
                 chunks.append(c)
 

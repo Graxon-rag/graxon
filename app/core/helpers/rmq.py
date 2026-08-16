@@ -7,6 +7,7 @@ from ..processor.audio.model import AudioProviderEnum
 from ..rabbitmq.producer import GMQDocumentProducer
 from app.constants.document import DocumentStatus
 from ..schemas import processor_schema as ps
+from .chunk_helper import ChunkHelper
 from app.utils.logger import logger
 from app.config.env import Env
 
@@ -232,7 +233,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_txt(cp, data.model_copy(update={
@@ -265,8 +267,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_json(cp, data.model_copy(update={
@@ -298,8 +300,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_xml(cp, data.model_copy(update={
@@ -327,8 +329,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_pdf(cp, data.model_copy(update={
@@ -370,8 +372,8 @@ class RMQProcessorHelper:
             "is_last_md_chunk": is_last_md_chunk,
         })
 
-        # TODO: process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last_md_chunk:
             # More chunks remain in THIS markdown file -> keep chunking it.
@@ -427,8 +429,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_yaml(cp, data.model_copy(update={
@@ -457,8 +459,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_docx(cp, data.model_copy(update={
@@ -492,8 +494,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_excel(cp, data.model_copy(update={
@@ -523,7 +525,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_code(cp, data.model_copy(update={
@@ -551,8 +554,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_ppt(cp, data.model_copy(update={
@@ -585,8 +588,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        # TODO: Process
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_html(cp, data.model_copy(update={
@@ -620,8 +623,8 @@ class RMQProcessorHelper:
 
         logger.info({"message": "Processed chunks", "docs": len(docs), "next_rag_start_index": next_rag_start_index, "is_last": is_last})
 
-        print(docs)
-        # TODO: Process
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             await RMQProducerHelper.produce_csv(cp, data.model_copy(update={
@@ -731,8 +734,8 @@ class RMQProcessorHelper:
         )
         docs, next_rag_start_index, is_last = await processor.process()
 
-        # TODO: process docs
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             # every provider-specific field is already on `data` and unchanged
@@ -774,8 +777,8 @@ class RMQProcessorHelper:
 
         docs, next_rag_start_index, is_last = await processor.process()
 
-        # TODO: process docs
-        print(docs)
+        # Process
+        await ChunkHelper.inject(cp, docs)
 
         if not is_last:
             # every provider-specific field is already on `data` and unchanged

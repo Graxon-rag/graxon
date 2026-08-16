@@ -1,16 +1,14 @@
 from pydantic import BaseModel, model_serializer, Field, field_validator, model_validator
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
-from typing import Optional, List
-from enum import Enum
+from typing import Optional, List, Dict, Any
 
 
 class Chunk(BaseModel):
     chunk_id: str
     chunk_number: int
     text: str
-    title: Optional[str] = None
-    source: Optional[str] = None
-    page_number: Optional[int] = None    
+    file_chunk_number: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None    
 
 
 class ChunkEmbedding(BaseModel):
