@@ -228,19 +228,30 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             }
         )
         # --- Level 3: build RAG chunk documents ---
-        documents = self._build_documents(core_segments)
+        # start_index = self.rag_chunk_start_index always — index 0 is reserved
+        # for the overview and is never drawn from this counter, so segment
+        # numbering here is independent of whether an overview is attached.
+        segment_documents = self._build_documents(core_segments, start_index=self.rag_chunk_start_index)
+
+        documents = segment_documents
 
         # --- Overview document (chunk 0 only) ---
-        if (
+        include_overview = (
             self.file_chunk_number == 0
             and overview_task
             and hasattr(overview_task, "status")
             and overview_task.status == "ready"
-        ):
+        )
+        if include_overview:
             overview_doc = self._build_overview_document(overview_task.result.data)  # type: ignore
             documents = [overview_doc] + documents
 
-        return documents, self.rag_chunk_start_index + len(documents), is_last
+        # next index is based only on how many *sequenced* (non-overview) docs
+        # were assigned this round — the overview's fixed index 0 sits outside
+        # this counter, so it must never be added into the running total.
+        next_rag_chunk_index = self.rag_chunk_start_index + len(segment_documents)
+
+        return documents, next_rag_chunk_index, is_last
 
     # -------------------------------------------------------------------------
     # Level 1 — Video slicing (async subprocess — does not block the event loop)
@@ -549,7 +560,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
     # Level 3 — Build RAG chunk Documents
     # -------------------------------------------------------------------------
 
-    def _build_documents(self, segments: List[Dict]) -> List[Document]:
+    def _build_documents(self, segments: List[Dict], start_index: int) -> List[Document]:
         if not segments:
             return []
 
@@ -562,7 +573,7 @@ class TwelveLabsVideoProcessor(VideoProcessor):
             if not current_segments:
                 return None
 
-            absolute_index = self.rag_chunk_start_index + len(documents)
+            absolute_index = start_index + len(documents)
             chunk_start = current_segments[0].get("start_time")
             chunk_end = current_segments[-1].get("end_time")
 

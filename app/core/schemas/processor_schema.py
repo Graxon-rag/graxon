@@ -319,12 +319,12 @@ class VideoProcessParams(BaseModel):
     is_last: bool = Field(..., description="True if this is the last chunk.")
 
     # Level 1 — video slicing
-    chunk_duration_min: Optional[float] = Field(default=10.0, description="The duration of each chunk in minutes.")  # core window duration
-    overlap_min: Optional[float] = Field(default=1.0, description="The overlap on each side in minutes.")            # overlap on each side
+    chunk_duration_min: Optional[float] = Field(default=Env.VIDEO_SEGMENT_DURATION_MINUTES, description="The duration of each chunk in minutes.")  # core window duration
+    overlap_min: Optional[float] = Field(default=Env.VIDEO_OVERLAP_MINUTES, description="The overlap on each side in minutes.")            # overlap on each side
 
     # Level 2 — RAG chunking from segments
-    max_duration_per_rag_chunk_sec: Optional[float] = Field(default=180.0, description="The maximum duration per RAG chunk in seconds.")
-    max_words_per_rag_chunk: Optional[int] = Field(default=400, description="The maximum words per RAG chunk.")
+    max_duration_per_rag_chunk_sec: Optional[float] = Field(default=Env.VIDEO_MAX_DURATION_PER_RAG_CHUNK, description="The maximum duration per RAG chunk in seconds.")
+    max_words_per_rag_chunk: Optional[int] = Field(default=Env.VIDEO_MAX_WORDS_PER_RAG_CHUNK, description="The maximum words per RAG chunk.")
 
     # Twelvelabs config
     model_name: Optional[str] = Field(default="pegasus1.5", description="The model to use for transcription.")
