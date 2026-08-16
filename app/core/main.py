@@ -1,3 +1,4 @@
+from .rabbitmq.consumer import GMQDocumentConsumer, GMQWebhookConsumer
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from .databases.postgresql.client import GPostgresqlClient
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -5,7 +6,6 @@ from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi import Depends, FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from .databases.qdrant.client import GQdrantClient
-from .rabbitmq.consumer import GMQDocumentConsumer
 from .databases.minio.client import GMinioClient
 from .databases.redis.client import GRedisClient
 from .databases.neo4j.client import GNeo4jClient
@@ -47,6 +47,9 @@ load_imp_env()
 DOCUMENT_CONSUMER_COUNT = int(os.getenv("DOCUMENT_CONSUMER_COUNT", 5))
 print("DOCUMENT_CONSUMER_COUNT: ", DOCUMENT_CONSUMER_COUNT)
 
+WEBHOOK_CONSUMER_COUNT = int(os.getenv("WEBHOOK_CONSUMER_COUNT", 2))
+print("WEBHOOK_CONSUMER_COUNT: ", WEBHOOK_CONSUMER_COUNT)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -65,6 +68,9 @@ async def lifespan(app: FastAPI):
 
     # Start One Consumer for Document Status
     tasks.append(asyncio.create_task(GMQDocumentConsumer().consume_document_status_queue()))
+
+    webhook_consumers = [GMQWebhookConsumer() for _ in range(WEBHOOK_CONSUMER_COUNT)]
+    tasks.extend([asyncio.create_task(c.consume_webhook_queue()) for c in webhook_consumers])
 
     await SeedDefaultData().seed()
 

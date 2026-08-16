@@ -91,16 +91,22 @@ class GRabbitMQClient:
             await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
             await ch.declare_exchange(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
             await ch.declare_exchange(GExchanges.DOCUMENT_STATUS_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+            await ch.declare_exchange(GExchanges.WEBHOOK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+            await ch.declare_exchange(GExchanges.WEBHOOK_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
 
             # Declare queues
             doc_queue_a = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE, durable=True)
             dlx_queue = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE_DLX, durable=True)
             doc_status_queue = await ch.declare_queue(GQueues.DOCUMENT_STATUS_QUEUE, durable=True)
+            webhook_queue = await ch.declare_queue(GQueues.WEBHOOK_QUEUE, durable=True)
+            webhook_queue_dlx = await ch.declare_queue(GQueues.WEBHOOK_QUEUE_DLX, durable=True)
 
             # Bind queues
             await doc_queue_a.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
             await dlx_queue.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE_DLX, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
             await doc_status_queue.bind(GExchanges.DOCUMENT_STATUS_EXCHANGE, GRoutingKeys.DOCUMENT_STATUS_ROUTING_KEY)
+            await webhook_queue.bind(GExchanges.WEBHOOK_EXCHANGE, GRoutingKeys.WEBHOOK_ROUTING_KEY)
+            await webhook_queue_dlx.bind(GExchanges.WEBHOOK_EXCHANGE_DLX, GRoutingKeys.WEBHOOK_ROUTING_KEY)
 
             # Set policies
             pattern = "^" + GQueues.DOCUMENT_PROCESSING_QUEUE + "$"
@@ -118,6 +124,22 @@ class GRabbitMQClient:
             }
 
             await GRabbitMQPolicy.upsert(GQueues.DOCUMENT_PROCESSING_QUEUE_DLX, pattern, dlx_q_definition)
+
+            webhook_pattern = "^" + GQueues.WEBHOOK_QUEUE + "$"
+            webhook_q_definition: Dict[str, Any] = {
+                "dead-letter-exchange": GExchanges.WEBHOOK_EXCHANGE_DLX,
+            }
+
+            await GRabbitMQPolicy.upsert(GQueues.WEBHOOK_QUEUE, webhook_pattern, webhook_q_definition)
+
+            webhook_pattern_dlx = "^" + GQueues.WEBHOOK_QUEUE_DLX + "$"
+            webhook_dlx_q_definition: Dict[str, Any] = {
+                "dead-letter-exchange": GExchanges.WEBHOOK_EXCHANGE,
+                "dead-letter-routing-key": GRoutingKeys.WEBHOOK_ROUTING_KEY,
+                "message-ttl": 1000 * 60,  # 1 minute
+            }
+
+            await GRabbitMQPolicy.upsert(GQueues.WEBHOOK_QUEUE_DLX, webhook_pattern_dlx, webhook_dlx_q_definition)
 
             logger.info("Policies upserted successfully.")
         except Exception as e:

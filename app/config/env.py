@@ -53,6 +53,7 @@ class Env:
     RABBITMQ_PASSWORD: str | None = os.getenv("RABBITMQ_PASSWORD", None)
     RABBITMQ_MANAGEMENT_PORT: int | None = int(os.getenv("RABBITMQ_MANAGEMENT_PORT", 15672))
     DOCUMENT_CONSUMER_COUNT: int = int(os.getenv("DOCUMENT_CONSUMER_COUNT", 5))
+    WEBHOOK_CONSUMER_COUNT: int = int(os.getenv("WEBHOOK_CONSUMER_COUNT", 2))
 
     # Chunks
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1500))
