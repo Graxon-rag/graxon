@@ -21,6 +21,11 @@ class AudioProcessor(str, Enum):
     ELEVENLABS = "elevenlabs"
 
 
+class VideoProcessor(str, Enum):
+    TWELVELABS = "twelvelabs"
+    GEMINI = "gemini"
+
+
 class FileType(str, Enum):
     TEXT = "text"
     JSON = "json"
@@ -304,6 +309,32 @@ class AudioProcessParams(BaseModel):
     kwargs: Optional[Dict[str, Any]] = Field(default={}, description="The kwargs for the OCR service.")
 
 
+class VideoProcessParams(BaseModel):
+    file_path: str = Field(..., description="The path to the document file.")
+    filename: str = Field(..., description="The name of the document file.")
+    processor: VideoProcessor = Field(..., description="The video processor to use.")
+    api_key: str = Field(..., description="The API key for the video processor.")
+    file_chunk_number: int = Field(..., description="The chunk number of the file.")
+    rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
+    is_last: bool = Field(..., description="True if this is the last chunk.")
+
+    # Level 1 — video slicing
+    chunk_duration_min: Optional[float] = Field(default=10.0, description="The duration of each chunk in minutes.")  # core window duration
+    overlap_min: Optional[float] = Field(default=1.0, description="The overlap on each side in minutes.")            # overlap on each side
+
+    # Level 2 — RAG chunking from segments
+    max_duration_per_rag_chunk_sec: Optional[float] = Field(default=180.0, description="The maximum duration per RAG chunk in seconds.")
+    max_words_per_rag_chunk: Optional[int] = Field(default=400, description="The maximum words per RAG chunk.")
+
+    # Twelvelabs config
+    model_name: Optional[str] = Field(default="pegasus1.5", description="The model to use for transcription.")
+    poll_interval: Optional[float] = Field(default=5.0, description="The poll interval for the video service.")
+    max_workers: Optional[int] = Field(default=5, description="The maximum number of workers for the video service.")
+    max_retries: Optional[int] = Field(default=3, description="The maximum number of retries for the video service.")
+
+    timeout: float = Field(default=60 * 10, description="The timeout for the video service.")
+
+
 class CommonParams(BaseModel):
     org_id: str = Field(..., description="The organization id.")
     project_id: uuid.UUID = Field(..., description="The project uuid.")
@@ -346,3 +377,6 @@ class ProcessParams(CommonParams):
 
     # Audio
     audio_params: Optional[AudioProcessParams] = None
+
+    # Video
+    video_params: Optional[VideoProcessParams] = None

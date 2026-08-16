@@ -142,7 +142,9 @@ class GMQDocumentConsumer:
 
             # Video
             case ps.FileType.VIDEO:
-                pass
+                if data.video_params is None:
+                    raise ValueError("Video params is None")
+                await RMQProcessorHelper.handle_video(cp, data.video_params)
 
             # Text
             case ps.FileType.CODE:

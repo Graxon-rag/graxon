@@ -1,6 +1,6 @@
+from ..schemas.processor_schema import OCRProcessor, AudioProcessor, VideoProcessor
 from ..processor.text.processor_helper import get_language_from_extension
 from ..schemas.project_config_schema import ProjectConfigDetailGetSchema
-from ..schemas.processor_schema import OCRProcessor, AudioProcessor
 from ..services.project_config_service import ProjectConfigService
 from ..schemas.document_schema import DocumentGetSchema
 from ..helpers.minio_helper import MinioHelper
@@ -80,6 +80,35 @@ class ProcessHelper:
             api_key=project_config.audio_model_credential.api_key,
             file_chunk_number=0,
             rag_chunk_start_index=0,
+            is_last=False
+        )
+
+    @staticmethod
+    async def _build_video_params(
+        file_path: str,
+        filename: str,
+        project_config: ProjectConfigDetailGetSchema
+    ) -> ps.VideoProcessParams:
+        video_model = project_config.video_model
+        if video_model is None:
+            raise Exception("Video model not configured for project")
+        if project_config.video_model_credential is None:
+            raise Exception("Video model credential not configured for project")
+
+        if video_model.provider == "gemini":
+            processor = VideoProcessor.GEMINI
+        elif video_model.provider == "twelvelabs":
+            processor = VideoProcessor.TWELVELABS
+        else:
+            raise Exception("Video model provider not supported")
+
+        return ps.VideoProcessParams(
+            file_path=file_path,
+            filename=filename,
+            processor=processor,
+            api_key=project_config.video_model_credential.api_key,
+            file_chunk_number=0,
+            rag_chunk_start_index=1,  # it start from -1 so (-1 +1 = 0)
             is_last=False
         )
 
@@ -245,7 +274,11 @@ class ProcessHelper:
                 )
 
             elif file_type is ps.FileType.VIDEO:
-                pass
+                pp.video_params = await ProcessHelper._build_video_params(
+                    file_path=file_path,
+                    filename=document.name,
+                    project_config=project_config
+                )
 
             return pp
         except Exception as e:

@@ -1,4 +1,5 @@
 from ..processor.ocr.processor_factory import OcrProcessorFactory, ProcessorEnum as ocr_enum
+from ..processor.video.processor_factory import VideoProcessorFactory, VideoProcessorEnum
 from ..processor.audio.processor_factory import AudioProcessorFactory
 from ..processor.text.processor_factory import ProcessorFactory
 from ..schemas.document_schema import DocumentStatusMQSchema
@@ -190,6 +191,17 @@ class RMQProducerHelper:
                         file_type=cp.file_type,
                         filename=image.filename,
                         ocr_params=image
+            ))
+
+    @staticmethod
+    async def produce_video(cp: ps.CommonParams, video: ps.VideoProcessParams):
+        await GMQDocumentProducer.publish_to_processing_exchange(ps.ProcessParams(
+                        org_id=cp.org_id,
+                        project_id=cp.project_id,
+                        doc_id=cp.doc_id,
+                        file_type=cp.file_type,
+                        filename=video.filename,
+                        video_params=video
             ))
 
     @staticmethod
@@ -726,6 +738,49 @@ class RMQProcessorHelper:
             # every provider-specific field is already on `data` and unchanged
             # between chunks -- only these three move.
             await RMQProducerHelper.produce_audio(cp, data.model_copy(update={
+                "file_chunk_number": data.file_chunk_number + 1,
+                "rag_chunk_start_index": next_rag_start_index,
+                "is_last": is_last,
+            }))
+        else:
+            await RMQProducerHelper.produce_status(cp)
+
+    @staticmethod
+    async def handle_video(cp: ps.CommonParams, data: ps.VideoProcessParams):
+        kwargs = {
+                "chunk_duration_min": data.chunk_duration_min,
+                "overlap_min": data.overlap_min,
+                "max_duration_per_rag_chunk_sec": data.max_duration_per_rag_chunk_sec,
+                "max_words_per_rag_chunk": data.max_words_per_rag_chunk,
+            }
+
+        if data.processor == "twelvelabs":
+            processor_type = VideoProcessorEnum.TWELVELABS
+            kwargs["model_name"] = data.model_name
+            kwargs["poll_interval"] = data.poll_interval
+            kwargs["max_workers"] = data.max_workers
+            kwargs["max_retries"] = data.max_retries
+
+        elif data.processor == "gemini":
+            processor_type = VideoProcessorEnum.GEMINI
+        else:
+            raise Exception(f"Unknown video processor type: {data.processor}")
+
+        processor = VideoProcessorFactory.get_processor(
+            processor_type, data.file_path, data.filename, data.api_key,
+            data.file_chunk_number, data.rag_chunk_start_index,
+            timeout=data.timeout, **kwargs,
+            )
+
+        docs, next_rag_start_index, is_last = await processor.process()
+
+        # TODO: process docs
+        print(docs)
+
+        if not is_last:
+            # every provider-specific field is already on `data` and unchanged
+            # between chunks -- only these three move.
+            await RMQProducerHelper.produce_video(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last,
