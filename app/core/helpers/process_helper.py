@@ -123,6 +123,7 @@ class ProcessHelper:
                 org_id=document.org_id,
                 project_id=document.project_id,
                 doc_id=document.id,
+                doc_readable_id=document.readable_id,
                 file_type=file_type,
                 filename=document.name
             )

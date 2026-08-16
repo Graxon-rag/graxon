@@ -339,6 +339,7 @@ class CommonParams(BaseModel):
     org_id: str = Field(..., description="The organization id.")
     project_id: uuid.UUID = Field(..., description="The project uuid.")
     doc_id: uuid.UUID = Field(..., description="The document id.")
+    doc_readable_id: str = Field(..., description="The document readable id.")
     file_type: FileType = Field(..., description="The file type of the document.")
 
 
