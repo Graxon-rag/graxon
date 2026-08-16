@@ -46,6 +46,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=txt.filename,
                         txt_params=txt
@@ -57,6 +58,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=json.filename,
                         json_params=json
@@ -68,6 +70,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=xml.filename,
                         xml_params=xml
@@ -79,6 +82,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=docx.filename,
                         docx_params=docx
@@ -90,6 +94,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=pdf.filename,
                         pdf_params=pdf
@@ -101,6 +106,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=csv.filename,
                         csv_params=csv
@@ -112,6 +118,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=ppt.filename,
                         ppt_params=ppt
@@ -123,6 +130,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=excel.filename,
                         excel_params=excel
@@ -134,6 +142,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=markdown.filename,
                         md_params=markdown
@@ -145,6 +154,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=yaml.filename,
                         yaml_params=yaml
@@ -156,6 +166,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=code.filename,
                         code_params=code
@@ -167,6 +178,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=html.filename,
                         html_params=html
@@ -178,6 +190,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=audio.filename,
                         audio_params=audio
@@ -189,6 +202,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=image.filename,
                         ocr_params=image
@@ -200,6 +214,7 @@ class RMQProducerHelper:
                         org_id=cp.org_id,
                         project_id=cp.project_id,
                         doc_id=cp.doc_id,
+                        doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=video.filename,
                         video_params=video

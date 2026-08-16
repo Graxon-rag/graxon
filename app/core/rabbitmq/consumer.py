@@ -162,6 +162,7 @@ class GMQDocumentConsumer:
             org_id=data.org_id,
             project_id=data.project_id,
             doc_id=data.doc_id,
+            doc_readable_id=data.doc_readable_id,
             file_type=file_type,
         )
         print("\n**************** $$$$ ******************")
