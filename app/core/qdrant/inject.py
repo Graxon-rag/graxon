@@ -54,7 +54,7 @@ class QdrantInjector:
                         "document_id": str(document_id),      # UUID → str
                         "chunk_id": chunk_id,
                         "chunk_number": chunk.chunk_number,
-                        "page_number": chunk.page_number,
+                        **(chunk.metadata or {}),
                     },
                 ))
 

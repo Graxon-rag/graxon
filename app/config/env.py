@@ -55,6 +55,11 @@ class Env:
     DOCUMENT_CONSUMER_COUNT: int = int(os.getenv("DOCUMENT_CONSUMER_COUNT", 5))
     WEBHOOK_CONSUMER_COUNT: int = int(os.getenv("WEBHOOK_CONSUMER_COUNT", 2))
 
+    # External 
+    EMBEDDING_CHUNK_BATCH_SIZE: int = int(os.getenv("EMBEDDING_CHUNK_BATCH_SIZE", 30))
+    SPARSE_CHUNK_BATCH_SIZE: int = int(os.getenv("SPARSE_CHUNK_BATCH_SIZE", 30))
+    LLM_TAG_EXTRACTION_BATCH_SIZE: int = int(os.getenv("LLM_TAG_EXTRACTION_BATCH_SIZE", 10))
+
     # Chunks
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", 1500))
     CHUNK_OVERLAP: int = int(os.getenv("CHUNK_OVERLAP", 200))

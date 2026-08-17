@@ -24,6 +24,7 @@ from app.utils.logger import logger
 from collections import defaultdict
 from typing import TypedDict, Tuple
 from langgraph.types import Send
+from app.config.env import Env
 import traceback
 import operator
 import asyncio
@@ -175,38 +176,85 @@ class DocumentInjectGraph:
             global_tags: List[str] = []
             chunk_tag_results: List[ChunkTagResult] = []
 
-            for chunk in chunks:
+            BATCH_SIZE = Env.LLM_TAG_EXTRACTION_BATCH_SIZE  # 5 to 10 chunks per batch to prevent rate limit spikes
+
+            async def process_single_chunk(chunk: Chunk, current_global_tags: List[str]) -> ChunkTagResult:
+                """Helper to process and safely handle errors for a single chunk."""
                 try:
-                    logger.info({"message": "LLM chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    existing_tags_str = ", ".join(global_tags) if global_tags else "None yet — this is the first chunk."
+                    existing_tags_str = ", ".join(current_global_tags) if current_global_tags else "None yet — this is the first chunk."
                     formatted_prompt = Tagging_Prompt.format(
                         existing_tags=existing_tags_str,
                         chunk_text=chunk.text,
                     )
-                    tag_response: TagResponse = await structured_llm.ainvoke(formatted_prompt)
 
-                    await self._tag_redis.add_tag_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, data=tag_response)
+                    tag_response: Optional[TagResponse] = await structured_llm.ainvoke(formatted_prompt)
 
-                    # hallucination guard
-                    tag_response.validate_similar_tags_against_pool(global_tags)
+                    # Guard against None / invalid parsing
+                    if tag_response is None:
+                        logger.warning({
+                            "message": "LLM returned None for chunk, falling back to empty TagResponse",
+                            "chunk_number": chunk.chunk_number
+                        })
+                        tag_response = TagResponse(
+                            new_tags=[],
+                            similar_tags=[],
+                            has_backward_reference=False,
+                            reference_hint=None
+                        )
 
-                    # grow global pool
-                    for new_tag in tag_response.new_tags:
-                        if new_tag not in global_tags:
-                            global_tags.append(new_tag)
+                    # Hallucination guard
+                    tag_response.validate_similar_tags_against_pool(current_global_tags)
 
-                    # store in memory — nothing else
-                    chunk_tag_results.append(ChunkTagResult(
+                    return ChunkTagResult(
                         chunk_id=chunk.chunk_id,
                         chunk_number=chunk.chunk_number,
                         tag_response=tag_response,
-                    ))
+                    )
 
                 except Exception as e:
-                    logger.error({"message": "Failed to run LLM agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-                    raise e
+                    logger.warning({
+                        "message": "LLM agent failed on chunk, using fallback empty TagResponse",
+                        "chunk_number": chunk.chunk_number,
+                        "error": str(e)
+                    })
+                    fallback_resp = TagResponse(
+                        new_tags=[],
+                        similar_tags=[],
+                        has_backward_reference=False,
+                        reference_hint=None
+                    )
+                    return ChunkTagResult(
+                        chunk_id=chunk.chunk_id,
+                        chunk_number=chunk.chunk_number,
+                        tag_response=fallback_resp,
+                    )
 
-            # Sort results by chunk_number before upload
+            #  Run batches in sequence while running chunks inside each batch in parallel
+            for i in range(0, len(chunks), BATCH_SIZE):
+                batch_chunks = chunks[i: i + BATCH_SIZE]
+                chunk_numbers = [c.chunk_number for c in batch_chunks]
+
+                logger.info({
+                    "message": "Processing LLM chunk batch",
+                    "chunk_numbers": chunk_numbers,
+                    "document_id": self.document_id,
+                    "org_id": self.org_id,
+                    "project_id": self.project_id,
+                    "batch_size": len(batch_chunks)
+                })
+
+                # Dispatch this batch concurrently with a snapshot of global_tags
+                tasks = [process_single_chunk(c, global_tags) for c in batch_chunks]
+                batch_results: List[ChunkTagResult] = await asyncio.gather(*tasks)
+
+                # Update results and collect new tags for subsequent batches
+                for res in batch_results:
+                    chunk_tag_results.append(res)
+                    for new_tag in res.tag_response.new_tags:
+                        if new_tag not in global_tags:
+                            global_tags.append(new_tag)
+
+            # Sort final results by chunk_number
             chunk_tag_results.sort(key=lambda x: x.chunk_number)
 
             # Upload LLM results
@@ -237,17 +285,57 @@ class DocumentInjectGraph:
             embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
 
             chs_embeddings: List[ChunkEmbedding] = []
+            BATCH_SIZE = Env.EMBEDDING_CHUNK_BATCH_SIZE
 
-            for chunk in chunks:
+            # Process in slices of BATCH_SIZE chunks
+            for i in range(0, len(chunks), BATCH_SIZE):
+                batch_chunks = chunks[i: i + BATCH_SIZE]
+                chunk_numbers = [c.chunk_number for c in batch_chunks]
+
                 try:
-                    logger.info({"message": "Embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    em_vector: list[float] = await embedder.aembed(chunk.text)
+                    logger.info({
+                        "message": "Embedding chunk batch",
+                        "chunk_numbers": chunk_numbers,
+                        "document_id": self.document_id,
+                        "org_id": self.org_id,
+                        "project_id": self.project_id,
+                        "batch_size": len(batch_chunks),
+                    })
 
-                    await self._embedding_redis.add_embedding_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, embedding=em_vector)
+                    # Embed the batch of texts together
+                    texts = [chunk.text for chunk in batch_chunks]
+                    em_vectors: List[List[float]] = await embedder.aembed_batch(texts)
 
-                    chs_embeddings.append(ChunkEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
+                    # # Concurrently save each embedding to Redis
+                    # redis_tasks = [
+                    #     self._embedding_redis.add_embedding_temporary(
+                    #         document_id=self.document_id,
+                    #         chunk_number=chunk.chunk_number,
+                    #         embedding=vector,
+                    #     )
+                    #     for chunk, vector in zip(batch_chunks, em_vectors)
+                    # ]
+                    # await asyncio.gather(*redis_tasks)
+
+                    # Append to final results list
+                    for chunk, vector in zip(batch_chunks, em_vectors):
+                        chs_embeddings.append(
+                            ChunkEmbedding(
+                                chunk_id=chunk.chunk_id,
+                                chunk_number=chunk.chunk_number,
+                                embedding=vector,
+                            )
+                        )
+
                 except Exception as e:
-                    logger.error({"message": "Failed to run embedding agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
+                    logger.error({
+                        "message": "Failed to run embedding agent for batch",
+                        "chunk_numbers": chunk_numbers,
+                        "document_id": self.document_id,
+                        "org_id": self.org_id,
+                        "project_id": self.project_id,
+                        "error": str(e),
+                    })
                     raise e
 
             # Sort final results by chunk_number before upload
@@ -291,23 +379,60 @@ class DocumentInjectGraph:
 
             sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider, provider_type=sparse_embedding_model.provider_type, api_key=api_key)
             chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
+            BATCH_SIZE = Env.SPARSE_CHUNK_BATCH_SIZE
 
-            chs_sparse_embeddings: List[ChunkSparseEmbedding] = []
+            # Process chunks in batches of BATCH_SIZE
+            for i in range(0, len(chunks), BATCH_SIZE):
+                batch_chunks = chunks[i: i + BATCH_SIZE]
+                chunk_numbers = [c.chunk_number for c in batch_chunks]
 
-            for chunk in chunks:
                 try:
-                    logger.info({"message": "Sparse embedding chunk", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-                    em_vector: SparseEmbedding = await sparse_embedder.embed(chunk.text)
+                    logger.info({
+                        "message": "Sparse embedding chunk batch",
+                        "chunk_numbers": chunk_numbers,
+                        "document_id": self.document_id,
+                        "org_id": self.org_id,
+                        "project_id": self.project_id,
+                        "batch_size": len(batch_chunks),
+                    })
 
-                    # await self._sparse_embedding_redis.add_sparse_embedding_temporary(document_id=self.document_id, chunk_number=chunk.chunk_number, sparse_embedding=em_vector)
+                    #  Embed the batch of texts
+                    texts = [chunk.text for chunk in batch_chunks]
+                    em_vectors: List[SparseEmbedding] = await sparse_embedder.embed_batch(texts)
 
-                    chs_sparse_embeddings.append(ChunkSparseEmbedding(chunk_id=chunk.chunk_id, chunk_number=chunk.chunk_number, embedding=em_vector))
+                    #  Concurrently save each sparse embedding to Redis (uncomment if needed)
+                    # redis_tasks = [
+                    #     self._sparse_embedding_redis.add_sparse_embedding_temporary(
+                    #         document_id=self.document_id,
+                    #         chunk_number=chunk.chunk_number,
+                    #         sparse_embedding=vector,
+                    #     )
+                    #     for chunk, vector in zip(batch_chunks, em_vectors)
+                    # ]
+                    # await asyncio.gather(*redis_tasks)
+
+                    # Append to the final results list
+                    for chunk, vector in zip(batch_chunks, em_vectors):
+                        chs_sparse_embeddings.append(
+                            ChunkSparseEmbedding(
+                                chunk_id=chunk.chunk_id,
+                                chunk_number=chunk.chunk_number,
+                                embedding=vector,
+                            )
+                        )
+
                 except Exception as e:
-                    logger.error({"message": "Failed to run sparse agent", "chunk_number": chunk.chunk_number, "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-                    # Raise the error so it doesn't silently upload an empty list
+                    logger.error({
+                        "message": "Failed to run sparse agent for batch",
+                        "chunk_numbers": chunk_numbers,
+                        "document_id": self.document_id,
+                        "org_id": self.org_id,
+                        "project_id": self.project_id,
+                        "error": str(e),
+                    })
                     raise e
 
-            # Sort and upload
+            # Sort and prepare final results
             chs_sparse_embeddings.sort(key=lambda x: x.chunk_number)
 
             # Upload sparse embeddings
