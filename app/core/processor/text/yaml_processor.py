@@ -230,7 +230,8 @@ class YAMLProcessor(Processor):
         is_last: bool,
     ) -> Tuple[bool, int, int, bool]:
         """
-        Parses a YAML block string, applies start_object offset and dual guard.
+        Parses a YAML block string, normalises it into one or more record
+        dicts, and applies start_object offset + dual guard to each.
 
         Returns: (continue_streaming, skipped, total_bytes, is_last)
           continue_streaming=False → caller should stop the loop
@@ -243,14 +244,56 @@ class YAMLProcessor(Processor):
         except yaml.YAMLError:
             return True, skipped, total_bytes, is_last
 
-        # Normalise: sequence block parses as a list — extract first item
-        if isinstance(parsed, list) and parsed:
-            obj = parsed[0]
-        elif isinstance(parsed, dict):
-            obj = parsed
-        else:
-            return True, skipped, total_bytes, is_last
+        objs = self._extract_objects(parsed)
 
+        for obj in objs:
+            cont, skipped, total_bytes, is_last = self._process_object(
+                obj, collected, skipped, total_bytes, is_last
+            )
+            if not cont:
+                return False, skipped, total_bytes, is_last
+
+        return True, skipped, total_bytes, is_last
+
+    def _extract_objects(self, parsed) -> List[Dict]:
+        """
+        Normalises a parsed YAML block into a list of record dicts.
+
+        - list of dicts                          -> each item is its own record
+              [ {...}, {...} ]
+        - dict with exactly one key whose value   -> unwrap: each item in that
+          is itself a list of dicts                  list becomes its own record
+              services: [ {...}, {...} ]
+        - plain dict                              -> single record
+              name: iPhone
+              brand: Apple
+        """
+        if isinstance(parsed, list):
+            return [item for item in parsed if isinstance(item, dict)]
+
+        if isinstance(parsed, dict):
+            if len(parsed) == 1:
+                ((only_key, only_val),) = parsed.items()
+                if isinstance(only_val, list) and only_val and all(
+                    isinstance(i, dict) for i in only_val
+                ):
+                    return only_val
+            return [parsed]
+
+        return []
+
+    def _process_object(
+        self,
+        obj,
+        collected: List[Dict],
+        skipped: int,
+        total_bytes: int,
+        is_last: bool,
+    ) -> Tuple[bool, int, int, bool]:
+        """
+        Applies start_object offset + dual guard (count + size cap) to a
+        single record dict, flattening and appending it if it passes.
+        """
         if not isinstance(obj, dict):
             return True, skipped, total_bytes, is_last
 

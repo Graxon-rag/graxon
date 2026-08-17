@@ -1,13 +1,10 @@
-import json
-import uuid
+from langchain_core.documents import Document
+from ..schemas import processor_schema as ps
+from ..schemas import chunk_schema as cs
+from ..libs.id import IDLibs
 from pathlib import Path
 from typing import List
-
-from langchain_core.documents import Document
-
-from ..libs.id import IDLibs
-from ..schemas import chunk_schema as cs
-from ..schemas import processor_schema as ps
+import json
 
 
 class ChunkHelper:
@@ -34,7 +31,7 @@ class ChunkHelper:
         debug_dir = Path("debug/chunks")
         debug_dir.mkdir(parents=True, exist_ok=True)
 
-        file_path = debug_dir / f"{cp.doc_readable_id}.json"
+        file_path = debug_dir / f"{cp.doc_id}.json"
 
         # Serialize Pydantic/dataclass models to dictionaries
         new_records = [

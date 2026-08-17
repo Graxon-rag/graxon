@@ -42,6 +42,7 @@ class WebhookConsumerHelper:
                     "error": str(e),
                 }
             )
+            raise e
 
     async def handle_webhook_send(self, data: WebhookSendParams):
         if not data.webhooks:
