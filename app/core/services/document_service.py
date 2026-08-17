@@ -50,7 +50,9 @@ class DocumentService:
 
     async def delete(self, document_id: uuid.UUID) -> bool:
         try:
-            return await self._repo.delete(document_id)
+            result = await self._repo.delete(document_id)
+            await self._send_webhook(WebhookEventEnum.DOCUMENT_DELETED, {"org_id": self.org_id, "project_id": str(self.project_id), "document_id": str(document_id)})
+            return result
         except Exception as e:
             logger.error({"message": "Failed to delete document", "error": str(e)})
             raise e
@@ -203,6 +205,7 @@ class DocumentService:
 
     async def _send_webhook(self, event: WebhookEventEnum, data: Dict[str, Any]):
         try:
+            logger.info({"message": "Sending webhook", "event": event, "data": data})
             webhooks = await self._webhook_service.list()
             webhook_event = WebhookEventParams(
                 event=event,

@@ -20,7 +20,7 @@ class Graph:
 
     async def inject_document(self, cp: ps.CommonParams, chunks: List[cs.Chunk]):
         try:
-            project_config = await self._pcs.get_with_details_by_project()
+            project_config = await self._pcs.get_with_details_by_project(is_external_call=False)
             if project_config is None:
                 raise Exception("Project config not found")
             embedder_provider = project_config.embedding_model

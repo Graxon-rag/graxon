@@ -60,6 +60,7 @@ class WebhookEventEnum(str, Enum):
     DOCUMENT_PROCESSING = "document.processing"
     DOCUMENT_PROCESSED = "document.processed"
     DOCUMENT_FAILED = "document.failed"
+    DOCUMENT_DELETED = "document.deleted"
 
 
 class WebhookEventParams(BaseModel):

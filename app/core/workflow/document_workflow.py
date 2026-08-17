@@ -15,8 +15,8 @@ class DocumentWorkflow:
 
     async def process(self, cp: ps.CommonParams, chunks: List[cs.Chunk]):
         try:
-            pass
-            # return result
+            result = await self.graph.inject_document(cp, chunks)
+            return result
         except Exception as e:
             logger.error({"message": "Failed to process document", "error": str(e)})
             raise e
