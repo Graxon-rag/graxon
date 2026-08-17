@@ -1,12 +1,14 @@
-from ..schemas.provider_schema import ProviderSchema, QueryProviderSchema
+from ...services.project_config_service import ProjectConfigService
 from .document_inject_graph import DocumentInjectGraph, DIGState
 from app.core.schemas.query_schema import QueryDepth, QueryType
-from app.core.schemas.document_schema import DocumentGetSchema
 from .document_query_graph import DocumentQueryGraph, DQGState
 from .prompts.answer_prompt import DEFAULT_ANSWER_RESPONSE
+from ..schemas.provider_schema import QueryProviderSchema
 from app.core.schemas.query_schema import GQuery
+from ...schemas import processor_schema as ps
+from ...schemas import chunk_schema as cs
 from app.utils.logger import logger
-from app.config.env import Env
+from typing import List
 import uuid
 
 
@@ -14,31 +16,30 @@ class Graph:
     def __init__(self, org_id: str, project_id: uuid.UUID):
         self.org_id = org_id
         self.project_id = project_id
+        self._pcs = ProjectConfigService(org_id=self.org_id, project_id=self.project_id)
 
-    async def inject_document(self, document: DocumentGetSchema, providers: ProviderSchema):
+    async def inject_document(self, cp: ps.CommonParams, chunks: List[cs.Chunk]):
         try:
-            print("Document:", document.model_dump(mode="json"))
-            print("Providers:", providers.model_dump(mode="json"))
-            embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
-            dimension = providers.embedding.dimension
-            ep_model_key = self._get_model_key(embedder_provider, dimension)
+            project_config = await self._pcs.get_with_details_by_project()
+            if project_config is None:
+                raise Exception("Project config not found")
+            embedder_provider = project_config.embedding_model
+            if embedder_provider is None:
+                raise Exception("Embedder provider not found")
+
+            ep_model_key = self._get_model_key(embedder_provider.provider.value, embedder_provider.dimension)
 
             request_id = str(uuid.uuid4())
-            graph = DocumentInjectGraph(org_id=self.org_id, project_id=self.project_id, document_id=document.id, document_readable_id=document.readable_id)
+            graph = DocumentInjectGraph(cp)
             workflow = graph.build_graph()
             initial_state: DIGState = {
                 "request_id": request_id,
                 "org_id": self.org_id,
                 "project_id": self.project_id,
-                "document_id": document.id,
+                "document_id": cp.doc_id,
+                "project_config": project_config,
                 "ep_model_key": ep_model_key,
-                "document": document,
-                "providers": providers,
-                "temp_path": None,
-                "file_path": None,
-                "chunk_size": Env.CHUNK_SIZE,
-                "chunk_overlap": Env.CHUNK_OVERLAP,
-                "chunks": None,
+                "chunks": chunks,
                 "tags": [],
                 "chunk_tag_results": [],
                 "lexical_engine_data": None,

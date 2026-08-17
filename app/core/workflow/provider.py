@@ -1,3 +1,5 @@
+from ..schemas.sparse_text_model_schema import SparseModelProviderType, SparseModelProvider
+from app.providers.sparse_embedder.pinecone_sparse_embedder import PineconeSparseEmbedder
 from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider
 from app.providers.sparse_embedder.fast_embed import FastEmbedSparseEmbedder
 from app.providers.fast_embedder.fast_embedder import FastEmbedEmbedder
@@ -60,8 +62,16 @@ class WorkflowReranker:
 class WorkflowSparseEmbedder:
 
     @staticmethod
-    def sparse_embedder(model: str, provider: Optional[str], **kwargs) -> BaseSparseEmbedder:
-        return FastEmbedSparseEmbedder(embed_model=model, **kwargs)
+    def sparse_embedder(model: str, provider: SparseModelProvider, provider_type: SparseModelProviderType, api_key: str | None, **kwargs) -> BaseSparseEmbedder:
+        if provider_type == SparseModelProviderType.CLOUD:
+            if api_key is None:
+                raise ValueError("For cloud provider, API key is required")
+            if provider == SparseModelProvider.PINECONE:
+                return PineconeSparseEmbedder(api_key=api_key, model=model, **kwargs)
+            else:
+                raise ValueError(f"Unknown Sparse Embedding provider: {provider}")
+        else:
+            return FastEmbedSparseEmbedder(model=model, **kwargs)
 
 
 class WorkflowFastEmbedder:
