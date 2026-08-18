@@ -1,4 +1,4 @@
-from .rabbitmq.consumer import GMQDocumentConsumer, GMQWebhookConsumer
+from .rabbitmq.consumer import GMQDocumentConsumer, GMQWebhookConsumer, GMQVectorSimilarSyncConsumer
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from .databases.postgresql.client import GPostgresqlClient
 from slowapi import Limiter, _rate_limit_exceeded_handler
@@ -51,6 +51,9 @@ print("DOCUMENT_CONSUMER_COUNT: ", DOCUMENT_CONSUMER_COUNT)
 WEBHOOK_CONSUMER_COUNT = int(os.getenv("WEBHOOK_CONSUMER_COUNT", 2))
 print("WEBHOOK_CONSUMER_COUNT: ", WEBHOOK_CONSUMER_COUNT)
 
+VECTOR_SIMILAR_CONSUMER_COUNT = int(os.getenv("VECTOR_SIMILAR_CONSUMER_COUNT", 1))
+print("VECTOR_SIMILAR_CONSUMER_COUNT: ", VECTOR_SIMILAR_CONSUMER_COUNT)
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -72,6 +75,9 @@ async def lifespan(app: FastAPI):
 
     webhook_consumers = [GMQWebhookConsumer() for _ in range(WEBHOOK_CONSUMER_COUNT)]
     tasks.extend([asyncio.create_task(c.consume_webhook_queue()) for c in webhook_consumers])
+
+    vector_similar_consumers = [GMQVectorSimilarSyncConsumer() for _ in range(VECTOR_SIMILAR_CONSUMER_COUNT)]
+    tasks.extend([asyncio.create_task(c.consume()) for c in vector_similar_consumers])
 
     await SeedDefaultData().seed()
 

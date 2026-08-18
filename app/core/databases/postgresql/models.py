@@ -200,7 +200,7 @@ class ProjectVariable(Base):
 
     # Vector Similarity Thresholds
     gte_edge_vector_similar_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.75)
-    gte_edge_vector_similar_top_k: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    gte_edge_vector_similar_top_k: Mapped[int] = mapped_column(Integer, nullable=False, default=3, server_default="3")
     gte_qdrant_point_score_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.45)
 
     # Expert Query

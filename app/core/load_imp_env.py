@@ -13,7 +13,11 @@ def load_imp_env():
         "GRAXON_PUBLIC_URL",
 
         # Frontend
-        "CLIENTS"
+        "CLIENTS",
+
+        "DOCUMENT_CONSUMER_COUNT",
+        "WEBHOOK_CONSUMER_COUNT",
+        "VECTOR_SIMILAR_CONSUMER_COUNT"
     ]
 
     missing_vars = []
