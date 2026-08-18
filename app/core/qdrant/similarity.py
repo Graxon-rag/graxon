@@ -21,6 +21,8 @@ class QdrantSimilarity:
         document_id: uuid.UUID,
         chunk_ids: list[str],
         top_k: int = 3,
+        limit: int = Env.MAX_CHUNKS,
+        threshold: float = Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD
     ) -> dict[str, list[ChunkDenseVectorScore]]:
         try:
             coll, dense_vector_name = GQdrantClient._get_collection_vector_name(model_key)
@@ -42,7 +44,7 @@ class QdrantSimilarity:
                 ),
                 with_vectors=[dense_vector_name],
                 with_payload=True,
-                limit=Env.MAX_CHUNKS,
+                limit=limit,
             )  # scroll returns (points, next_page_offset)
 
             if not all_points:
@@ -118,7 +120,7 @@ class QdrantSimilarity:
                         score=float(round(scores[i], 6)),
                     )
                     for i in top_indices
-                    if scores[i] > -np.inf
+                    if scores[i] > -np.inf and scores[i] >= threshold
                 ]
 
                 logger.info(f"chunk_id={source_chunk_id} → top {top_k} neighbors found.")

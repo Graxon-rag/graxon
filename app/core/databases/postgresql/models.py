@@ -200,6 +200,7 @@ class ProjectVariable(Base):
 
     # Vector Similarity Thresholds
     gte_edge_vector_similar_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.75)
+    gte_edge_vector_similar_top_k: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
     gte_qdrant_point_score_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.45)
 
     # Expert Query
@@ -249,6 +250,7 @@ class ProjectVariable(Base):
             "audio_max_duration_per_rag_chunk": self.audio_max_duration_per_rag_chunk,
             "audio_max_words_per_rag_chunk": self.audio_max_words_per_rag_chunk,
             "gte_edge_vector_similar_threshold": self.gte_edge_vector_similar_threshold,
+            "gte_edge_vector_similar_top_k": self.gte_edge_vector_similar_top_k,
             "gte_qdrant_point_score_threshold": self.gte_qdrant_point_score_threshold,
             "eq_max_lane_count": self.eq_max_lane_count,
             "eq_max_lane_entity": self.eq_max_lane_entity,

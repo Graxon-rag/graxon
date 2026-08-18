@@ -127,6 +127,11 @@ class ProjectVariableBase(BaseModel):
         le=1.0,
         description="Minimum cosine similarity score required to create a relationship edge between chunks."
     )
+    gte_edge_vector_similar_top_k: int = Field(
+        default=3,
+        ge=1,
+        description="Maximum number of top similar chunks to retrieve when creating relationship (vector_similar) edges."
+    )
     gte_qdrant_point_score_threshold: float = Field(
         default=0.45,
         ge=0.0,

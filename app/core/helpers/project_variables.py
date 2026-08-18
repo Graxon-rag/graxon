@@ -116,6 +116,11 @@ PROJECT_VARIABLES_DEFAULT_VALUES: list[dict[str, str]] = [
     "description": "Minimum cosine similarity score required to create a relationship edge between chunks."
   },
   {
+    "key": "gte_edge_vector_similar_top_k",
+    "value": "3",
+    "description": "Maximum number of top similar chunks to retrieve when creating relationship edges."
+  },
+  {
     "key": "gte_qdrant_point_score_threshold",
     "value": "0.45",
     "description": "Minimum search similarity threshold for Qdrant vector retrieval."

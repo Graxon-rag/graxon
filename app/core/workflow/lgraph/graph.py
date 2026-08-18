@@ -5,6 +5,7 @@ from .document_query_graph import DocumentQueryGraph, DQGState
 from .prompts.answer_prompt import DEFAULT_ANSWER_RESPONSE
 from ..schemas.provider_schema import QueryProviderSchema
 from app.core.schemas.query_schema import GQuery
+from ...libs.embedding_lib import EmbeddingLib
 from ...schemas import processor_schema as ps
 from ...schemas import chunk_schema as cs
 from app.utils.logger import logger
@@ -27,7 +28,7 @@ class Graph:
             if embedder_provider is None:
                 raise Exception("Embedder provider not found")
 
-            ep_model_key = self._get_model_key(embedder_provider.provider.value, embedder_provider.dimension)
+            ep_model_key = EmbeddingLib.get_model_key(embedder_provider.provider.value, embedder_provider.dimension)
 
             request_id = str(uuid.uuid4())
             graph = DocumentInjectGraph(cp)
@@ -77,7 +78,7 @@ class Graph:
             request_id = str(uuid.uuid4())
             embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
             dimension = providers.embedding.dimension
-            ep_model_key = self._get_model_key(embedder_provider, dimension)
+            ep_model_key = EmbeddingLib.get_model_key(embedder_provider, dimension)
 
             graph = DocumentQueryGraph(org_id=self.org_id, project_id=self.project_id)
             workflow = graph.build_graph()
@@ -125,9 +126,6 @@ class Graph:
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
             return DEFAULT_ANSWER_RESPONSE
-
-    def _get_model_key(self, provider: str, dimension: int) -> str:
-        return f"{provider}_{dimension}"
 
     def _safe_serialize(self, c):
         if hasattr(c, "model_dump"):          # Pydantic v2
