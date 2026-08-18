@@ -1,3 +1,4 @@
+from ..helpers.vector_similarity_helper import VectorSimilarityHelper
 from ..schemas.document_schema import DocumentStatusMQSchema
 from ..helpers.webhook_helper import WebhookConsumerHelper
 from ..services.document_service import DocumentService
@@ -42,6 +43,57 @@ class GMQWebhookConsumer:
                 body = message.body.decode()
                 webhook_data = WebhookSendParams.model_validate_json(body)
                 await WebhookConsumerHelper().handle_webhook_send(webhook_data)
+
+                await message.ack()  # We are done with the message
+            except Exception as e:
+                logger.error({"message": "Failed to update document status in MQ Consumer, skipping this again", "error": str(e)})
+                await message.ack()  # We are done with the message
+                raise e
+
+    def _get_retry_count(self, message: AbstractIncomingMessage) -> int:
+        try:
+            x_death = message.headers.get("x-death")
+            if x_death and isinstance(x_death, list) and len(x_death) > 0:
+                first = x_death[0]
+                if isinstance(first, dict):
+                    count = first.get("count", 0)
+                    if isinstance(count, (int, float)):
+                        return int(count)
+            return 0
+        except Exception:
+            return 0
+
+
+class GMQVectorSimilarSyncConsumer:
+    async def consume(self):
+        try:
+            logger.info(f"[✓] Started consuming from queue: {GQueues.WEBHOOK_QUEUE}")
+
+            channel = await GRabbitMQClient.create_channel()
+
+            await channel.set_qos(prefetch_count=1)  # Set the prefetch count to 1 so we only get one message at a time from the queue and process it
+
+            queue = await channel.get_queue(GQueues.VECTOR_SIMILAR_SYNC_QUEUE)
+
+            await queue.consume(self._on_vss_message, no_ack=False)
+
+            logger.info(f"[✓] Consuming from queue: {GQueues.VECTOR_SIMILAR_SYNC_QUEUE}")
+        except Exception as e:
+            logger.error({"message": "Failed to consume message", "error": str(e)})
+            raise e
+
+    async def _on_vss_message(self, message: AbstractIncomingMessage):
+        async with message.process(requeue=False, ignore_processed=True):
+            try:
+                retry_count = self._get_retry_count(message)
+                if retry_count > 1:
+                    logger.error({"message": "Max retries exceeded, skipping message for vector similar sync", "retry_count": retry_count})
+                    await message.ack()  # ack to drop it permanently, not reject/nack
+                    return
+
+                body = message.body.decode()
+                cp = ps.CommonParams.model_validate_json(body)
+                await VectorSimilarityHelper().add_edges(cp)
 
                 await message.ack()  # We are done with the message
             except Exception as e:

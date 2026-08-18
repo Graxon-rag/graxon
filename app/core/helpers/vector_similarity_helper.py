@@ -1,5 +1,7 @@
+from ..schemas.webhook_schema import WebhookEventEnum, WebhookSendParams, WebhookEventParams
 from ..services.project_variables_service import ProjectVariableService
 from ..services.project_config_service import ProjectConfigService
+from ..rabbitmq.producer import GMQWebhookProducer
 from ..services.chunk_service import ChunkService
 from ..qdrant.similarity import QdrantSimilarity
 from ..libs.embedding_lib import EmbeddingLib
@@ -50,6 +52,9 @@ class VectorSimilarityHelper:
             await GN4jChunk(org_id=cp.org_id, project_id=cp.project_id).create_edges(cp.doc_id, n4j_similarity_edges)
 
             logger.info({"message": "Created vector similarity edges", "document_id": cp.doc_id, "org_id": cp.org_id, "project_id": cp.project_id})
+
+            await GMQWebhookProducer.publish_to_webhook_exchange(WebhookSendParams(event_data=WebhookEventParams(event=WebhookEventEnum.DOCUMENT_VECTOR_SIMILARITY_PROCESSED, data={"document_id": cp.doc_id, "org_id": cp.org_id, "project_id": cp.project_id})))
         except Exception as e:
             logger.error({"message": "Failed to add edges", "error": str(e)})
+            await GMQWebhookProducer.publish_to_webhook_exchange(WebhookSendParams(event_data=WebhookEventParams(event=WebhookEventEnum.DOCUMENT_VECTOR_SIMILARITY_FAILED, data={"document_id": cp.doc_id, "org_id": cp.org_id, "project_id": cp.project_id})))
             raise e

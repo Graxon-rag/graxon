@@ -1,12 +1,12 @@
-import asyncio
-import aio_pika
-from typing import cast
 from aio_pika.abc import AbstractRobustConnection, AbstractRobustChannel
-from app.config.env import Env
 from app.constants.rabbitmq import GExchanges, GQueues, GRoutingKeys
 from app.utils.logger import logger
-from typing import Dict, Any
 from .policy import GRabbitMQPolicy
+from app.config.env import Env
+from typing import Dict, Any
+from typing import cast
+import aio_pika
+import asyncio
 
 
 class GRabbitMQClient:
@@ -93,6 +93,8 @@ class GRabbitMQClient:
             await ch.declare_exchange(GExchanges.DOCUMENT_STATUS_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
             await ch.declare_exchange(GExchanges.WEBHOOK_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
             await ch.declare_exchange(GExchanges.WEBHOOK_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
+            await ch.declare_exchange(GExchanges.VECTOR_SIMILAR_SYNC_EXCHANGE, aio_pika.ExchangeType.DIRECT, durable=True)
+            await ch.declare_exchange(GExchanges.VECTOR_SIMILAR_SYNC_EXCHANGE_DLX, aio_pika.ExchangeType.DIRECT, durable=True)
 
             # Declare queues
             doc_queue_a = await ch.declare_queue(GQueues.DOCUMENT_PROCESSING_QUEUE, durable=True)
@@ -100,6 +102,8 @@ class GRabbitMQClient:
             doc_status_queue = await ch.declare_queue(GQueues.DOCUMENT_STATUS_QUEUE, durable=True)
             webhook_queue = await ch.declare_queue(GQueues.WEBHOOK_QUEUE, durable=True)
             webhook_queue_dlx = await ch.declare_queue(GQueues.WEBHOOK_QUEUE_DLX, durable=True)
+            vector_similar_queue = await ch.declare_queue(GQueues.VECTOR_SIMILAR_SYNC_QUEUE, durable=True)
+            vector_similar_queue_dlx = await ch.declare_queue(GQueues.VECTOR_SIMILAR_SYNC_QUEUE_DLX, durable=True)
 
             # Bind queues
             await doc_queue_a.bind(GExchanges.DOCUMENT_PROCESSING_EXCHANGE, GRoutingKeys.DOCUMENT_PROCESSING_ROUTING_KEY)
@@ -107,6 +111,8 @@ class GRabbitMQClient:
             await doc_status_queue.bind(GExchanges.DOCUMENT_STATUS_EXCHANGE, GRoutingKeys.DOCUMENT_STATUS_ROUTING_KEY)
             await webhook_queue.bind(GExchanges.WEBHOOK_EXCHANGE, GRoutingKeys.WEBHOOK_ROUTING_KEY)
             await webhook_queue_dlx.bind(GExchanges.WEBHOOK_EXCHANGE_DLX, GRoutingKeys.WEBHOOK_ROUTING_KEY)
+            await vector_similar_queue.bind(GExchanges.VECTOR_SIMILAR_SYNC_EXCHANGE, GRoutingKeys.VECTOR_SIMILAR_SYNC_ROUTING_KEY)
+            await vector_similar_queue_dlx.bind(GExchanges.VECTOR_SIMILAR_SYNC_EXCHANGE_DLX, GRoutingKeys.VECTOR_SIMILAR_SYNC_ROUTING_KEY)
 
             # Set policies
             pattern = "^" + GQueues.DOCUMENT_PROCESSING_QUEUE + "$"
@@ -140,6 +146,22 @@ class GRabbitMQClient:
             }
 
             await GRabbitMQPolicy.upsert(GQueues.WEBHOOK_QUEUE_DLX, webhook_pattern_dlx, webhook_dlx_q_definition)
+
+            vector_similar_pattern = "^" + GQueues.VECTOR_SIMILAR_SYNC_QUEUE + "$"
+            vector_similar_q_definition: Dict[str, Any] = {
+                "dead-letter-exchange": GExchanges.VECTOR_SIMILAR_SYNC_EXCHANGE_DLX,
+            }
+
+            await GRabbitMQPolicy.upsert(GQueues.VECTOR_SIMILAR_SYNC_QUEUE, vector_similar_pattern, vector_similar_q_definition)
+
+            vector_similar_pattern_dlx = "^" + GQueues.VECTOR_SIMILAR_SYNC_QUEUE_DLX + "$"
+            vector_similar_dlx_q_definition: Dict[str, Any] = {
+                "dead-letter-exchange": GExchanges.VECTOR_SIMILAR_SYNC_EXCHANGE,
+                "dead-letter-routing-key": GRoutingKeys.VECTOR_SIMILAR_SYNC_ROUTING_KEY,
+                "message-ttl": 1000 * 60,  # 1 minute
+            }
+
+            await GRabbitMQPolicy.upsert(GQueues.VECTOR_SIMILAR_SYNC_QUEUE_DLX, vector_similar_pattern_dlx, vector_similar_dlx_q_definition)
 
             logger.info("Policies upserted successfully.")
         except Exception as e:

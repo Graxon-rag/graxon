@@ -1,10 +1,10 @@
 from ..processor.ocr.processor_factory import OcrProcessorFactory, ProcessorEnum as ocr_enum
 from ..processor.video.processor_factory import VideoProcessorFactory, VideoProcessorEnum
+from ..rabbitmq.producer import GMQDocumentProducer, GMQVectorSimilarSyncProducer
 from ..processor.audio.processor_factory import AudioProcessorFactory
 from ..processor.text.processor_factory import ProcessorFactory
 from ..schemas.document_schema import DocumentStatusMQSchema
 from ..processor.audio.model import AudioProviderEnum
-from ..rabbitmq.producer import GMQDocumentProducer
 from app.constants.document import DocumentStatus
 from ..schemas import processor_schema as ps
 from .chunk_helper import ChunkHelper
@@ -243,6 +243,7 @@ class RMQProducerHelper:
             id=cp.doc_id,
             status=DocumentStatus.PROCESSED
         ))
+        await GMQVectorSimilarSyncProducer.publish(cp)
 
 
 class RMQProcessorHelper:

@@ -74,6 +74,10 @@ class DocumentService:
                 raise Exception("Model check failed")
             dict_data = {"org_id": self.org_id, "project_id": str(document.project_id), "document_id": str(document_id)}
 
+            status = document.status
+            if status in [DocumentStatus.PROCESSING, DocumentStatus.PROCESSED]:
+                raise Exception("Document is already (in processing) or (processed)")
+
             try:
                 process_params = await ProcessHelper.get_process_params(document)
                 await self._repo.change_document_status(document_id, DocumentStatus.QUEUED)

@@ -61,6 +61,8 @@ class WebhookEventEnum(str, Enum):
     DOCUMENT_PROCESSED = "document.processed"
     DOCUMENT_FAILED = "document.failed"
     DOCUMENT_DELETED = "document.deleted"
+    DOCUMENT_VECTOR_SIMILARITY_PROCESSED = "document.vector_similarity.processed"
+    DOCUMENT_VECTOR_SIMILARITY_FAILED = "document.vector_similarity.failed"
 
 
 class WebhookEventParams(BaseModel):
