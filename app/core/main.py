@@ -39,6 +39,7 @@ from .routes.video_model_route import router as video_model_router
 from .routes.ocr_model_route import router as ocr_model_router
 from .routes.webhook_route import router as webhook_router
 from .routes.project_config_route import router as project_config_router
+from .routes.project_variables_route import router as project_variables_router
 
 
 load_dotenv()
@@ -145,6 +146,7 @@ app.include_router(video_model_router, prefix="/api/video-models")
 app.include_router(ocr_model_router, prefix="/api/ocr-models")
 app.include_router(webhook_router, prefix="/api/webhooks")
 app.include_router(project_config_router, prefix="/api/project-configs")
+app.include_router(project_variables_router, prefix="/api/project-variables")
 
 
 @app.get("/")
