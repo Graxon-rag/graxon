@@ -278,10 +278,10 @@ class AudioProcessParams(BaseModel):
     rag_chunk_start_index: int = Field(..., description="The start index of the RAG chunk.")
     is_last: bool = Field(..., description="True if this is the last chunk.")
 
-    segment_duration_min: Optional[float] = Field(default=10, description="The duration of the audio segment in minutes.")
+    segment_duration_min: Optional[float] = Field(default=Env.AUDIO_SEGMENT_DURATION_MINUTES, description="The duration of the audio segment in minutes.")
 
-    max_time_per_rag_chunk_min: Optional[float] = Field(default=2.0, description="The maximum time per RAG chunk in minutes.")
-    max_words_per_rag_chunk: Optional[int] = Field(default=300, description="The maximum words per RAG chunk.")
+    max_time_per_rag_chunk_min: Optional[float] = Field(default=Env.AUDIO_MAX_DURATION_PER_RAG_CHUNK, description="The maximum time per RAG chunk in minutes.")
+    max_words_per_rag_chunk: Optional[int] = Field(default=Env.AUDIO_MAX_WORDS_PER_RAG_CHUNK, description="The maximum words per RAG chunk.")
 
     # ElevenLabs config
     base_url: Optional[str] = Field(default="https://api.elevenlabs.io", description="The base URL for the ElevenLabs API.")

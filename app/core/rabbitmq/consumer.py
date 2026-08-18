@@ -164,6 +164,7 @@ class GMQDocumentConsumer:
             doc_id=data.doc_id,
             doc_readable_id=data.doc_readable_id,
             file_type=file_type,
+            project_variables=data.project_variables
         )
         print("\n**************** $$$$ ******************")
         logger.info({"message": "Processing document", "file_type": file_type, "common_params": cp.model_dump(mode="json", exclude_none=True)})

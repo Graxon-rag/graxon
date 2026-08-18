@@ -248,7 +248,7 @@ class RMQProducerHelper:
 class RMQProcessorHelper:
     @staticmethod
     async def handle_txt(cp: ps.CommonParams, data: ps.TxtProcessParams):
-        logger.info({"message": "Processing text", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing text", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "chunk_number": data.file_chunk_number,
@@ -278,7 +278,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_json(cp: ps.CommonParams, data: ps.JsonProcessParams):
-        logger.info({"message": "Processing json", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing json", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_object": data.start_object,
@@ -311,7 +311,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_xml(cp: ps.CommonParams, data: ps.XmlProcessParams):
-        logger.info({"message": "Processing xml", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing xml", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_object": data.start_object,
@@ -344,7 +344,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_pdf(cp: ps.CommonParams, data: ps.PdfProcessParams):
-        logger.info({"message": "Processing json", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing json", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "chunk_number": data.file_chunk_number,
@@ -376,7 +376,7 @@ class RMQProcessorHelper:
         logger.info({
             "message": "Processing markdown",
             "common_params": cp.model_dump(mode="json", exclude_none=True),
-            "data": data.model_dump(mode="json", exclude_none=True),
+            #
             "file_path": data.markdown_path,
             "file_chunk_number": data.file_chunk_number,
             "filename": data.filename,
@@ -439,7 +439,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_yaml(cp: ps.CommonParams, data: ps.YamlProcessParams):
-        logger.info({"message": "Processing yaml", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing yaml", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_object": data.start_object, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_object": data.start_object,
@@ -473,7 +473,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_docx(cp: ps.CommonParams, data: ps.DocxProcessParams):
-        logger.info({"message": "Processing docx", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "file_chunk_number": data.file_chunk_number, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing docx", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "file_chunk_number": data.file_chunk_number, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "chunk_number": data.file_chunk_number,
@@ -503,7 +503,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_excel(cp: ps.CommonParams, data: ps.ExcelProcessParams):
-        logger.info({"message": "Processing excel", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing excel", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_row": data.start_row,
@@ -538,7 +538,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_code(cp: ps.CommonParams, data: ps.CodeProcessParams):
-        logger.info({"message": "Processing code file", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing code file", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "chunk_number": data.file_chunk_number,
@@ -569,7 +569,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_ppt(cp: ps.CommonParams, data: ps.PptxProcessParams):
-        logger.info({"message": "Processing ppt", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing ppt", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "file_chunk_number": data.file_chunk_number, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "chunk_number": data.file_chunk_number,
@@ -598,7 +598,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_html(cp: ps.CommonParams, data: ps.HtmlProcessParams):
-        logger.info({"message": "Processing html", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "start_unit": data.start_unit, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing html", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "start_unit": data.start_unit, "filename": data.filename, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_unit": data.start_unit,
@@ -632,7 +632,7 @@ class RMQProcessorHelper:
 
     @staticmethod
     async def handle_csv(cp: ps.CommonParams, data: ps.CSVProcessParams):
-        logger.info({"message": "Processing csv", "common_params": cp.model_dump(mode="json", exclude_none=True), "data": data.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
+        logger.info({"message": "Processing csv", "common_params": cp.model_dump(mode="json", exclude_none=True), "file_path": data.file_path, "filename": data.filename, "start_row": data.start_row, "rag_chunk_start_index": data.rag_chunk_start_index})
 
         kwargs = {
             "start_row": data.start_row,

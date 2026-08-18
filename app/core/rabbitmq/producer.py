@@ -40,7 +40,7 @@ class GMQDocumentProducer:
             message = aio_pika.Message(
                 body=data_str,
             )
-            logger.info({"message": "Sending message to exchange", "routing_key": routing_key, "document_id": data.doc_id, "data": data.model_dump(exclude_none=True)})
+            logger.info({"message": "Sending message to exchange", "routing_key": routing_key, "document_id": data.doc_id})
 
             await exchange.publish(message=message, routing_key=routing_key)
 
