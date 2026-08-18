@@ -561,7 +561,7 @@ class DocumentInjectGraph:
 
     # TEXT SEARCH
     def _find_referenced_chunks(self, reference_hint: str, chunks: list[Chunk], current_chunk_number: int) -> List[int]:
-        matched = []
+        matched: List[int] = []
         hint_lower = reference_hint.strip().lower()
 
         vague_signals = ["earlier", "above", "previous", "before", "prior", "as defined", "as mentioned"]
@@ -589,6 +589,9 @@ class DocumentInjectGraph:
         - Create all Neo4j edges
         """
         all_chunk_tags: List[ChunkTags] = []
+
+        #  Build lookup dictionary to map chunk_number -> Chunk object
+        chunk_map: Dict[int, Chunk] = {chunk.chunk_number: chunk for chunk in chunks}
 
         # BUILD TAG MAP
         tag_map = self._build_tag_map(chunk_results)
@@ -625,10 +628,9 @@ class DocumentInjectGraph:
             )
             all_chunk_tags.append(chunk_tags)
 
-            # NEXT / PREV EDGES
-            if chunk_number > 0:
-                prev_chunk = chunks[chunk_number - 1]
-
+            # NEXT / PREV EDGES (Lookup previous chunk safely via chunk_map)
+            prev_chunk = chunk_map.get(chunk_number - 1)
+            if prev_chunk is not None:
                 n4j_nex_prev_edges.append(N4jChunkEdge(
                     from_chunk_id=chunk_id,
                     to_chunk_id=prev_chunk.chunk_id,
@@ -644,9 +646,12 @@ class DocumentInjectGraph:
                     weight=1.0,
                 ))
 
-            # REFERENCES EDGES
+            # REFERENCES EDGES (Lookup referenced chunk safely via chunk_map)
             for ref_chunk_number in reference_chunk_numbers:
-                ref_chunk = chunks[ref_chunk_number]
+                ref_chunk = chunk_map.get(ref_chunk_number)
+                if ref_chunk is None:
+                    continue
+
                 if len(reference_chunk_numbers) == 1:
                     ref_weight = 1.0 if tag_response.reference_hint != "previous" else 0.6
                 else:
