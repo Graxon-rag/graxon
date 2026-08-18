@@ -1,11 +1,12 @@
+from .project_variables_schema import ProjectVariableCreateSchema
 from .sparse_text_model_schema import SparseTextModelGetSchema
 from .model_credential_schema import ModelCredentialGetSchema
 from .project_config_schema import ProjectConfigCreateSchema
 from .embedding_model_schema import EmbeddingModelGetSchema
 from .llm_model_schema import LLMModelGetSchema
 from .reranker_schema import ReRankerGetSchema
-from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any
+from pydantic import BaseModel, Field
 import datetime
 import uuid
 
@@ -18,6 +19,7 @@ class ProjectCreateSchema(BaseModel):
         description="The name of the project",
     )
     config: ProjectConfigCreateSchema
+    variables: ProjectVariableCreateSchema
     description: str = Field(
         description="The description of the project",
     )

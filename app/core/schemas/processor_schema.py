@@ -1,3 +1,4 @@
+from .project_variables_schema import ProjectVariableBase
 from typing import Optional, List, Dict, Any, Literal
 from langchain_text_splitters import Language
 from pydantic import BaseModel, Field
@@ -341,6 +342,8 @@ class CommonParams(BaseModel):
     doc_id: uuid.UUID = Field(..., description="The document id.")
     doc_readable_id: str = Field(..., description="The document readable id.")
     file_type: FileType = Field(..., description="The file type of the document.")
+
+    project_variables: ProjectVariableBase = Field(..., description="The project variables.")
 
 
 class MarkdownProcessParams(BaseModel):
