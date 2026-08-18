@@ -156,6 +156,110 @@ class ProjectConfig(Base):
         }
 
 
+class ProjectVariable(Base):
+    __tablename__ = PGTables.PROJECT_VARIABLES_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        Uuid,
+        ForeignKey(f"{PGTables.PROJECT_TABLE}.id", ondelete="CASCADE"),
+        nullable=False,
+        unique=True,
+        index=True
+    )
+
+    # External Call / Batching
+    embedding_chunk_batch_size: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    sparse_chunk_batch_size: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    llm_tag_extraction_batch_size: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    delay_between_chunk_processing_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+
+    # Chunks & Processing Limits
+    chunk_size: Mapped[int] = mapped_column(Integer, nullable=False, default=1500)
+    chunk_overlap: Mapped[int] = mapped_column(Integer, nullable=False, default=200)
+    max_chunks: Mapped[int] = mapped_column(Integer, nullable=False, default=10000)
+    max_chunk_size_mb: Mapped[float] = mapped_column(Float, nullable=False, default=5.0)
+    max_pages_per_batch: Mapped[int] = mapped_column(Integer, nullable=False, default=10)
+    tail_carry_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=500)
+    group_size_for_rag_chunk: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    max_group_size_for_rag_chunk: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    objects_per_buffer: Mapped[int] = mapped_column(Integer, nullable=False, default=500)
+    rows_per_io_buffer: Mapped[int] = mapped_column(Integer, nullable=False, default=500)
+
+    # Video Processing
+    video_segment_duration_minutes: Mapped[float] = mapped_column(Float, nullable=False, default=10.0)
+    video_overlap_minutes: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    video_max_duration_per_rag_chunk: Mapped[float] = mapped_column(Float, nullable=False, default=2.0)
+    video_max_words_per_rag_chunk: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
+
+    # Audio Processing
+    audio_segment_duration_minutes: Mapped[float] = mapped_column(Float, nullable=False, default=10.0)
+    audio_overlap_minutes: Mapped[float] = mapped_column(Float, nullable=False, default=1.0)
+    audio_max_duration_per_rag_chunk: Mapped[float] = mapped_column(Float, nullable=False, default=2.0)
+    audio_max_words_per_rag_chunk: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
+
+    # Vector Similarity Thresholds
+    gte_edge_vector_similar_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.75)
+    gte_qdrant_point_score_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.45)
+
+    # Expert Query
+    eq_max_lane_count: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    eq_max_lane_entity: Mapped[int] = mapped_column(Integer, nullable=False, default=3)
+    eq_gte_lane_weight_threshold: Mapped[float] = mapped_column(Float, nullable=False, default=0.7)
+    eq_max_lane_chunks: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+    eq_max_chunks: Mapped[int] = mapped_column(Integer, nullable=False, default=5)
+
+    # Timestamps
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        onupdate=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "id": self.id,
+            "project_id": self.project_id,
+            "embedding_chunk_batch_size": self.embedding_chunk_batch_size,
+            "sparse_chunk_batch_size": self.sparse_chunk_batch_size,
+            "llm_tag_extraction_batch_size": self.llm_tag_extraction_batch_size,
+            "delay_between_chunk_processing_seconds": self.delay_between_chunk_processing_seconds,
+            "chunk_size": self.chunk_size,
+            "chunk_overlap": self.chunk_overlap,
+            "max_chunks": self.max_chunks,
+            "max_chunk_size_mb": self.max_chunk_size_mb,
+            "max_pages_per_batch": self.max_pages_per_batch,
+            "tail_carry_chars": self.tail_carry_chars,
+            "group_size_for_rag_chunk": self.group_size_for_rag_chunk,
+            "max_group_size_for_rag_chunk": self.max_group_size_for_rag_chunk,
+            "objects_per_buffer": self.objects_per_buffer,
+            "rows_per_io_buffer": self.rows_per_io_buffer,
+            "video_segment_duration_minutes": self.video_segment_duration_minutes,
+            "video_overlap_minutes": self.video_overlap_minutes,
+            "video_max_duration_per_rag_chunk": self.video_max_duration_per_rag_chunk,
+            "video_max_words_per_rag_chunk": self.video_max_words_per_rag_chunk,
+            "audio_segment_duration_minutes": self.audio_segment_duration_minutes,
+            "audio_overlap_minutes": self.audio_overlap_minutes,
+            "audio_max_duration_per_rag_chunk": self.audio_max_duration_per_rag_chunk,
+            "audio_max_words_per_rag_chunk": self.audio_max_words_per_rag_chunk,
+            "gte_edge_vector_similar_threshold": self.gte_edge_vector_similar_threshold,
+            "gte_qdrant_point_score_threshold": self.gte_qdrant_point_score_threshold,
+            "eq_max_lane_count": self.eq_max_lane_count,
+            "eq_max_lane_entity": self.eq_max_lane_entity,
+            "eq_gte_lane_weight_threshold": self.eq_gte_lane_weight_threshold,
+            "eq_max_lane_chunks": self.eq_max_lane_chunks,
+            "eq_max_chunks": self.eq_max_chunks,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
 class Document(Base):
     __tablename__ = PGTables.DOCUMENT_TABLE
 
