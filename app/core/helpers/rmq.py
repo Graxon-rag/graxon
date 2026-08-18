@@ -49,6 +49,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=txt.filename,
+                        project_variables=cp.project_variables,
                         txt_params=txt
             ))
 
@@ -61,6 +62,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=json.filename,
+                        project_variables=cp.project_variables,
                         json_params=json
             ))
 
@@ -73,6 +75,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=xml.filename,
+                        project_variables=cp.project_variables,
                         xml_params=xml
             ))
 
@@ -85,6 +88,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=docx.filename,
+                        project_variables=cp.project_variables,
                         docx_params=docx
             ))
 
@@ -97,6 +101,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=pdf.filename,
+                        project_variables=cp.project_variables,
                         pdf_params=pdf
             ))
 
@@ -109,6 +114,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=csv.filename,
+                        project_variables=cp.project_variables,
                         csv_params=csv
             ))
 
@@ -121,6 +127,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=ppt.filename,
+                        project_variables=cp.project_variables,
                         ppt_params=ppt
             ))
 
@@ -133,6 +140,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=excel.filename,
+                        project_variables=cp.project_variables,
                         excel_params=excel
             ))
 
@@ -145,6 +153,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=markdown.filename,
+                        project_variables=cp.project_variables,
                         md_params=markdown
             ))
 
@@ -157,6 +166,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=yaml.filename,
+                        project_variables=cp.project_variables,
                         yaml_params=yaml
             ))
 
@@ -169,6 +179,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=code.filename,
+                        project_variables=cp.project_variables,
                         code_params=code
             ))
 
@@ -181,6 +192,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=html.filename,
+                        project_variables=cp.project_variables,
                         html_params=html
             ))
 
@@ -193,6 +205,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=audio.filename,
+                        project_variables=cp.project_variables,
                         audio_params=audio
             ))
 
@@ -205,6 +218,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=image.filename,
+                        project_variables=cp.project_variables,
                         ocr_params=image
             ))
 
@@ -217,6 +231,7 @@ class RMQProducerHelper:
                         doc_readable_id=cp.doc_readable_id,
                         file_type=cp.file_type,
                         filename=video.filename,
+                        project_variables=cp.project_variables,
                         video_params=video
             ))
 

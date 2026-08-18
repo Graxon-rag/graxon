@@ -4,9 +4,11 @@ from ..schemas import processor_schema as ps
 from ..schemas import chunk_schema as cs
 from app.config.config import Config
 from app.utils.logger import logger
+from app.config.env import Env
 from ..libs.id import IDLibs
 from pathlib import Path
 from typing import List
+import asyncio
 import json
 
 
@@ -37,6 +39,9 @@ class ChunkHelper:
             if Config.is_dev_env() or Config.is_test_env():
                 ChunkHelper._save_to_debug(cp, chunks)
 
+            wait_before_start = Env.DELAY_BETWEEN_CHUNK_PROCESSING_SECONDS
+            logger.info({"message": "Waiting before starting chunk processing", "seconds": wait_before_start, "doc_id": cp.doc_id, "project_id": cp.project_id, "org_id": cp.org_id})
+            await asyncio.sleep(wait_before_start)
             result = await DocumentWorkflow(cp.org_id, cp.project_id).process(cp, chunks)
             return result
         except Exception as e:
