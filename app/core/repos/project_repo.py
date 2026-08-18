@@ -1,6 +1,6 @@
 from ..schemas.project_schema import ProjectCreateSchema, ProjectGetSchema, ProjectDetailSchema
 from ..databases.postgresql.client import GPostgresqlClient
-from ..helpers.project_helper import ProjectHelper
+from .project_variables_repo import ProjectVariableRepo
 from .project_config_repo import ProjectConfigRepo
 from ..databases.postgresql.models import Project
 from ..neo4j.project import GN4Project
@@ -47,6 +47,8 @@ class ProjectRepo:
 
                 # Passing the active session to the ConfigRepo
                 await ProjectConfigRepo(self.org_id, project.id).create(data.config, session=session)
+
+                await ProjectVariableRepo(self.org_id, project.id).create(data.variables, session=session)
 
                 # Commit EVERYTHING in one atomic transaction
                 await session.commit()
