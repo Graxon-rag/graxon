@@ -1,4 +1,4 @@
-from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON, Boolean
+from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON, Boolean, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
@@ -300,6 +300,44 @@ class Document(Base):
             "status": self.status,
             "size": self.size or None,
             "is_ocr_needed": self.is_ocr_needed,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class Chunk(Base):
+    __tablename__ = PGTables.CHUNK_TABLE
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    document_id: Mapped[uuid.UUID] = mapped_column(ForeignKey(f"{PGTables.DOCUMENT_TABLE}.id", ondelete="CASCADE"), nullable=False, index=True)
+
+    chunk_id: Mapped[str] = mapped_column(String(255), nullable=False, index=True)
+    chunk_number: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    text: Mapped[str] = mapped_column(Text, nullable=False)
+
+    file_chunk_number: Mapped[int] = mapped_column(Integer, nullable=True)
+    chunk_metadata: Mapped[Dict[str, Any]] = mapped_column(JSON, nullable=True, default={})
+
+    # Timestamp
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc)
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "document_id": self.document_id,
+            "chunk_id": self.chunk_id,
+            "chunk_number": self.chunk_number,
+            "text": self.text,
+            "file_chunk_number": self.file_chunk_number,
+            "metadata": self.chunk_metadata,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }

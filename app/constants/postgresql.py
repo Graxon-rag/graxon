@@ -13,6 +13,7 @@ class PGTables:
     VIDEO_MODEL_TABLE: str = "video_models"
     WEBHOOK_TABLE: str = "webhooks"
     PROJECT_VARIABLES_TABLE = "project_variables"
+    CHUNK_TABLE: str = "chunks"
 
 
 class PGDatabase:
