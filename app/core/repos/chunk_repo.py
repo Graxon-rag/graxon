@@ -14,7 +14,7 @@ class ChunkRepo:
         self.project_id = project_id
         self.document_id = document_id
 
-    async def create(self, chunk: cs.Chunk) -> bool:
+    async def create(self, chunk: cs.ChunkCreateSchema) -> bool:
         try:
             async with self._db.get_session() as session:
                 c = Chunk(
@@ -32,7 +32,7 @@ class ChunkRepo:
             logger.error({"message": "Failed to create chunk", "error": str(e)})
             raise e
 
-    async def create_multiple(self, chunks: list[cs.Chunk]) -> bool:
+    async def create_multiple(self, chunks: list[cs.ChunkCreateSchema]) -> bool:
         try:
             async with self._db.get_session() as session:
                 chunk_models = [Chunk(**chunk.model_dump(), document_id=self.document_id, chunk_metadata=chunk.metadata) for chunk in chunks]
@@ -43,13 +43,13 @@ class ChunkRepo:
             logger.error({"message": "Failed to create chunks", "error": str(e)})
             raise e
 
-    async def get(self, id: uuid.UUID) -> cs.Chunk | None:
+    async def get(self, id: uuid.UUID) -> cs.ChunkGetSchema | None:
         try:
             async with self._db.get_session() as session:
                 chunk = await session.scalar(select(Chunk).where(Chunk.id == id))
                 if chunk is None:
                     raise Exception(f"Chunk with id {id} not found")
-                return cs.Chunk(**chunk.to_dict())
+                return cs.ChunkGetSchema(**chunk.to_dict())
         except Exception as e:
             logger.error({"message": "Failed to get chunk", "error": str(e)})
             raise e
@@ -101,7 +101,7 @@ class ChunkRepo:
                 result_list = pg_result.scalars().all()
 
                 return cs.ChunkListSchema(
-                        data=[cs.Chunk(**doc.to_dict()) for doc in result_list],
+                        data=[cs.ChunkGetSchema(**doc.to_dict()) for doc in result_list],
                         pagination=cs.PaginationSchema(
                             total_pages=total_pages,
                             current_page=params.page,

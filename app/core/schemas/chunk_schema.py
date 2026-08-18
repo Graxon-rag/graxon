@@ -2,6 +2,7 @@ from pydantic import BaseModel, model_serializer, Field, field_validator, model_
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
 from typing import Optional, List, Dict, Any
 from .common_schema import PaginationSchema
+import uuid
 
 
 class Chunk(BaseModel):
@@ -160,6 +161,14 @@ class ChunkPrevNextSchema(BaseModel):
 # }
 
 
+class ChunkCreateSchema(Chunk):
+    pass
+
+
+class ChunkGetSchema(Chunk):
+    id: Optional[uuid.UUID] = None
+
+
 class ChunkPrevNextVecSimilaritySchema(BaseModel):
     chunk_id: str
     text: str
@@ -177,5 +186,5 @@ class ChunkQueryParams(BaseModel):
 
 
 class ChunkListSchema(BaseModel):
-    data: list[Chunk]
+    data: list[ChunkGetSchema]
     pagination: Optional[PaginationSchema] = None

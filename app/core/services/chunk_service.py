@@ -12,14 +12,14 @@ class ChunkService:
         self.project_id = project_id
         self.document_id = document_id
 
-    async def create(self, chunk: cs.Chunk) -> bool:
+    async def create(self, chunk: cs.ChunkCreateSchema) -> bool:
         try:
             return await self._repo.create(chunk=chunk)
         except Exception as e:
             logger.error({"message": "Failed to create chunk", "error": str(e)})
             raise e
 
-    async def create_multiple(self, chunks: list[cs.Chunk]) -> bool:
+    async def create_multiple(self, chunks: list[cs.ChunkCreateSchema]) -> bool:
         try:
             return await self._repo.create_multiple(chunks=chunks)
         except Exception as e:
@@ -33,7 +33,7 @@ class ChunkService:
             logger.error({"message": "Failed to list chunks", "error": str(e)})
             raise e
 
-    async def get(self, id: uuid.UUID) -> cs.Chunk | None:
+    async def get(self, id: uuid.UUID) -> cs.ChunkGetSchema | None:
         try:
             return await self._repo.get(id=id)
         except Exception as e:

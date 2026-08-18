@@ -40,7 +40,11 @@ class ChunkHelper:
             if Config.is_dev_env() or Config.is_test_env():
                 ChunkHelper._save_to_debug(cp, chunks)
 
-            await ChunkService(cp.org_id, cp.project_id, cp.doc_id).create_multiple(chunks)
+            db_chunks: List[cs.ChunkCreateSchema] = []
+            for chunk in chunks:
+                db_chunks.append(cs.ChunkCreateSchema(**chunk.model_dump()))
+
+            await ChunkService(cp.org_id, cp.project_id, cp.doc_id).create_multiple(db_chunks)
 
             wait_before_start = Env.DELAY_BETWEEN_CHUNK_PROCESSING_SECONDS
             logger.info({"message": "Waiting before starting chunk processing", "seconds": wait_before_start, "doc_id": cp.doc_id, "project_id": cp.project_id, "org_id": cp.org_id})

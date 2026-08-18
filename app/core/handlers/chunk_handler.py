@@ -19,7 +19,7 @@ class ChunkHandler:
             logger.error({"message": "Failed to list chunks", "error": str(e)})
             raise e
 
-    async def get(self, id: uuid.UUID) -> cs.Chunk | None:
+    async def get(self, id: uuid.UUID) -> cs.ChunkGetSchema | None:
         try:
             return await self._service.get(id=id)
         except Exception as e:
