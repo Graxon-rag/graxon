@@ -203,10 +203,15 @@ class ProcessHelper:
                     next_start_unit=0
                 ))
             else:
+                print(" " * 50 + " <<<<<<<<<---RESUMING PROCESSING--->>>>>>>>" + " " * 50)
                 logger.info({
-                    "message": "Resuming document processing", 
-                    "last_chunk": document_processing_state.last_file_chunk_number
+                    "message": "Resuming document processing",
+                    "data": document_processing_state.model_dump(mode="json")
                 })
+                if document_processing_state.status == ProcessingStatus.COMPLETED:
+                    logger.info({"message": "Document already processed"})
+                    raise Exception("Document already processed")
+
                 # If it failed/stopped on the very first try, last_file_chunk_number is -1.
                 # -1 + 1 = 0 (Starts perfectly at the beginning)
                 # If it failed after chunk 5, last_file_chunk_number is 5.

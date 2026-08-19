@@ -157,10 +157,10 @@ class GMQDocumentConsumer:
             retry_count = self._get_retry_count(message)
             data = ps.ProcessParams.model_validate_json(body)
             try:
-                logger.info({"message": "Received message", "retry_count": retry_count, "document": data.model_dump(mode="json", exclude_none=True)})
+                logger.info({"message": "Received message", "retry_count": retry_count, "document_id": data.doc_id})
 
                 if retry_count > 3:
-                    logger.error({"message": "Max retries exceeded, skipping message", "retry_count": retry_count, "document": data.model_dump(mode="json", exclude_none=True)})
+                    logger.error({"message": "Max retries exceeded, skipping message", "retry_count": retry_count, "document_id": data.doc_id})
 
                     await GMQDocumentProducer.publish_to_status_exchange(DocumentStatusMQSchema(org_id=data.org_id, project_id=data.project_id, id=data.doc_id, status=DocumentStatus.FAILED))
 

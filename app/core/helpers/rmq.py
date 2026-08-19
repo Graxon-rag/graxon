@@ -44,6 +44,9 @@ _AUDIO_PROVIDERS = {
 
 async def update_document_processing_state(org_id: str, project_id: uuid.UUID, doc_id: uuid.UUID, u: DocumentProcessingUpdateSchema) -> bool:
     try:
+        print(" " * 50 + "<<<<<<<<<--- UPDATE PROCESSING STATE ---->>>>>>>>>" + " " * 50)
+        print(u.model_dump(mode="json", exclude_none=True))
+
         await DocumentProcessingService(org_id, project_id, doc_id).update(u)
         return True
     except Exception as e:
@@ -456,6 +459,9 @@ class RMQProcessorHelper:
         # Process
         await ChunkHelper.inject(cp, docs)
 
+        if is_last_md_chunk and data.is_ocr_part:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
         if not is_last_md_chunk:
             await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
 
@@ -475,6 +481,7 @@ class RMQProcessorHelper:
             return
 
         elif data.is_ocr_part is False:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(status=ProcessingStatus.COMPLETED, last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
             await RMQProducerHelper.produce_status(cp)
             return
 
@@ -488,6 +495,7 @@ class RMQProcessorHelper:
             return
 
         if data.is_ocr_part and data.ocr_params is not None and data.ocr_params.is_last_ocr_batch:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(status=ProcessingStatus.COMPLETED, last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -839,7 +847,7 @@ class RMQProcessorHelper:
             processor=ocr_processor_type,
             api_key=data.api_key,
             start_page=next_page,
-            file_chunk_number=0,
+            file_chunk_number=0,  # for every new markdown file it should be 0
             rag_chunk_start_index=data.rag_chunk_start_index,  # gets refreshed later
             is_last_ocr_batch=is_last_ocr_batch,
             max_pages_per_chunk=data.max_pages_per_chunk,
