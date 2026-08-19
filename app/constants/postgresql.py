@@ -14,6 +14,7 @@ class PGTables:
     WEBHOOK_TABLE: str = "webhooks"
     PROJECT_VARIABLES_TABLE = "project_variables"
     CHUNK_TABLE: str = "chunks"
+    DOCUMENT_PROCESSING_STATE_TABLE: str = "document_processing_states"
 
 
 class PGDatabase:
