@@ -1,6 +1,8 @@
+from ..schemas.document_processing_schema import DocumentProcessingUpdateSchema, ProcessingStatus
 from ..processor.ocr.processor_factory import OcrProcessorFactory, ProcessorEnum as ocr_enum
 from ..processor.video.processor_factory import VideoProcessorFactory, VideoProcessorEnum
 from ..rabbitmq.producer import GMQDocumentProducer, GMQVectorSimilarSyncProducer
+from ..services.document_processing_service import DocumentProcessingService
 from ..processor.audio.processor_factory import AudioProcessorFactory
 from ..processor.text.processor_factory import ProcessorFactory
 from ..schemas.document_schema import DocumentStatusMQSchema
@@ -10,6 +12,7 @@ from ..schemas import processor_schema as ps
 from .chunk_helper import ChunkHelper
 from app.utils.logger import logger
 from app.config.env import Env
+import uuid
 
 
 _AUDIO_PROVIDERS = {
@@ -37,6 +40,15 @@ _AUDIO_PROVIDERS = {
         "model": "groq_model",
     }),
 }
+
+
+async def update_document_processing_state(org_id: str, project_id: uuid.UUID, doc_id: uuid.UUID, u: DocumentProcessingUpdateSchema) -> bool:
+    try:
+        await DocumentProcessingService(org_id, project_id, doc_id).update(u)
+        return True
+    except Exception as e:
+        logger.error({"message": "Failed to update document processing state", "error": str(e)})
+        raise e
 
 
 class RMQProducerHelper:
@@ -268,6 +280,8 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
             await RMQProducerHelper.produce_txt(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
                 "rag_chunk_start_index": next_rag_start_index,
@@ -275,6 +289,13 @@ class RMQProcessorHelper:
 
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -302,12 +323,22 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            next_start_object = data.start_object + increment  # add objects per buffer
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(next_rag_start_index=next_rag_start_index, next_start_object=next_start_object))
+
             await RMQProducerHelper.produce_json(cp, data.model_copy(update={
-                "start_object": data.start_object + increment,  # add objects per buffer
+                "start_object": next_start_object,
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    next_start_object=data.start_object
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -335,12 +366,22 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            next_start_object = data.start_object + increment  # add objects per buffer
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(next_rag_start_index=next_rag_start_index, next_start_object=next_start_object))
+
             await RMQProducerHelper.produce_xml(cp, data.model_copy(update={
-                "start_object": data.start_object + increment,  # add objects per buffer
+                "start_object": next_start_object,  # add objects per buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    next_start_object=data.start_object
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -364,12 +405,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
             await RMQProducerHelper.produce_pdf(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -407,6 +457,8 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last_md_chunk:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
             # More chunks remain in THIS markdown file -> keep chunking it.
             await RMQProducerHelper.produce_markdown(cp, ps.MarkdownProcessParams(
                 markdown_path=data.markdown_path,
@@ -464,12 +516,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            next_start_object = data.start_object + increment  # add objects per buffer
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(next_rag_start_index=next_rag_start_index, next_start_object=next_start_object))
             await RMQProducerHelper.produce_yaml(cp, data.model_copy(update={
-                "start_object": data.start_object + increment,  # add objects per buffer
+                "start_object": next_start_object,  # add objects per buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    next_start_object=data.start_object
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -494,12 +555,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
             await RMQProducerHelper.produce_docx(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -529,12 +599,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            next_start_row = data.start_row + increment  # adding rows_per_io_buffer
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(next_rag_start_index=next_rag_start_index, next_start_row=next_start_row))
             await RMQProducerHelper.produce_excel(cp, data.model_copy(update={
-                "start_row": data.start_row + increment,  # adding rows_per_io_buffer
+                "start_row": next_start_row,  # adding rows_per_io_buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    next_start_row=data.start_row
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -560,12 +639,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
             await RMQProducerHelper.produce_code(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -589,12 +677,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+
             await RMQProducerHelper.produce_ppt(cp, data.model_copy(update={
                 "file_chunk_number": data.file_chunk_number + 1,  # Increment chunk number
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -623,12 +720,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            next_start_unit = data.start_unit + increment  # adding units_per_buffer to start_unit
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(next_rag_start_index=next_rag_start_index, next_start_unit=next_start_unit))
             await RMQProducerHelper.produce_html(cp, data.model_copy(update={
-                "start_unit": data.start_unit + increment,  # adding units_per_buffer to start_unit
+                "start_unit": next_start_unit,  # adding units_per_buffer to start_unit
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    next_start_unit=data.start_unit
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -658,12 +764,21 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            next_start_row = data.start_row + increment  # adding rows_per_io_buffer
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(next_rag_start_index=next_rag_start_index, next_start_row=next_start_row))
             await RMQProducerHelper.produce_csv(cp, data.model_copy(update={
-                "start_row": data.start_row + increment,  # adding rows_per_io_buffer
+                "start_row": next_start_row,  # adding rows_per_io_buffer
                 "rag_chunk_start_index": next_rag_start_index,
                 "is_last": is_last
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    next_start_row=data.start_row
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -769,6 +884,7 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
             # every provider-specific field is already on `data` and unchanged
             # between chunks -- only these three move.
             await RMQProducerHelper.produce_audio(cp, data.model_copy(update={
@@ -777,6 +893,13 @@ class RMQProcessorHelper:
                 "is_last": is_last,
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -812,6 +935,7 @@ class RMQProcessorHelper:
         await ChunkHelper.inject(cp, docs)
 
         if not is_last:
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
             # every provider-specific field is already on `data` and unchanged
             # between chunks -- only these three move.
             await RMQProducerHelper.produce_video(cp, data.model_copy(update={
@@ -820,4 +944,11 @@ class RMQProcessorHelper:
                 "is_last": is_last,
             }))
         else:
+            await update_document_processing_state(
+                org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
+                u=DocumentProcessingUpdateSchema(
+                    status=ProcessingStatus.COMPLETED,
+                    last_file_chunk_number=data.file_chunk_number
+                )
+            )
             await RMQProducerHelper.produce_status(cp)
