@@ -344,6 +344,7 @@ class DocumentProcessingState(Base):
     next_start_row: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     next_start_object: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
     next_start_unit: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    next_start_page: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
 
     error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
 
@@ -373,6 +374,7 @@ class DocumentProcessingState(Base):
             "next_start_row": self.next_start_row,
             "next_start_object": self.next_start_object,
             "next_start_unit": self.next_start_unit,
+            "next_start_page": self.next_start_page,
             "error_message": self.error_message,
             "created_at": self.created_at,
             "updated_at": self.updated_at

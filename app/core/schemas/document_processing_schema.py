@@ -20,6 +20,7 @@ class DocumentProcessingBase(BaseModel):
     next_start_row: int = Field(default=0)
     next_start_object: int = Field(default=0)
     next_start_unit: int = Field(default=0)
+    next_start_page: int = Field(default=0)
     error_message: Optional[str] = None
 
 
@@ -34,6 +35,7 @@ class DocumentProcessingUpdateSchema(BaseModel):
     next_start_row: int = Field(default=0)
     next_start_object: int = Field(default=0)
     next_start_unit: int = Field(default=0)
+    next_start_page: int = Field(default=0)
     error_message: Optional[str] = None
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 

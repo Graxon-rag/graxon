@@ -459,8 +459,8 @@ class RMQProcessorHelper:
         # Process
         await ChunkHelper.inject(cp, docs)
 
-        if is_last_md_chunk and data.is_ocr_part:
-            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+        # if is_last_md_chunk and data.is_ocr_part:
+        #     await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
 
         if not is_last_md_chunk:
             await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
@@ -488,14 +488,18 @@ class RMQProcessorHelper:
         # This markdown file's chunks are exhausted. If it was produced as part
         # of an OCR pipeline and there are more pages left to OCR, resume OCR.
         if data.is_ocr_part and data.ocr_params is not None and not data.ocr_params.is_last_ocr_batch:
+            next_start_page = data.ocr_params.start_page  # Current Markdown file is done, moving to the NEXT OCR batch
             resume_params = data.ocr_params.model_copy(
                 update={"rag_chunk_start_index": next_rag_start_index}
             )
+            # Reset last_file_chunk_number to -1 for the new file, and save next_start_page
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(last_file_chunk_number=-1, next_rag_start_index=next_rag_start_index, next_start_page=next_start_page))
             await RMQProducerHelper.produce_ocr(cp, resume_params)
             return
 
         if data.is_ocr_part and data.ocr_params is not None and data.ocr_params.is_last_ocr_batch:
-            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(status=ProcessingStatus.COMPLETED, last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index))
+            next_start_page = data.ocr_params.start_page
+            await update_document_processing_state(org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, u=DocumentProcessingUpdateSchema(status=ProcessingStatus.COMPLETED, last_file_chunk_number=data.file_chunk_number, next_rag_start_index=next_rag_start_index, next_start_page=next_start_page))
             await RMQProducerHelper.produce_status(cp)
 
     @staticmethod
@@ -864,7 +868,7 @@ class RMQProcessorHelper:
         md_processor = ps.MarkdownProcessParams(
             markdown_path=str(md_path),
             filename=md_path.name,
-            file_chunk_number=0,
+            file_chunk_number=data.file_chunk_number,
             rag_chunk_start_index=data.rag_chunk_start_index,
             is_last=False,  # placeholder; handle_md computes the real value from its own processor
             is_ocr_part=True,

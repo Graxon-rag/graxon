@@ -23,6 +23,7 @@ class ProcessHelper:
         filename: str,
         file_chunk_number: int,
         rag_chunk_start_index: int,
+        start_page: int,
         project_config: ProjectConfigDetailGetSchema,
         project_variables: ProjectVariableBase
     ) -> ps.OCRProcessParams:
@@ -49,7 +50,7 @@ class ProcessHelper:
             filename=filename,
             processor=processor,
             api_key=ocr_model_credential.api_key,
-            start_page=0,
+            start_page=start_page,
             is_last_ocr_batch=False,
             rag_chunk_start_index=rag_chunk_start_index,
             file_chunk_number=file_chunk_number,
@@ -183,6 +184,7 @@ class ProcessHelper:
             start_row = 0
             start_object = 0
             start_unit = 0
+            start_page = 0
 
             document_processing_service = DocumentProcessingService(
                 org_id=document.org_id, 
@@ -200,7 +202,8 @@ class ProcessHelper:
                     next_rag_start_index=0,
                     next_start_row=0,
                     next_start_object=0,
-                    next_start_unit=0
+                    next_start_unit=0,
+                    next_start_page=0
                 ))
             else:
                 print(" " * 50 + " <<<<<<<<<---RESUMING PROCESSING--->>>>>>>>" + " " * 50)
@@ -222,6 +225,7 @@ class ProcessHelper:
                 start_row = document_processing_state.next_start_row
                 start_object = document_processing_state.next_start_object
                 start_unit = document_processing_state.next_start_unit
+                start_page = document_processing_state.next_start_page
 
                 # Update the status to PROCESSING if it was previously FAILED or PENDING
                 if document_processing_state.status != ProcessingStatus.PROCESSING:
@@ -241,6 +245,7 @@ class ProcessHelper:
                     filename=document.name,
                     file_chunk_number=file_chunk_number,
                     rag_chunk_start_index=rag_chunk_start_index,
+                    start_page=start_page,
                     project_config=project_config,
                     project_variables=project_variables
                 )
@@ -408,6 +413,7 @@ class ProcessHelper:
                     filename=document.name,
                     file_chunk_number=file_chunk_number,
                     rag_chunk_start_index=rag_chunk_start_index,
+                    start_page=start_page,
                     project_config=project_config,
                     project_variables=project_variables
                 )
