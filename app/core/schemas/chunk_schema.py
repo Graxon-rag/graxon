@@ -1,6 +1,6 @@
 from pydantic import BaseModel, model_serializer, Field, field_validator, model_validator
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Dict, Any, Literal
 from .common_schema import PaginationSchema
 import uuid
 
@@ -183,6 +183,20 @@ class ChunkPrevNextVecSimilaritySchema(BaseModel):
 class ChunkQueryParams(BaseModel):
     page: int = Field(default=1, ge=1)
     limit: int = Field(default=10, ge=1, le=50)
+
+    # Filters
+    search: Optional[str] = Field(default=None, description="Fuzzy search on chunk text")
+    chunk_number: Optional[int] = Field(default=None, description="Exact match for chunk number")
+    chunk_id: Optional[str] = Field(default=None, description="Exact match for readable chunk ID")
+    id: Optional[uuid.UUID] = Field(default=None, description="Exact match for primary key UUID")
+
+    # Sorting
+    sort_by: Literal["created_at", "chunk_number"] = Field(
+        default="chunk_number", description="Column to sort by"
+    )
+    sort_order: Literal["asc", "desc"] = Field(
+        default="asc", description="Sort direction"
+    )
 
 
 class ChunkListSchema(BaseModel):

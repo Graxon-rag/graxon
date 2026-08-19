@@ -73,21 +73,39 @@ class ChunkRepo:
                 stmt = select(Chunk)
                 count_stmt = select(func.count()).select_from(Chunk)
 
+                # Base filter: must belong to the document
                 filters = [
                     Chunk.document_id == self.document_id,
                 ]
+
+                # Fuzzy search strictly on text
+                if params.search:
+                    filters.append(Chunk.text.ilike(f"%{params.search.strip()}%"))
+
+                # Exact match on chunk_number
+                if params.chunk_number is not None:
+                    filters.append(Chunk.chunk_number == params.chunk_number)
+
+                # Exact match on readable chunk_id
+                if params.chunk_id:
+                    filters.append(Chunk.chunk_id == params.chunk_id)
+
+                # Exact match on primary key UUID
+                if params.id:
+                    filters.append(Chunk.id == params.id)
+
+                # Apply filters to both statements
                 stmt = stmt.where(*filters)
                 count_stmt = count_stmt.where(*filters)
 
+                # Count total items
                 total_count = await session.scalar(count_stmt) or 0
                 total_pages = math.ceil(total_count / params.limit) if total_count > 0 else 1
 
-                sort_by_val = "created_at"
-                sort_order_val = "desc"
+                # Dynamic Sorting
+                sort_column = getattr(Chunk, params.sort_by)
 
-                # Apply Sorting to the statement
-                sort_column = getattr(Chunk, sort_by_val, Chunk.created_at)
-                if sort_order_val == "desc":
+                if params.sort_order == "desc":
                     stmt = stmt.order_by(desc(sort_column))
                 else:
                     stmt = stmt.order_by(asc(sort_column))
@@ -97,17 +115,16 @@ class ChunkRepo:
                 stmt = stmt.offset(offset).limit(params.limit)
 
                 pg_result = await session.execute(stmt)
-                # scalars().all() returns a Sequence, so no need for list() casting
                 result_list = pg_result.scalars().all()
 
                 return cs.ChunkListSchema(
-                        data=[cs.ChunkGetSchema(**doc.to_dict()) for doc in result_list],
-                        pagination=cs.PaginationSchema(
-                            total_pages=total_pages,
-                            current_page=params.page,
-                            current_limit=params.limit,
-                        ),
-                    )
+                    data=[cs.ChunkGetSchema(**doc.to_dict()) for doc in result_list],
+                    pagination=cs.PaginationSchema(
+                        total_pages=total_pages,
+                        current_page=params.page,
+                        current_limit=params.limit,
+                    ),
+                )
 
         except Exception as e:
             logger.error({"message": "Failed to list chunks", "error": str(e)})
