@@ -1,4 +1,4 @@
-from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON, Boolean, Text
+from sqlalchemy import String, Uuid, ForeignKey, Float, TIMESTAMP, Integer, CheckConstraint, JSON, Boolean, Text, func
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from app.constants.document import DocumentStatus
 from app.constants.postgresql import PGTables
@@ -302,6 +302,78 @@ class Document(Base):
             "status": self.status,
             "size": self.size or None,
             "is_ocr_needed": self.is_ocr_needed,
+            "created_at": self.created_at,
+            "updated_at": self.updated_at
+        }
+
+
+class DocumentProcessingState(Base):
+    __tablename__ = PGTables.DOCUMENT_PROCESSING_STATE_TABLE
+
+    id: Mapped[uuid.UUID] = mapped_column(Uuid, primary_key=True, default=uuid.uuid4)
+    org_id: Mapped[str] = mapped_column(
+        ForeignKey(f"{PGTables.ORGANIZATION_TABLE}.id", ondelete="CASCADE"), 
+        nullable=False, 
+        index=True
+    )
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(f"{PGTables.PROJECT_TABLE}.id", ondelete="CASCADE"), 
+        nullable=False, 
+        index=True
+    )
+    document_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey(f"{PGTables.DOCUMENT_TABLE}.id", ondelete="CASCADE"), 
+        nullable=False, 
+        unique=True,  # Guarantees exactly 1 state row per document
+        index=True
+    )
+
+    status: Mapped[str] = mapped_column(String(255), nullable=False)
+    last_file_chunk_number: Mapped[int] = mapped_column(
+        Integer, 
+        nullable=False, 
+        default=-1, 
+        server_default="-1"
+    )
+    next_rag_start_index: Mapped[int] = mapped_column(
+        Integer, 
+        nullable=False, 
+        default=0, 
+        server_default="0"
+    )
+    next_start_row: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    next_start_object: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+    next_start_unit: Mapped[int] = mapped_column(Integer, nullable=False, default=0, server_default="0")
+
+    error_message: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    created_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        server_default=func.now()
+    )
+    updated_at: Mapped[datetime.datetime] = mapped_column(
+        TIMESTAMP(timezone=True),
+        nullable=False,
+        default=lambda: datetime.datetime.now(datetime.timezone.utc),
+        onupdate=lambda: datetime.datetime.now(datetime.timezone.utc),
+        server_default=func.now()
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "org_id": self.org_id,
+            "project_id": self.project_id,
+            "document_id": self.document_id,
+            "status": self.status,
+            "last_file_chunk_number": self.last_file_chunk_number,
+            "next_rag_start_index": self.next_rag_start_index,
+            "next_start_row": self.next_start_row,
+            "next_start_object": self.next_start_object,
+            "next_start_unit": self.next_start_unit,
+            "error_message": self.error_message,
             "created_at": self.created_at,
             "updated_at": self.updated_at
         }
