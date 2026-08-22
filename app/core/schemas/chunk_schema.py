@@ -202,3 +202,14 @@ class ChunkQueryParams(BaseModel):
 class ChunkListSchema(BaseModel):
     data: list[ChunkGetSchema]
     pagination: Optional[PaginationSchema] = None
+
+
+class ChunkAddParams(BaseModel):
+    text: str
+    file_chunk_number: Optional[int] = None
+    metadata: Optional[Dict[str, Any]] = None
+
+
+class ChunkUpdateParams(BaseModel):
+    id: uuid.UUID
+    text: str

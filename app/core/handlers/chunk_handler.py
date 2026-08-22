@@ -12,6 +12,13 @@ class ChunkHandler:
         self.project_id = project_id
         self.document_id = document_id
 
+    async def add(self, c: cs.ChunkAddParams) -> bool:
+        try:
+            return await self._service.add(c=c)
+        except Exception as e:
+            logger.error({"message": "Failed to add chunk", "error": str(e)})
+            raise e
+
     async def list(self, params: cs.ChunkQueryParams) -> cs.ChunkListSchema:
         try:
             return await self._service.list(params=params)
@@ -31,4 +38,11 @@ class ChunkHandler:
             return await self._service.get_all_chunk_id_and_number()
         except Exception as e:
             logger.error({"message": "Failed to get chunk", "error": str(e)})
+            raise e
+
+    async def update(self, u: cs.ChunkUpdateParams) -> bool:
+        try:
+            return await self._service.update(u=u)
+        except Exception as e:
+            logger.error({"message": "Failed to update chunk", "error": str(e)})
             raise e

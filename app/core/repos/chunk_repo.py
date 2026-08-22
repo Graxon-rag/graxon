@@ -43,6 +43,30 @@ class ChunkRepo:
             logger.error({"message": "Failed to create chunks", "error": str(e)})
             raise e
 
+    async def update(self, u: cs.ChunkUpdateParams) -> bool:
+        try:
+            async with self._db.get_session() as session:
+                chunk = await session.scalar(select(Chunk).where(Chunk.id == u.id))
+                if chunk is None:
+                    raise Exception(f"Chunk with id {u.id} not found")
+                chunk.text = u.text
+                await session.commit()
+                return True
+        except Exception as e:
+            logger.error({"message": "Failed to update chunk", "error": str(e)})
+            raise e
+
+    async def get_last_chunk(self) -> cs.ChunkGetSchema | None:
+        try:
+            async with self._db.get_session() as session:
+                chunk = await session.scalar(select(Chunk).where(Chunk.document_id == self.document_id).order_by(desc(Chunk.chunk_number)).limit(1))
+                if chunk is None:
+                    return None
+                return cs.ChunkGetSchema(**chunk.to_dict())
+        except Exception as e:
+            logger.error({"message": "Failed to get last chunk", "error": str(e)})
+            raise e
+
     async def get(self, id: uuid.UUID) -> cs.ChunkGetSchema | None:
         try:
             async with self._db.get_session() as session:
