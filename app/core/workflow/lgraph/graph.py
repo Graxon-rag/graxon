@@ -145,9 +145,15 @@ class Graph:
 
     async def stream_query_documents(self, query: GQuery) -> AsyncGenerator[str, None]:
         def _sse(event: str, data: Any) -> str:
-            """Helper to format outputs as Server-Sent Events."""
             data_str = json.dumps(data) if not isinstance(data, str) else data
             return f"event: {event}\ndata: {data_str}\n\n"
+
+        # Buffers text per LLM call (keyed by run_id) until we know, from
+        # on_chat_model_end, whether that turn ended in tool_calls (-> reasoning)
+        # or not (-> final answer). This is the ONLY reliable signal, since
+        # _agent_node runs its whole ReAct loop as a single graph node -- there's
+        # no node-name distinction between reasoning turns and the final turn.
+        turn_buffers: dict[str, str] = {}
 
         try:
             print("Stream Query:", query)
@@ -184,50 +190,60 @@ class Graph:
                 "answer": None
             }
 
-            # Listen to all events emitted during the graph's execution[cite: 1]
             async for event in workflow.astream_events(initial_state, version="v2"):
                 kind = event["event"]
+                run_id = event.get("run_id")
 
-                # 1. Stream thinking/tokens from the LLM[cite: 1]
                 if kind == "on_chat_model_stream":
                     chunk = event["data"]["chunk"]  # type: ignore
+
+                    # Non-text reasoning fields (if your model/provider populates
+                    # them) can still stream live immediately -- they're
+                    # unambiguously reasoning regardless of tool_calls.
                     reasoning = getattr(chunk, "additional_kwargs", {}).get("reasoning_content")
                     if reasoning:
                         yield _sse("thinking", reasoning)
 
                     if chunk.content:
-                        # Handle multimodal content lists safely
                         content_str = chunk.content if isinstance(chunk.content, str) else str(chunk.content)
-                        yield _sse("token", content_str)
+                        # Buffer -- don't emit yet, we don't know this turn's
+                        # classification until on_chat_model_end.
+                        turn_buffers[run_id] = turn_buffers.get(run_id, "") + content_str
 
-                # 2. Notify when a retrieval tool starts (useful for UI loaders)[cite: 1]
+                elif kind == "on_chat_model_end":
+                    text = turn_buffers.pop(run_id, "")
+                    if text:
+                        output = event["data"]["output"]  # type: ignore
+                        has_tool_calls = bool(getattr(output, "tool_calls", None))
+                        # Tool-planning turn -> reasoning. Plain-text-only turn
+                        # (including the forced final-answer call, which uses
+                        # base_llm with no tools bound) -> real answer.
+                        if has_tool_calls:
+                            yield _sse("thinking", text)
+                        else:
+                            yield _sse("token", text)
+
                 elif kind == "on_tool_start":
                     yield _sse("tool_call", {"name": event["name"], "input": event["data"].get("input")})
 
-                # 3. Notify when a retrieval tool finishes[cite: 1]
                 elif kind == "on_tool_end":
                     output = event["data"].get("output")
                     output_str = getattr(output, "content", str(output))
                     yield _sse("tool_result", {"name": event["name"], "output": output_str})
 
-                # 4. Final chain completion (Emit chunks, metadata, and lexical analysis)[cite: 1]
                 elif kind == "on_chain_end" and event["name"] == "agent_node":
                     output = event["data"].get("output") or {}
-
                     metadata_payload = {
                         "chunks": output.get("metadata") or [],
                         "lexical_engine_analysis": None
                     }
-
                     if query.query_type == QueryType.EXPERT and query.query_depth == QueryDepth.ADVANCED:
                         metadata_payload["lexical_engine_analysis"] = self._safe_serialize(output.get("eq_analysis"))
-
                     if query.query_type == QueryType.EXPERT:
                         metadata_payload["lexical_engine_chunk_ids"] = [
                             {"chunk_id": chunk_id, "score": score}
                             for chunk_id, score in (output.get("eq_lexical_engine_chunk_ids") or [])
                         ]
-
                     yield _sse("metadata", metadata_payload)
 
         except Exception as e:
