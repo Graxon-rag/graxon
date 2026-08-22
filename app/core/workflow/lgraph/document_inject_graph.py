@@ -1,11 +1,10 @@
-from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding, ChunkTags, TagResponse, ChunkTagResult, N4jChunkEdge, ChunkDenseVectorScore
+from ...schemas.chunk_schema import Chunk, ChunkEmbedding, ChunkSparseEmbedding, ChunkTags, TagResponse, ChunkTagResult, N4jChunkEdge
 from app.core.lexical_engine.index import LexicalEngine, LEChunk, LexicalResult
 from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowLLM
 from ...schemas.project_config_schema import ProjectConfigDetailGetSchema
-from app.core.redis.sparse_embedding import GRedisSparseEmbeddingClient
 from fastembed.sparse.sparse_embedding_base import SparseEmbedding
+from ...minio.checkpoint import CheckpointMinioClient, AgentEnum
 from app.core.schemas.neo4j_schema import LexicalSemanticResult
-from app.core.redis.embeddings import GRedisEmbeddingsClient
 from app.core.qdrant.similarity import QdrantSimilarity
 from app.constants.neo4j import GNeo4jEdges, GN4jNodes
 from app.core.helpers.minio_helper import MinioHelper
@@ -14,7 +13,6 @@ from langgraph.graph import StateGraph, START, END
 from typing import Dict, List, Optional, Annotated
 from app.core.qdrant.inject import QdrantInjector
 from app.core.redis.tags import GRedisTagsClient
-from app.constants.redis import GRedisConstant
 from .prompts.tag_prompt import Tagging_Prompt
 from ...schemas import processor_schema as ps
 from app.constants.minio import MinioConstant
@@ -29,7 +27,6 @@ import traceback
 import operator
 import asyncio
 import uuid
-import os
 
 
 SUPERVISOR_AGENT = "supervisor_agent"
@@ -41,6 +38,7 @@ LEXICAL_ENGINE_AGENT = "lexical_engine_agent"
 VECTOR_DATABASE_AGENT = "vector_database_agent"
 GRAPH_DATABASE_AGENT = "graph_database_agent"
 SIMILARITY_SYNC_AGENT = "similarity_sync_agent"
+# CLEANUP_AGENT = "cleanup_agent"
 
 
 class DIGState(TypedDict):
@@ -70,9 +68,8 @@ class DocumentInjectGraph:
         self.minio_helper = MinioHelper(org_id=self.org_id, project_id=self.project_id)
         self._tag_redis = GRedisTagsClient(org_id=self.org_id, project_id=self.project_id)
         self.qdrant_similarity = QdrantSimilarity(org_id=self.org_id, project_id=self.project_id)
-        self._embedding_redis = GRedisEmbeddingsClient(org_id=self.org_id, project_id=self.project_id)
-        self._sparse_embedding_redis = GRedisSparseEmbeddingClient(org_id=self.org_id, project_id=self.project_id)
         self._dig_redis = DIGRedisClient(org_id=self.org_id, project_id=self.project_id, document_id=self.document_id)
+        self._minio_checkpoint_client = CheckpointMinioClient(org_id=self.org_id, project_id=self.project_id)
 
     def build_graph(self):
         try:
@@ -87,7 +84,6 @@ class DocumentInjectGraph:
             graph.add_node(LEXICAL_ENGINE_AGENT, self._lexical_engine_agent)
             graph.add_node(VECTOR_DATABASE_AGENT, self._vector_database_agent)
             graph.add_node(GRAPH_DATABASE_AGENT, self._graph_database_agent)
-            graph.add_node(SIMILARITY_SYNC_AGENT, self._similarity_sync_agent)
 
             # Edges
 
@@ -109,9 +105,9 @@ class DocumentInjectGraph:
 
             graph.add_edge(VECTOR_DATABASE_AGENT, GRAPH_DATABASE_AGENT)
 
-            graph.add_edge(GRAPH_DATABASE_AGENT, SIMILARITY_SYNC_AGENT)
+            graph.add_edge(GRAPH_DATABASE_AGENT, END)
 
-            graph.add_edge(SIMILARITY_SYNC_AGENT, END)
+            # graph.add_edge(SIMILARITY_SYNC_AGENT, END)
 
             workflow = graph.compile()
             mermaid = workflow.get_graph().draw_mermaid()
@@ -229,11 +225,42 @@ class DocumentInjectGraph:
                         tag_response=fallback_resp,
                     )
 
-            #  Run batches in sequence while running chunks inside each batch in parallel
+            # Run batches in sequence while running chunks inside each batch in parallel
             for i in range(0, len(chunks), BATCH_SIZE):
                 batch_chunks = chunks[i: i + BATCH_SIZE]
                 chunk_numbers = [c.chunk_number for c in batch_chunks]
 
+                # Setup Batch Cursor Identifiers
+                start_num = batch_chunks[0].chunk_number
+                end_num = batch_chunks[-1].chunk_number
+
+                # FETCH & CHECK MINIO CACHE
+                cached_data = await self._minio_checkpoint_client.get(
+                    document_id=self.document_id,
+                    agent=AgentEnum.LLM,
+                    start_chunk=start_num,
+                    end_chunk=end_num
+                )
+
+                if cached_data:
+                    logger.info({
+                        "message": "Loaded LLM tag batch from MinIO cache",
+                        "chunk_numbers": chunk_numbers,
+                        "document_id": self.document_id
+                    })
+
+                    # Rehydrate cached JSON into Pydantic models and rebuild global_tags
+                    for item in cached_data["data"]:
+                        res = ChunkTagResult(**item)
+                        chunk_tag_results.append(res)
+                        for new_tag in res.tag_response.new_tags:
+                            if new_tag not in global_tags:
+                                global_tags.append(new_tag)
+
+                    # Skip API invocation for this batch
+                    continue
+
+                # PROCESS BATCH VIA API
                 logger.info({
                     "message": "Processing LLM chunk batch",
                     "chunk_numbers": chunk_numbers,
@@ -247,6 +274,16 @@ class DocumentInjectGraph:
                 tasks = [process_single_chunk(c, global_tags) for c in batch_chunks]
                 batch_results: List[ChunkTagResult] = await asyncio.gather(*tasks)
 
+                # UPLOAD CHECKPOINT IMMEDIATELY AFTER SUCCESS
+                batch_json_data = {"data": [res.model_dump() for res in batch_results]}
+                await self._minio_checkpoint_client.upload(
+                    document_id=self.document_id,
+                    agent=AgentEnum.LLM,
+                    start_chunk=start_num,
+                    end_chunk=end_num,
+                    data=batch_json_data
+                )
+
                 # Update results and collect new tags for subsequent batches
                 for res in batch_results:
                     chunk_tag_results.append(res)
@@ -257,12 +294,8 @@ class DocumentInjectGraph:
             # Sort final results by chunk_number
             chunk_tag_results.sort(key=lambda x: x.chunk_number)
 
-            # Upload LLM results
-            chunk_result_json = [chunk_result.model_dump_json() for chunk_result in chunk_tag_results]
-            await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_OUTPUT_FILE, json_data={"data": chunk_result_json}, document_id=self.document_id)
-
-            # await self._dig_redis.update_status(dig_node=GRedisConstant.LLM_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {"chunk_tag_results": chunk_tag_results}
+
         except Exception as e:
             logger.error({"message": "Failed to run LLM agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e), "traceback": traceback.format_exc()})
             raise e
@@ -273,6 +306,7 @@ class DocumentInjectGraph:
             project_config = state["project_config"]
             embedding_model = project_config.embedding_model
             embedding_model_credential = project_config.embedding_model_credential
+
             if embedding_model is None or embedding_model_credential is None:
                 logger.error({"message": "Embedding Model is not configured", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
                 raise ValueError("Embedding Model or Embedding Model Credential is not configured")
@@ -292,9 +326,38 @@ class DocumentInjectGraph:
                 batch_chunks = chunks[i: i + BATCH_SIZE]
                 chunk_numbers = [c.chunk_number for c in batch_chunks]
 
+                # Setup Batch Cursor Identifiers
+                start_num = batch_chunks[0].chunk_number
+                end_num = batch_chunks[-1].chunk_number
+
                 try:
+                    # FETCH & CHECK MINIO CACHE
+                    cached_data = await self._minio_checkpoint_client.get(
+                        document_id=self.document_id,
+                        agent=AgentEnum.EMBEDDING,
+                        start_chunk=start_num,
+                        end_chunk=end_num
+                    )
+
+                    if cached_data:
+                        logger.info({
+                            "message": "Loaded embedding batch from MinIO cache",
+                            "chunk_numbers": chunk_numbers,
+                            "document_id": self.document_id,
+                            "org_id": self.org_id,
+                            "project_id": self.project_id
+                        })
+
+                        # Rehydrate cached JSON into Pydantic models
+                        batch_embeddings = [ChunkEmbedding(**item) for item in cached_data["data"]]
+                        chs_embeddings.extend(batch_embeddings)
+
+                        # Skip API invocation for this batch
+                        continue
+
+                    # PROCESS BATCH VIA API
                     logger.info({
-                        "message": "Embedding chunk batch",
+                        "message": "Embedding chunk batch via API",
                         "chunk_numbers": chunk_numbers,
                         "document_id": self.document_id,
                         "org_id": self.org_id,
@@ -306,26 +369,27 @@ class DocumentInjectGraph:
                     texts = [chunk.text for chunk in batch_chunks]
                     em_vectors: List[List[float]] = await embedder.aembed_batch(texts)
 
-                    # # Concurrently save each embedding to Redis
-                    # redis_tasks = [
-                    #     self._embedding_redis.add_embedding_temporary(
-                    #         document_id=self.document_id,
-                    #         chunk_number=chunk.chunk_number,
-                    #         embedding=vector,
-                    #     )
-                    #     for chunk, vector in zip(batch_chunks, em_vectors)
-                    # ]
-                    # await asyncio.gather(*redis_tasks)
-
-                    # Append to final results list
+                    batch_embeddings = []
                     for chunk, vector in zip(batch_chunks, em_vectors):
-                        chs_embeddings.append(
+                        batch_embeddings.append(
                             ChunkEmbedding(
                                 chunk_id=chunk.chunk_id,
                                 chunk_number=chunk.chunk_number,
                                 embedding=vector,
                             )
                         )
+
+                    # UPLOAD CHECKPOINT IMMEDIATELY AFTER SUCCESS
+                    batch_json_data = {"data": [chunk.model_dump() for chunk in batch_embeddings]}
+                    await self._minio_checkpoint_client.upload(
+                        document_id=self.document_id,
+                        agent=AgentEnum.EMBEDDING,
+                        start_chunk=start_num,
+                        end_chunk=end_num,
+                        data=batch_json_data
+                    )
+
+                    chs_embeddings.extend(batch_embeddings)
 
                 except Exception as e:
                     logger.error({
@@ -338,14 +402,8 @@ class DocumentInjectGraph:
                     })
                     raise e
 
-            # Sort final results by chunk_number before upload
+            # Sort final results by chunk_number
             chs_embeddings.sort(key=lambda x: x.chunk_number)
-
-            # save embeddings
-            data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_embeddings]}
-            minio_file_name = MinioConstant.EMBEDDING_OUTPUT_FILE
-            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_id=self.document_id)
-            # await self._dig_redis.update_status(dig_node=GRedisConstant.EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_embeddings": chs_embeddings}
 
@@ -386,9 +444,38 @@ class DocumentInjectGraph:
                 batch_chunks = chunks[i: i + BATCH_SIZE]
                 chunk_numbers = [c.chunk_number for c in batch_chunks]
 
+                # Setup Batch Cursor Identifiers
+                start_num = batch_chunks[0].chunk_number
+                end_num = batch_chunks[-1].chunk_number
+
                 try:
+                    # FETCH & CHECK MINIO CACHE
+                    cached_data = await self._minio_checkpoint_client.get(
+                        document_id=self.document_id,
+                        agent=AgentEnum.SPARSE,
+                        start_chunk=start_num,
+                        end_chunk=end_num
+                    )
+
+                    if cached_data:
+                        logger.info({
+                            "message": "Loaded sparse embedding batch from MinIO cache",
+                            "chunk_numbers": chunk_numbers,
+                            "document_id": self.document_id,
+                            "org_id": self.org_id,
+                            "project_id": self.project_id
+                        })
+
+                        # Rehydrate cached JSON into Pydantic models
+                        batch_embeddings = [ChunkSparseEmbedding(**item) for item in cached_data["data"]]
+                        chs_sparse_embeddings.extend(batch_embeddings)
+
+                        # Skip API invocation for this batch
+                        continue
+
+                    # PROCESS BATCH VIA API
                     logger.info({
-                        "message": "Sparse embedding chunk batch",
+                        "message": "Sparse embedding chunk batch via API",
                         "chunk_numbers": chunk_numbers,
                         "document_id": self.document_id,
                         "org_id": self.org_id,
@@ -396,30 +483,31 @@ class DocumentInjectGraph:
                         "batch_size": len(batch_chunks),
                     })
 
-                    #  Embed the batch of texts
+                    # Embed the batch of texts
                     texts = [chunk.text for chunk in batch_chunks]
                     em_vectors: List[SparseEmbedding] = await sparse_embedder.embed_batch(texts)
 
-                    #  Concurrently save each sparse embedding to Redis (uncomment if needed)
-                    # redis_tasks = [
-                    #     self._sparse_embedding_redis.add_sparse_embedding_temporary(
-                    #         document_id=self.document_id,
-                    #         chunk_number=chunk.chunk_number,
-                    #         sparse_embedding=vector,
-                    #     )
-                    #     for chunk, vector in zip(batch_chunks, em_vectors)
-                    # ]
-                    # await asyncio.gather(*redis_tasks)
-
-                    # Append to the final results list
+                    batch_embeddings = []
                     for chunk, vector in zip(batch_chunks, em_vectors):
-                        chs_sparse_embeddings.append(
+                        batch_embeddings.append(
                             ChunkSparseEmbedding(
                                 chunk_id=chunk.chunk_id,
                                 chunk_number=chunk.chunk_number,
                                 embedding=vector,
                             )
                         )
+
+                    # UPLOAD CHECKPOINT IMMEDIATELY AFTER SUCCESS
+                    batch_json_data = {"data": [chunk.model_dump() for chunk in batch_embeddings]}
+                    await self._minio_checkpoint_client.upload(
+                        document_id=self.document_id,
+                        agent=AgentEnum.SPARSE,
+                        start_chunk=start_num,
+                        end_chunk=end_num,
+                        data=batch_json_data
+                    )
+
+                    chs_sparse_embeddings.extend(batch_embeddings)
 
                 except Exception as e:
                     logger.error({
@@ -434,13 +522,6 @@ class DocumentInjectGraph:
 
             # Sort and prepare final results
             chs_sparse_embeddings.sort(key=lambda x: x.chunk_number)
-
-            # Upload sparse embeddings
-            data_for_minio = {"data": [chunk.model_dump_json() for chunk in chs_sparse_embeddings]}
-            minio_file_name = MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE
-
-            await self.minio_helper.upload_json(json_file_name=minio_file_name, json_data=data_for_minio, document_id=self.document_id)
-            await self._dig_redis.update_status(dig_node=GRedisConstant.SPARSE_EMBEDDING_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {"chunks_sparse_embeddings": chs_sparse_embeddings}
 
@@ -462,8 +543,6 @@ class DocumentInjectGraph:
             await self.minio_helper.upload_json(json_file_name=MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE, json_data=result.model_dump(), document_id=self.document_id)
 
             lexical_engine_data = result
-            # await self._dig_redis.update_status(dig_node=GRedisConstant.LEXICAL_ENGINE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
-
             return {"lexical_engine_data": lexical_engine_data}
         except Exception as e:
             logger.error({"message": "Failed to run lexical engine agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -478,7 +557,6 @@ class DocumentInjectGraph:
             ep_model_key = state["ep_model_key"]
 
             await self.injector.inject(model_key=ep_model_key, document_id=self.document_id, chunks=chunks, chunk_embeddings=chunks_embeddings, chunk_sparse_embeddings=chunks_sparse_embeddings)
-            # await self._dig_redis.update_status(dig_node=GRedisConstant.VECTOR_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
             return {}
         except Exception as e:
             logger.error({"message": "Failed to run chunks processor agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
@@ -505,34 +583,10 @@ class DocumentInjectGraph:
                 # Upload LLM tags
                 tags_json = [tag.model_dump_json() for tag in tags]
                 await self.minio_helper.upload_json(json_file_name=MinioConstant.LLM_TAG_RESPONSE, json_data={"data": tags_json}, document_id=self.document_id)
-                # await self._dig_redis.update_status(dig_node=GRedisConstant.GRAPH_DATABASE_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
 
             return {}
         except Exception as e:
             logger.error({"message": "Failed to run graph database agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
-            raise e
-
-    async def _similarity_sync_agent(self, state: DIGState):
-        try:
-            pass
-            # ep_model_key = state["ep_model_key"]
-            # chunks = state["chunks"]
-            # chunk_ids = [chunk.chunk_id for chunk in chunks]
-
-            # result: dict[str, list[ChunkDenseVectorScore]] = await self.qdrant_similarity.get_similar_chunks(model_key=ep_model_key, document_id=self.document_id, chunk_ids=chunk_ids, top_k=3)
-
-            # n4j_similarity_edges: list[N4jChunkEdge] = []
-
-            # for from_chunk_id, obj in result.items():
-            #     for cs in obj:
-            #         n4j_similarity_edges.append(N4jChunkEdge(from_chunk_id=from_chunk_id, to_chunk_id=cs.chunk_id, edge_name=GNeo4jEdges.VECTOR_SIMILARITY, label="vector_similarity", weight=cs.score))
-
-            # logger.info({"message": "Creating vector similarity edges", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id})
-            # await self.n4j_chunk_db.create_edges(self.document_id, n4j_similarity_edges)
-            # # await self._dig_redis.update_status(dig_node=GRedisConstant.SIMILARITY_SYNC_NODE, status=GRedisConstant.DIG_NODE_STATUS_COMPLETED)
-            # return {}
-        except Exception as e:
-            logger.error({"message": "Failed to run similarity sync agent", "document_id": self.document_id, "org_id": self.org_id, "project_id": self.project_id, "error": str(e)})
             raise e
 
     def _build_tag_map(self, chunk_results: List[ChunkTagResult]) -> Dict[str, List[Tuple[str, float]]]:
