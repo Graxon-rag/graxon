@@ -376,38 +376,32 @@ Removes duplicate or weaker relationships while preserving the strongest semanti
 
 Most RAG pipelines work great in a notebook. At enterprise scale, they fall apart.
 
-Rate limits spike. Workers crash. If your ingestion fails at page 800 of a 1,000-page document, an all-or-nothing architecture forces a full restart — burning engineering time and duplicate LLM tokens.
+Rate limits spike. Workers crash. If your ingestion fails at page 800 of a 1,000-page document, an all-or-nothing architecture forces a full restart — burning engineering time and duplicate API tokens.
 
 Graxon is built with an **infrastructure-first mindset** to make ingestion deterministic, fault-tolerant, and resumable by design.
 
 ---
 
-### Zero-Loss Macro & Micro Checkpointing
+### Two-Tier Zero-Loss Checkpointing
 
-Graxon treats ingestion like a **transaction log**, decoupling graph state and persisting checkpoints across two layers:
+Graxon treats ingestion like a distributed **transaction log**, decoupling graph state and persisting progress across two distinct fault boundaries:
 
-| Layer                 | Store      | Role                                     |
-| --------------------- | ---------- | ---------------------------------------- |
-| **Micro checkpoints** | Redis      | Hot in-memory state tracking per chunk   |
-| **Macro checkpoints** | MinIO (S3) | Cold artifact backups per document/batch |
+| Architecture Layer              | State Store                   | Role                                                                                                                                                                 |
+| :------------------------------ | :---------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Level 1: File Orchestration** | **PostgreSQL (Primary DB)**   | Message-driven atomic cursors. Tracks exact file chunk, row, or object offsets. Prevents memory bloat on massive files and drops duplicate RabbitMQ messages.        |
+| **Level 2: AI Pipeline**        | **MinIO (S3 Object Storage)** | Graph-driven batch checkpointing. LangGraph agents cache intermediate JSON outputs before hitting external APIs, guaranteeing zero duplicate token spend on failure. |
 
-If an API provider or worker node crashes mid-ingestion, Graxon **hot-boots and resumes from the exact chunk it left off** — no full restart, no wasted tokens.
+If an API provider goes down or a worker node crashes mid-ingestion, Graxon **hot-boots and resumes from the exact chunk it left off** — no full restart, zero wasted tokens. Once the pipeline completes successfully, temporary MinIO checkpoints are automatically garbage-collected.
 
 ---
 
 ### Ironclad Idempotency & Atomicity
 
-Resuming a failed pipeline usually introduces duplicate vectors or corrupted graph linkages. Graxon guarantees a **zero-duplicate footprint** by design:
+Resuming a failed pipeline usually introduces duplicate vectors or corrupted graph linkages. Graxon guarantees a **zero-duplicate footprint** by design across all storage engines:
 
-**Qdrant**
-
-- Deterministic `uuid5` hashing seeded by structured `chunk_id`s
-- Ensures every vector upsert is fully idempotent — re-ingesting a chunk overwrites cleanly, never duplicates
-
-**Neo4j**
-
-- Single-transaction bulk uploads via optimized Cypher `UNWIND` clauses
-- Strict `ON CREATE` / `ON MATCH` state isolation preserves temporal metadata and guarantees ACID consistency
+- **MinIO (Intermediate State):** Deterministic zero-padded batch keys (e.g., `chunks_000000_000029.json`) act as idempotency locks. Agents fetch before processing; if the batch exists, the API call is skipped.
+- **Qdrant (Vector DB):** Deterministic `uuid5` hashing seeded by structured `chunk_id`s ensures every vector upsert is fully idempotent. Re-ingesting a chunk overwrites cleanly and never duplicates.
+- **Neo4j (Knowledge Graph):** Single-transaction bulk uploads via optimized Cypher `UNWIND` clauses. Strict `ON CREATE` / `ON MATCH` state isolation preserves temporal metadata and guarantees ACID consistency.
 
 ---
 
@@ -415,16 +409,16 @@ Resuming a failed pipeline usually introduces duplicate vectors or corrupted gra
 
 Rather than sequential processing, Graxon uses LangGraph to run a parallelized scatter-gather pipeline across all storage layers simultaneously:
 
-- **Dense vectors** → Qdrant (deep semantic similarity)
-- **Sparse vectors** → FastEmbed / BM25 → Qdrant (lexical exact matching)
-- **Knowledge Graph** → Neo4j (chunk nodes, entity tags, structural edges)
-- **Lexical Analysis** → SpaCy (natural textual topology)
+- **Dense Vectors** $\rightarrow$ Qdrant (deep semantic similarity)
+- **Sparse Vectors** $\rightarrow$ FastEmbed / BM25 $\rightarrow$ Qdrant (lexical exact matching)
+- **Knowledge Graph** $\rightarrow$ Neo4j (chunk nodes, entity tags, structural edges)
+- **Lexical Analysis** $\rightarrow$ SpaCy (natural textual topology)
 
 All four engines process each chunk concurrently — maximizing throughput and minimizing ingestion latency at scale.
 
 ---
 
-## Checkpoints
+## Architecture Flow
 
 ```mermaid
 graph TD
@@ -443,8 +437,8 @@ graph TD
         Raw[Raw File<br/>] --> Producer[RabbitMQ Producer]
         Producer --> Consumer[RabbitMQ Consumer]:::process
 
-        Consumer -->|Validate & Check Status| DB[(State Database<br/>Checkpoint)]:::database
-        DB -->|Ready for Processing| Chunking[File Chunking]:::process
+        Consumer -->|Validate & Check Status| DB[(State Database<br/>Cursor Checkpoint)]:::database
+        DB -->|Ready for Processing| Chunking[File Chunking & Injection]:::process
         Chunking -->|Save Progress| DB
     end
 
@@ -462,10 +456,10 @@ graph TD
         Parser --> Lexical[Lexical Processing Agent]:::agent
 
         %% Object Storage Checkpointing
-        LLM -.->|Checkpoint| ObjectStorage[(MinIO / S3<br/>Object Storage)]:::storage
-        Dense -.->|Checkpoint| ObjectStorage
-        Sparse -.->|Checkpoint| ObjectStorage
-        Lexical -.->|Checkpoint| ObjectStorage
+        LLM -.->|Read/Write Batch Cache| ObjectStorage[(MinIO / S3<br/>Temp Checkpoints)]:::storage
+        Dense -.->|Read/Write Batch Cache| ObjectStorage
+        Sparse -.->|Read/Write Batch Cache| ObjectStorage
+        Lexical -.->|Read/Write Graph Cache| ObjectStorage
 
         %% Processing Results
         LLM --> VectorDB[Vector Database Agent]:::agent
@@ -474,6 +468,8 @@ graph TD
         Lexical --> VectorDB
 
         VectorDB --> GraphDB[Graph Database Agent]:::agent
+        GraphDB --> Cleanup[Cleanup Agent]:::agent
+        Cleanup -.->|Delete Temp Data| ObjectStorage
     end
 ```
 
