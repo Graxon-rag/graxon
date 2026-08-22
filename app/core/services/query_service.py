@@ -1,6 +1,7 @@
 from ..workflow.document_workflow import DocumentWorkflow
 from ..schemas.query_schema import GQuery
 from app.utils.logger import logger
+from typing import AsyncGenerator
 import uuid
 
 
@@ -15,4 +16,11 @@ class QueryService:
             return await self.workflow.query(query)
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
+            raise e
+
+    def stream_query(self, query: GQuery) -> AsyncGenerator[str, None]:
+        try:
+            return self.workflow.stream_query(query)
+        except Exception as e:
+            logger.error({"message": "Failed to stream query", "error": str(e)})
             raise e

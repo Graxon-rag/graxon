@@ -1,7 +1,8 @@
+from langchain_core.runnables import Runnable
 from langchain_anthropic import ChatAnthropic
+from pydantic import SecretStr, BaseModel
 from app.utils.logger import logger
 from typing import Type, Union, Any
-from pydantic import SecretStr, BaseModel
 from .base import BaseLLM
 
 
@@ -29,3 +30,6 @@ class ClaudeLLM(BaseLLM):
         except Exception as e:
             logger.error({"message": "Failed to complete Claude LLM", "error": str(e)})
             raise e
+
+    def get_langchain_llm(self) -> Runnable:
+        return self._llm

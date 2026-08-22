@@ -1,7 +1,7 @@
-from typing import Type, Union, Any
+from langchain_core.runnables import Runnable
 from langchain_deepseek import ChatDeepSeek
-from langchain_core.messages import AIMessage
 from pydantic import SecretStr, BaseModel
+from typing import Type, Union, Any
 from app.utils.logger import logger
 from .base import BaseLLM
 
@@ -36,3 +36,6 @@ class DeepseekLLM(BaseLLM):
         except Exception as e:
             logger.error({"message": "Failed to complete Deepseek LLM", "error": str(e)})
             raise e
+
+    def get_langchain_llm(self) -> Runnable:
+        return self._llm
