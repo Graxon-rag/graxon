@@ -3,7 +3,6 @@ from .document_inject_graph import DocumentInjectGraph, DIGState
 from app.core.schemas.query_schema import QueryDepth, QueryType
 from .document_query_graph import DocumentQueryGraph, DQGState
 from .prompts.answer_prompt import DEFAULT_ANSWER_RESPONSE
-from ..schemas.provider_schema import QueryProviderSchema
 from app.core.schemas.query_schema import GQuery
 from ...libs.embedding_lib import EmbeddingLib
 from ...schemas import processor_schema as ps
@@ -71,26 +70,30 @@ class Graph:
             logger.error({"message": "Failed to inject document", "error": str(e)})
             raise e
 
-    async def query_documents(self, providers: QueryProviderSchema, query: GQuery):
+    async def query_documents(self, query: GQuery):
         try:
             print("Query:", query)
-            print("Providers:", providers.model_dump(mode="json"))
-            request_id = str(uuid.uuid4())
-            embedder_provider = providers.embedding.provider.value  # Use .value because it's a enum
-            dimension = providers.embedding.dimension
-            ep_model_key = EmbeddingLib.get_model_key(embedder_provider, dimension)
+            project_config = await self._pcs.get_with_details_by_project(is_external_call=False)
+            if project_config is None:
+                raise Exception("Project config not found")
+            embedder_provider = project_config.embedding_model
+            if embedder_provider is None:
+                raise Exception("Embedder provider not found")
+
+            ep_model_key = EmbeddingLib.get_model_key(embedder_provider.provider.value, embedder_provider.dimension)
 
             graph = DocumentQueryGraph(org_id=self.org_id, project_id=self.project_id)
             workflow = graph.build_graph()
             if workflow is None:
                 raise Exception("Workflow is None")
 
+            request_id = str(uuid.uuid4())
             initial_state: DQGState = {
                 "request_id": request_id,
                 "org_id": self.org_id,
                 "project_id": self.project_id,
-                "providers": providers,
-                "model_key": ep_model_key,
+                "project_config": project_config,
+                "ep_model_key": ep_model_key,
                 "query": query.query,
                 "queries": [query.query],
                 "top_k": query.top_k,

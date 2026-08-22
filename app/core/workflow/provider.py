@@ -1,11 +1,15 @@
 from ..schemas.sparse_text_model_schema import SparseModelProviderType, SparseModelProvider
 from app.providers.sparse_embedder.pinecone_sparse_embedder import PineconeSparseEmbedder
+from ..schemas.reranker_schema import RerankerModelProviderType, RerankerModelProvider
 from app.constants.model_provider import LLMModelProvider, EmbeddingModelProvider
 from app.providers.sparse_embedder.fast_embed import FastEmbedSparseEmbedder
 from app.providers.fast_embedder.fast_embedder import FastEmbedEmbedder
 from app.providers.fast_embedder.base import BaseFastEmbedEmbedder
 from app.providers.sparse_embedder.base import BaseSparseEmbedder
+from app.providers.reranker.cohere_reranker import CohereReranker
+from app.providers.reranker.voyage_reranker import VoyageReranker
 from app.providers.reranker.fast_embed import FastEmbedReranker
+from app.providers.reranker.jina_reranker import JinaReranker
 from app.providers.embedder.openai import OpenaiEmbedder
 from app.providers.embedder.gemini import GeminiEmbedder
 from app.providers.embedder.voyage import VoyageEmbedder
@@ -55,8 +59,20 @@ class WorkflowEmbedder:
 class WorkflowReranker:
 
     @staticmethod
-    def reranker(model: str, provider: Optional[str], **kwargs) -> BaseReranker:
-        return FastEmbedReranker(rerank_model=model, **kwargs)
+    def reranker(model: str, provider: RerankerModelProvider, provider_type: RerankerModelProviderType, api_key: str | None, **kwargs) -> BaseReranker:
+        if provider_type == SparseModelProviderType.CLOUD:
+            if api_key is None:
+                raise ValueError("For cloud provider, API key is required")
+            if provider == RerankerModelProvider.COHERE:
+                return CohereReranker(api_key=api_key, model=model, **kwargs)
+            elif provider == RerankerModelProvider.VOYAGE:
+                return VoyageReranker(api_key=api_key, model=model, **kwargs)
+            elif provider == RerankerModelProvider.JINA:
+                return JinaReranker(api_key=api_key, model=model, **kwargs)
+            else:
+                raise ValueError(f"Unknown Reranker provider: {provider}")
+        else:
+            return FastEmbedReranker(model=model, **kwargs)
 
 
 class WorkflowSparseEmbedder:

@@ -1,10 +1,11 @@
 from app.core.schemas.chunk_schema import ChunkPrevNextVecSimilaritySchema, ChunkPrevNextSchema, ChunkVecSimilarity
-from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowFastEmbedder
-from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from .prompts.query_expansion_prompt import QUERY_EXPANSION_PROMPT, QueryExpansionResponse
+from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowFastEmbedder
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
 from app.core.lexical_engine.query import LexicalEngineQuery, QueryAnalysis
+from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
 from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional, List
+from ...schemas.project_config_schema import ProjectConfigDetailGetSchema
 from app.core.schemas.graph_schema import N4jCommonEdgeChunksSchema
 from qdrant_client.conversions.common_types import QueryResponse
 from app.core.qdrant.retrieval import QDrantRetrieval
@@ -59,8 +60,8 @@ class DQGState(TypedDict):
     request_id: str
     org_id: str
     project_id: uuid.UUID
-    providers: QueryProviderSchema
-    model_key: str
+    project_config: ProjectConfigDetailGetSchema
+    ep_model_key: str
     query: str
     top_k: int
     query_type: qs.QueryType
@@ -202,14 +203,19 @@ class DocumentQueryGraph():
         try:
             if not original_query:
                 return {"queries": [original_query]}
+            project_config = state["project_config"]
 
-            providers = state["providers"]
-            llm_provider = providers.llm
-            llm = WorkflowLLM.llm(
-                provider=llm_provider.provider,
-                api_key=llm_provider.api_key,
-                model=llm_provider.model,
-            ).with_structured_output(QueryExpansionResponse)
+            llm_model = project_config.llm_model
+            llm_model_credential = project_config.llm_model_credential
+            if llm_model is None or llm_model_credential is None:
+                logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                return
+
+            llm_provider = llm_model.provider
+            model = llm_model.model_id
+            api_key = llm_model_credential.api_key
+
+            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model).with_structured_output(QueryExpansionResponse)
 
             prompt = QUERY_EXPANSION_PROMPT.format(query=original_query)
             response = await llm.ainvoke(prompt=prompt)
@@ -238,15 +244,22 @@ class DocumentQueryGraph():
     async def _embedding(self, state: DQGState):
         try:
             # TODO: make this multi query
-            providers = state["providers"]
             queries = state["queries"]
             query = state["query"]
             first_query = queries[0] if queries is not None and len(queries) > 0 else query.strip()
 
-            embedder_provider = providers.embedding.provider
-            api_key = providers.embedding.api_key
-            model = providers.embedding.model
-            dimension = providers.embedding.dimension
+            project_config = state["project_config"]
+            embedding_model = project_config.embedding_model
+            embedding_model_credential = project_config.embedding_model_credential
+
+            if embedding_model is None or embedding_model_credential is None:
+                logger.error({"message": "Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Embedding Model or Embedding Model Credential is not configured")
+
+            embedder_provider = embedding_model.provider
+            model = embedding_model.model_id
+            dimension = embedding_model.dimension
+            api_key = embedding_model_credential.api_key
 
             embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
             embedding = await embedder.aembed(first_query)
@@ -260,15 +273,32 @@ class DocumentQueryGraph():
     async def _sparse_embedding(self, state: DQGState):
         try:
             # TODO: make this multi query
-            providers = state["providers"]
             queries = state["queries"]
             query = state["query"]
             first_query = queries[0] if queries is not None and len(queries) > 0 else query.strip()
-            sparse_provider = providers.sparse_model.provider
-            sparse_model = providers.sparse_model.model
+            project_config = state["project_config"]
 
-            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
-            em_vector: SparseEmbedding = sparse_embedder.embed(first_query)
+            if not project_config.sparse_embedding_enable:
+                logger.warning({"message": "Sparse Embedding is not enabled", "org_id": self.org_id, "project_id": self.project_id})
+                return {"query_sparse_embedding": None}
+
+            sparse_embedding_model = project_config.sparse_text_model
+            sparse_embedding_model_credential = project_config.sparse_text_model_credential
+
+            if sparse_embedding_model is None:
+                logger.error({"message": "Sparse Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Sparse Embedding Model is not configured")
+
+            if sparse_embedding_model.provider_type == "cloud" and sparse_embedding_model_credential is None:
+                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Sparse Embedding Model Credential is not configured")
+
+            sparse_provider = sparse_embedding_model.provider
+            sparse_model = sparse_embedding_model.model_id
+            api_key: str | None = sparse_embedding_model_credential and sparse_embedding_model_credential.api_key
+
+            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider, provider_type=sparse_embedding_model.provider_type, api_key=api_key)
+            em_vector: SparseEmbedding = await sparse_embedder.embed(first_query)
             return {"query_sparse_embedding": em_vector}
         except Exception as e:
             logger.error({"message": "Failed to sparse embedding", "error": str(e)})
@@ -280,16 +310,16 @@ class DocumentQueryGraph():
             query_dense_embedding = state["query_dense_embedding"]
             top_k = state["top_k"]
             document_id = state["document_id"]
-            model_key = state["model_key"]
+            ep_model_key = state["ep_model_key"]
 
-            if model_key is None:
+            if ep_model_key is None:
                 raise Exception("Model key is None")
             if query_sparse_embedding is None:
                 raise Exception("Query sparse embedding is None")
             if query_dense_embedding is None:
                 raise Exception("Query dense embedding is None")
 
-            result: QueryResponse = await self.q_retrieval.retrieve(model_key=model_key, query_sparse_embedding=query_sparse_embedding, query_dense_embedding=query_dense_embedding, top_k=top_k, document_id=document_id)
+            result: QueryResponse = await self.q_retrieval.retrieve(model_key=ep_model_key, query_sparse_embedding=query_sparse_embedding, query_dense_embedding=query_dense_embedding, top_k=top_k, document_id=document_id)
 
             print("Total points:", len(result.points))
             print("Points:", result.points)
@@ -400,9 +430,6 @@ class DocumentQueryGraph():
         try:
             logger.info({"message": "Expert query"})
             query = state["query"]
-            providers = state["providers"]
-            sparse_provider = providers.sparse_model.provider
-            sparse_model = providers.sparse_model.model
             query_depth: qs.QueryDepth = state["query_depth"]
             analysis: Optional[QueryAnalysis] = None
 
@@ -413,7 +440,7 @@ class DocumentQueryGraph():
                 lane_edges = await self._eq_get_chunk_ids_by_lanes(analysis=analysis)
 
                 analysis_chunk_id_scores = await self._eq_get_chunk_id_scores_by_spare_embedding_compare(
-                    query, lane_edges, sparse_model, sparse_provider,
+                    state, query, lane_edges
                 )
                 print("\n\n [Expert]: Analysis Chunk Id Scores:\n", analysis_chunk_id_scores)
 
@@ -444,7 +471,7 @@ class DocumentQueryGraph():
             # Source 2: Standard lane sparse embedding
             standard_lane_edges = await self._eq_get_chunk_ids_by_lanes()
             eq_lexical_engine_chunk_ids = await self._eq_get_chunk_id_scores_by_spare_embedding_compare(
-                query, standard_lane_edges, sparse_model, sparse_provider,
+                state, query, standard_lane_edges
             )
 
             # Cross-source scoring
@@ -528,11 +555,28 @@ class DocumentQueryGraph():
             if chunks is None or len(chunks) == 0:
                 raise Exception("No chunks found")
 
-            providers = state["providers"]
-            reranker_provider = providers.reranker.provider
-            reranker_model = providers.reranker.model
+            project_config = state["project_config"]
 
-            reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
+            reranker_model_enabled = project_config.reranker_enable
+            if not reranker_model_enabled:
+                logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
+                return {"reranked_chunks": []}
+
+            reranker_model = project_config.reranker_model
+            reranker_model_credential = project_config.reranker_model_credential
+
+            if reranker_model is None:
+                logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Reranker Model is not configured")
+
+            if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
+                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Sparse Embedding Model Credential is not configured")
+
+            reranker_provider = reranker_model.provider
+            reranker_model_id = reranker_model.model_id
+            api_key: str | None = reranker_model_credential and reranker_model_credential.api_key
+            reranker = WorkflowReranker().reranker(model=reranker_model_id, provider=reranker_provider, provider_type=reranker_model.provider_type, api_key=api_key)
 
             # index chunks by chunk_id for O(1) lookup
             chunk_map: dict[str, ChunkPrevNextSchema] = {chunk.chunk_id: chunk for chunk in chunks}
@@ -544,7 +588,7 @@ class DocumentQueryGraph():
                     metadata={"chunk_id": chunk.chunk_id}
                 ))
 
-            rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
+            rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
 
             reranked_chunks: list[ChunkPrevNextSchema] = []
             for doc in rerank_docs:
@@ -582,20 +626,26 @@ class DocumentQueryGraph():
                 raise Exception("No reranked chunks found")
 
             query = state["query"]
-            providers = state["providers"]
-            llm_provider = providers.llm
 
-            answer = await self._qq_llm_call(query=query, provider=llm_provider, reranked_chunks=reranked_chunks)
+            answer = await self._qq_llm_call(state, query=query, reranked_chunks=reranked_chunks)
             return {"answer": answer}
         except Exception as e:
             logger.error({"message": "Failed to answer", "error": str(e)})
             raise e
 
-    async def _qq_llm_call(self, query: str, provider: LLMProviderSchema, reranked_chunks: list[ChunkPrevNextSchema]) -> str:
+    async def _qq_llm_call(self, state: DQGState, query: str, reranked_chunks: list[ChunkPrevNextSchema]) -> str:
         try:
-            llm_provider = provider.provider
-            api_key = provider.api_key
-            model = provider.model
+            project_config = state["project_config"]
+            llm_model = project_config.llm_model
+            llm_model_credential = project_config.llm_model_credential
+            if llm_model is None or llm_model_credential is None:
+                logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("LLM Model is not configured")
+
+            llm_provider = llm_model.provider
+            model = llm_model.model_id
+            api_key = llm_model_credential.api_key
+
             chunks_str = self._qq_format_chunks(reranked_chunks)
 
             print("\n\n [Quick] Final chunks string for LLM :\n", chunks_str)
@@ -651,11 +701,28 @@ class DocumentQueryGraph():
             if not chunks:
                 raise Exception("No chunks found")
 
-            providers = state["providers"]
-            reranker_provider = providers.reranker.provider
-            reranker_model = providers.reranker.model
+            project_config = state["project_config"]
 
-            reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
+            reranker_model_enabled = project_config.reranker_enable
+            if not reranker_model_enabled:
+                logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
+                return {"reranked_chunks": []}
+
+            reranker_model = project_config.reranker_model
+            reranker_model_credential = project_config.reranker_model_credential
+
+            if reranker_model is None:
+                logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Reranker Model is not configured")
+
+            if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
+                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Sparse Embedding Model Credential is not configured")
+
+            reranker_provider = reranker_model.provider
+            reranker_model_id = reranker_model.model_id
+            api_key: str | None = reranker_model_credential and reranker_model_credential.api_key
+            reranker = WorkflowReranker().reranker(model=reranker_model_id, provider=reranker_provider, provider_type=reranker_model.provider_type, api_key=api_key)
 
             # index chunks by chunk_id for O(1) lookup
             chunk_map: dict[str, ChunkPrevNextVecSimilaritySchema] = {chunk.chunk_id: chunk for chunk in chunks}
@@ -667,7 +734,7 @@ class DocumentQueryGraph():
                     metadata={"chunk_id": chunk.chunk_id}
                 ))
 
-            rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
+            rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
 
             reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = []
             for doc in rerank_docs:
@@ -730,11 +797,10 @@ class DocumentQueryGraph():
             query = state["query"]
             query_depth: qs.QueryDepth = state["query_depth"]
             vec_similar_with_prev_next: list[ChunkPrevNextSchema] = state["vec_similar_with_prev_next"] or []
-            providers = state["providers"]
 
             answer = await self._sq_eq_llm_call(
+                state,
                 query=query,
-                provider=providers.llm,
                 reranked_chunks=reranked_chunks,
                 query_depth=query_depth,
                 vec_similar_with_prev_next=vec_similar_with_prev_next,
@@ -747,14 +813,24 @@ class DocumentQueryGraph():
 
     async def _sq_eq_llm_call(
         self,
+        state: DQGState,
         query: str,
-        provider: LLMProviderSchema,
         reranked_chunks: list[ChunkPrevNextVecSimilaritySchema],
         query_depth: qs.QueryDepth,
         vec_similar_with_prev_next: list[ChunkPrevNextSchema],
     ) -> str:
         try:
-            llm = WorkflowLLM.llm(provider=provider.provider, api_key=provider.api_key, model=provider.model)
+            project_config = state["project_config"]
+            llm_model = project_config.llm_model
+            llm_model_credential = project_config.llm_model_credential
+            if llm_model is None or llm_model_credential is None:
+                logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("LLM Model is not configured")
+
+            llm_provider = llm_model.provider
+            model = llm_model.model_id
+            api_key = llm_model_credential.api_key
+            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
             chunks_str = self._sq_eq_format_chunks(
                 chunks=reranked_chunks,
                 query_depth=query_depth,
@@ -845,11 +921,28 @@ class DocumentQueryGraph():
             if not chunks:
                 raise Exception("No chunks found")
 
-            providers = state["providers"]
-            reranker_provider = providers.reranker.provider
-            reranker_model = providers.reranker.model
+            project_config = state["project_config"]
 
-            reranker = WorkflowReranker().reranker(model=reranker_model, provider=reranker_provider)
+            reranker_model_enabled = project_config.reranker_enable
+            if not reranker_model_enabled:
+                logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
+                return {"reranked_chunks": []}
+
+            reranker_model = project_config.reranker_model
+            reranker_model_credential = project_config.reranker_model_credential
+
+            if reranker_model is None:
+                logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Reranker Model is not configured")
+
+            if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
+                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Sparse Embedding Model Credential is not configured")
+
+            reranker_provider = reranker_model.provider
+            reranker_model_id = reranker_model.model_id
+            api_key: str | None = reranker_model_credential and reranker_model_credential.api_key
+            reranker = WorkflowReranker().reranker(model=reranker_model_id, provider=reranker_provider, provider_type=reranker_model.provider_type, api_key=api_key)
 
             # index chunks by chunk_id for O(1) lookup
             chunk_map: dict[str, ChunkPrevNextVecSimilaritySchema] = {chunk.chunk_id: chunk for chunk in chunks}
@@ -861,7 +954,7 @@ class DocumentQueryGraph():
                     metadata={"chunk_id": chunk.chunk_id}
                 ))
 
-            rerank_docs = reranker.rerank(query=query, docs=docs, top_k=top_k)
+            rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
 
             reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = []
             for doc in rerank_docs:
@@ -923,11 +1016,10 @@ class DocumentQueryGraph():
             query = state["query"]
             query_depth: qs.QueryDepth = state["query_depth"]
             vec_similar_with_prev_next: list[ChunkPrevNextSchema] = state["vec_similar_with_prev_next"] or []
-            providers = state["providers"]
 
             answer = await self._sq_eq_llm_call(
+                state,
                 query=query,
-                provider=providers.llm,
                 reranked_chunks=reranked_chunks,
                 query_depth=query_depth,
                 vec_similar_with_prev_next=vec_similar_with_prev_next,
@@ -1005,16 +1097,45 @@ class DocumentQueryGraph():
 
     async def _eq_get_chunk_id_scores_by_spare_embedding_compare(
         self,
+        state: DQGState,
         query: str,
         lanes: dict[str, List[N4jCommonEdgeChunksSchema]],
-        sparse_model: str,
-        sparse_provider: str | None = None,
         normalized_query_per_lane: dict[str, str] | None = None,
     ) -> set[Tuple[str, float]]:
         try:
+            project_config = state["project_config"]
+
+            sparse_embedding_model = project_config.sparse_text_model
+            sparse_embedding_model_credential = project_config.sparse_text_model_credential
+
+            if sparse_embedding_model is None:
+                logger.error({"message": "Sparse Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                return set()
+
+            if sparse_embedding_model.provider_type == "cloud" and sparse_embedding_model_credential is None:
+                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Sparse Embedding Model Credential is not configured")
+
+            sparse_provider = sparse_embedding_model.provider
+            sparse_model = sparse_embedding_model.model_id
+            api_key: str | None = sparse_embedding_model_credential and sparse_embedding_model_credential.api_key
+
+            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider, provider_type=sparse_embedding_model.provider_type, api_key=api_key)
             max_chunk_count = Env.EQ_MAX_LANE_CHUNKS_COUNT
-            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider)
-            dense_embedder = WorkflowFastEmbedder.fast_embedder()
+
+            embedding_model = project_config.embedding_model
+            embedding_model_credential = project_config.embedding_model_credential
+
+            if embedding_model is None or embedding_model_credential is None:
+                logger.error({"message": "Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+                raise ValueError("Embedding Model or Embedding Model Credential is not configured")
+
+            embedder_provider = embedding_model.provider
+            model = embedding_model.model_id
+            dimension = embedding_model.dimension
+            api_key = embedding_model_credential.api_key
+
+            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
 
             chunk_scores: dict[str, float] = {}
 
@@ -1037,7 +1158,7 @@ class DocumentQueryGraph():
 
                 if lane in SPARSE_LANES:
                     # Sparse: exact token overlap
-                    embeddings: list[SparseEmbedding] = sparse_embedder.embed_batch(all_texts)
+                    embeddings: list[SparseEmbedding] = await sparse_embedder.embed_batch(all_texts)
                     query_emb = embeddings[0]
                     node_embs = embeddings[1:]
 
@@ -1048,7 +1169,7 @@ class DocumentQueryGraph():
 
                 else:
                     # Dense: semantic similarity
-                    dense_embeddings: list[list[float]] = await dense_embedder.embed_batch(all_texts)
+                    dense_embeddings: list[list[float]] = await embedder.aembed_batch(all_texts)
                     query_emb_dense = dense_embeddings[0]
                     node_embs_dense = dense_embeddings[1:]
 

@@ -204,7 +204,6 @@ class ProjectConfigDetailGetSchema(BaseModel):
     embedding_model: Optional[EmbeddingModelGetSchema] = None
     reranker_model: Optional[ReRankerGetSchema] = None
     sparse_text_model: Optional[SparseTextModelGetSchema] = None
-    reranker_model: Optional[ReRankerGetSchema] = None
     ocr_model: Optional[OCRModelGetSchema] = None
     audio_model: Optional[AudioModelGetSchema] = None
     video_model: Optional[VideoModelGetSchema] = None
