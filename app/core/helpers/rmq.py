@@ -296,7 +296,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -339,7 +340,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    next_start_object=data.start_object
+                    next_start_object=data.start_object,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -382,7 +384,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    next_start_object=data.start_object
+                    next_start_object=data.start_object,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -420,7 +423,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -540,7 +544,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    next_start_object=data.start_object
+                    next_start_object=data.start_object,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -579,7 +584,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -623,7 +629,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    next_start_row=data.start_row
+                    next_start_row=data.start_row,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -663,7 +670,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -701,7 +709,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -744,7 +753,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    next_start_unit=data.start_unit
+                    next_start_unit=data.start_unit,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -788,7 +798,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    next_start_row=data.start_row
+                    next_start_row=data.start_row,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -909,7 +920,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
@@ -960,7 +972,8 @@ class RMQProcessorHelper:
                 org_id=cp.org_id, project_id=cp.project_id, doc_id=cp.doc_id, 
                 u=DocumentProcessingUpdateSchema(
                     status=ProcessingStatus.COMPLETED,
-                    last_file_chunk_number=data.file_chunk_number
+                    last_file_chunk_number=data.file_chunk_number,
+                    next_rag_start_index=next_rag_start_index
                 )
             )
             await RMQProducerHelper.produce_status(cp)
