@@ -1,5 +1,6 @@
 from ..schemas.document_schema import DocumentGetSchema, DocumentCreateSchema, DocumentListSchema, PaginationSchema, DocumentQueryParams
 from ..databases.postgresql.client import GPostgresqlClient
+from ..minio.checkpoint import CheckpointMinioClient
 from ..databases.postgresql.models import Document
 from app.constants.document import DocumentStatus
 from ..helpers.minio_helper import MinioHelper
@@ -23,6 +24,7 @@ class DocumentRepo:
         self.qdrant_cleaner = QDrantCleaner(org_id=self.org_id, project_id=self.project_id)
         self.neo4j_document = GN4jDocument(org_id=self.org_id, project_id=self.project_id)
         self.neo4j_chunk = GN4jChunk(org_id=self.org_id, project_id=self.project_id)
+        self.minio_checkpoint_client = CheckpointMinioClient(org_id=self.org_id, project_id=self.project_id)
 
     async def create(self, doc: DocumentCreateSchema) -> DocumentGetSchema:
         try:
@@ -181,50 +183,50 @@ class DocumentRepo:
                 await session.delete(document)
                 await session.commit()
 
-                try:
-                    files_to_delete = [
-                        MinioConstant.SPARSE_EMBEDDING_OUTPUT_FILE,
-                        MinioConstant.EMBEDDING_OUTPUT_FILE,
-                        MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE,
-                        MinioConstant.LLM_OUTPUT_FILE,
-                        MinioConstant.LLM_TAG_RESPONSE,
-                        MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT,
-                        MinioConstant.N4J_EDGES_TAG_OUTPUT,
-                        MinioConstant.N4J_EDGES_REFERENCE_OUTPUT,
-                        MinioConstant.CHUNKS_OUTPUT_FILE,
-                    ]
-
-                    for file_name in files_to_delete:
-                        key = f"{self.project_id}/{document.readable_id}/{file_name}.json"
-
-                        try:
-                            await self.minio_helper.delete_file(
-                                bucket=bucket,
-                                key=key
-                            )
-
-                            logger.info({
-                                "message": "Deleted file from MinIO",
-                                "key": key
-                            })
-
-                        except Exception as delete_error:
-                            logger.warning({
-                                "message": "Failed to delete file from MinIO",
-                                "key": key,
-                                "error": str(delete_error)
-                            })
-
-                except Exception as e:
-                    logger.warning({
-                        "message": "Unexpected error during MinIO cleanup",
-                        "error": str(e)
-                    })
-
+                await self._cleanup(document_id, bucket)
                 return True
         except Exception as e:
             logger.error({"message": "Failed to delete document", "error": str(e)})
             raise e
+
+    async def _cleanup(self, document_id: uuid.UUID, bucket: str):
+        def get_key(document_id: uuid.UUID, filename: str):
+            return f"pro_{self.project_id}/doc_{document_id}/{filename}"
+        try:
+            files_to_delete = [
+                MinioConstant.LEXICAL_ENGINE_OUTPUT_FILE,
+                MinioConstant.LLM_TAG_RESPONSE,
+                MinioConstant.N4J_EDGES_NEXT_PREV_OUTPUT,
+                MinioConstant.N4J_EDGES_TAG_OUTPUT,
+                MinioConstant.N4J_EDGES_REFERENCE_OUTPUT,
+            ]
+
+            for file_name in files_to_delete:
+                key = f"{get_key(document_id, file_name)}.json"
+
+                try:
+                    await self.minio_helper.delete_file(
+                        bucket=bucket,
+                        key=key
+                    )
+
+                    logger.info({
+                        "message": "Deleted file from MinIO",
+                        "key": key
+                    })
+
+                except Exception as delete_error:
+                    logger.warning({
+                        "message": "Failed to delete file from MinIO",
+                        "key": key,
+                        "error": str(delete_error)
+                    })
+            await self.minio_checkpoint_client.delete_all_checkpoints(document_id)
+        except Exception as e:
+            logger.warning({
+                "message": "Unexpected error during MinIO cleanup",
+                "error": str(e)
+            })
 
     async def change_document_status(self, document_id: uuid.UUID, status: DocumentStatus) -> DocumentGetSchema:
         try:
