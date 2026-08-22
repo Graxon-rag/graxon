@@ -9,8 +9,5 @@ class N4jChunkInterface:
     chunk_id = "chunk_id"
     chunk_number = "chunk_number"
     text = "text"
-    page_number = "page_number"
-    title = "title"
-    source = "source"
     created_at = "created_at"
     updated_at = "updated_at"

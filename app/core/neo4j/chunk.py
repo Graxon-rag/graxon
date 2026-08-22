@@ -44,9 +44,6 @@ class GN4jChunk:
 
                 SET
                     ch.{N4jChunkInterface.text} = chunk_item.text,
-                    ch.{N4jChunkInterface.page_number} = chunk_item.page_number,
-                    ch.{N4jChunkInterface.title} = chunk_item.title,
-                    ch.{N4jChunkInterface.source} = chunk_item.source,
                     ch.{N4jChunkInterface.chunk_number} = chunk_item.chunk_number
 
                 MERGE (dc)-[:{GNeo4jEdges.HAS_CHUNK}]->(ch)
@@ -71,6 +68,44 @@ class GN4jChunk:
 
         except Exception as e:
             logger.error({"message": "Failed to create chunks", "error": str(e)})
+            raise e
+
+    async def update(self, document_id: uuid.UUID, chunk: Chunk):
+        try:
+            query = cast(LiteralString, f"""
+                MATCH (og:{GN4jNodes.ORGANIZATION} {{id: $org_id}})-[:{GNeo4jEdges.HAS_PROJECT}]->(pr:{GN4jNodes.PROJECT} {{id: $project_id}})-[:{GNeo4jEdges.HAS_DOCUMENT}]->(dc:{GN4jNodes.DOCUMENT} {{id: $document_id}})-[:{GNeo4jEdges.HAS_CHUNK}]->(ch:{GN4jNodes.CHUNK} {{id: $chunk_id}})
+
+                SET
+                    ch.{N4jChunkInterface.updated_at} = datetime(),
+                    ch.{N4jChunkInterface.text} = $text,
+                    ch.{N4jChunkInterface.chunk_number} = $chunk_number
+
+                RETURN ch.id as updated_chunk_id
+            """)
+
+            params = {
+                "org_id": self.org_id,
+                "project_id": str(self.project_id),
+                "document_id": str(document_id),
+                "chunk_id": chunk.chunk_id,
+                "text": chunk.text,
+                "chunk_number": chunk.chunk_number,
+            }
+
+            result, _, _ = await self.graph.execute_query(
+                query,
+                params,
+            )
+
+            if not result:
+                logger.warning(f"Chunk with ID {chunk.chunk_id} not found for update under document {document_id}.")
+                return None
+
+            logger.info(f"Successfully updated chunk {chunk.chunk_id}.")
+            return result[0]['updated_chunk_id']
+
+        except Exception as e:
+            logger.error({"message": "Failed to update chunk", "error": str(e)})
             raise e
 
     async def create_acronym_nodes_and_edges(self, document_id: uuid.UUID, acronyms: dict[str, dict]):
