@@ -1,12 +1,10 @@
-from ..databases.qdrant.client import GQdrantClient
-from qdrant_client import models
-from typing import Tuple
-from app.constants.qdrant import QDrant_MODEL_MAP
-from app.utils.logger import logger
-from qdrant_client.conversions.common_types import PointStruct
 from ..schemas.chunk_schema import ChunkEmbedding, ChunkSparseEmbedding, Chunk
-import uuid
+from qdrant_client.conversions.common_types import PointStruct
+from ..databases.qdrant.client import GQdrantClient
+from app.utils.logger import logger
+from qdrant_client import models
 import asyncio
+import uuid
 
 
 class QdrantInjector:
@@ -84,4 +82,69 @@ class QdrantInjector:
 
         except Exception as e:
             logger.error({"message": "Failed to inject data into Qdrant", "error": str(e)})
+            raise
+
+    async def add_chunk(self, model_key: str, document_id: uuid.UUID, chunk: Chunk, chunk_embedding: ChunkEmbedding, chunk_sparse_embedding: ChunkSparseEmbedding | None = None):
+        try:
+            chunk_sparse_embeddings: list[ChunkSparseEmbedding] = []
+            if chunk_sparse_embedding is not None:
+                chunk_sparse_embeddings = chunk_sparse_embeddings + [chunk_sparse_embedding]
+            return await self.inject(model_key=model_key, document_id=document_id, chunks=[chunk], chunk_embeddings=[chunk_embedding], chunk_sparse_embeddings=chunk_sparse_embeddings)
+        except Exception as e:
+            logger.error({"message": "Failed to add chunk to Qdrant", "error": str(e)})
+            raise
+
+    async def update(self, model_key: str, document_id: uuid.UUID, chunk: Chunk, chunk_embedding: ChunkEmbedding, chunk_sparse_embedding: ChunkSparseEmbedding):
+        try:
+            deterministic_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, chunk.chunk_id))
+
+            coll, dense_vector_name = GQdrantClient._get_collection_vector_name(model_key)
+            client = GQdrantClient.get_client()
+
+            point = PointStruct(
+                id=deterministic_id,
+                vector={
+                    dense_vector_name: chunk_embedding.embedding,
+                    "sparse": models.SparseVector(
+                        indices=chunk_sparse_embedding.embedding.indices.tolist(),
+                        values=chunk_sparse_embedding.embedding.values.tolist(),
+                    ),
+                },
+                payload={
+                    "text": chunk.text,
+                    "org_id": self.org_id,
+                    "project_id": str(self.project_id),
+                    "document_id": str(document_id),
+                    "chunk_id": chunk.chunk_id,
+                    "chunk_number": chunk.chunk_number,
+                    **(chunk.metadata or {}),
+                },
+            )
+
+            # Retry logic with exponential backoff
+            MAX_RETRIES = 3
+
+            for attempt in range(1, MAX_RETRIES + 1):
+                try:
+                    # upsert acts as an update if the deterministic_id already exists
+                    await client.upsert(
+                        collection_name=coll,
+                        points=[point],
+                        wait=True
+                    )
+                    logger.info(f"Updated point {deterministic_id} in collection '{coll}' using '{dense_vector_name}' (attempt {attempt}).")
+                    return  # success
+
+                except Exception as e:
+                    logger.warning({
+                        "message": "Qdrant upsert/update failed, retrying",
+                        "attempt": attempt,
+                        "max": MAX_RETRIES,
+                        "error": str(e),
+                    })
+                    if attempt < MAX_RETRIES:
+                        await asyncio.sleep(2 ** exponent if (exponent := attempt) else 2 ** attempt)  # or simply await asyncio.sleep(2 ** attempt)
+
+        except Exception as e:
+            logger.error({"message": "Failed to update chunk in Qdrant", "error": str(e)})
             raise
