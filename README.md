@@ -424,6 +424,73 @@ All four engines process each chunk concurrently — maximizing throughput and m
 
 ---
 
+## Checkpoints
+
+```mermaid
+graph TD
+    %% =========================
+    %% Styling
+    %% =========================
+    classDef database fill:#f2f2f2,stroke:#333,stroke-width:2px;
+    classDef process fill:#e1f5fe,stroke:#0288d1,stroke-width:2px;
+    classDef agent fill:#ede7f6,stroke:#512da8,stroke-width:2px;
+    classDef storage fill:#fff3e0,stroke:#f57c00,stroke-width:2px;
+
+    %% =========================
+    %% Level 1: Message Processing
+    %% =========================
+    subgraph L1["Level 1: Message-Driven File Processing"]
+        Raw[Raw File<br/>] --> Producer[RabbitMQ Producer]
+        Producer --> Consumer[RabbitMQ Consumer]:::process
+
+        Consumer -->|Validate & Check Status| DB[(State Database<br/>Checkpoint)]:::database
+        DB -->|Ready for Processing| Chunking[File Chunking]:::process
+        Chunking -->|Save Progress| DB
+    end
+
+    %% =========================
+    %% Level 2: Resumable AI Pipeline
+    %% =========================
+    subgraph L2["Level 2: LangGraph Resumable Processing Pipeline"]
+
+        Chunking --> Supervisor[Supervisor Agent]:::agent
+        Supervisor --> Parser[Chunk Parser Agent]:::agent
+
+        Parser --> LLM[LLM Agent]:::agent
+        Parser --> Dense[Dense Embedding Agent]:::agent
+        Parser --> Sparse[Sparse Embedding Agent]:::agent
+        Parser --> Lexical[Lexical Processing Agent]:::agent
+
+        %% Object Storage Checkpointing
+        LLM -.->|Checkpoint| ObjectStorage[(MinIO / S3<br/>Object Storage)]:::storage
+        Dense -.->|Checkpoint| ObjectStorage
+        Sparse -.->|Checkpoint| ObjectStorage
+        Lexical -.->|Checkpoint| ObjectStorage
+
+        %% Processing Results
+        LLM --> VectorDB[Vector Database Agent]:::agent
+        Dense --> VectorDB
+        Sparse --> VectorDB
+        Lexical --> VectorDB
+
+        VectorDB --> GraphDB[Graph Database Agent]:::agent
+    end
+```
+
+### Images
+
+!["image_1"](./img/checkponit/image_1.png)
+<br/>>
+!["image_2"](./img/checkponit/image_2.png)
+<br/>
+!["image_3"](./img/checkponit/image_3.png)
+<br/>
+!["image_4"](./img/checkponit/image_4.png)
+<br/>
+!["image_5"](./img/checkponit/image_5.png)
+
+---
+
 ## Query Pipeline
 
 Graxon uses a **LangGraph-orchestrated query pipeline** with 3 query types and 2 depth levels, giving fine-grained control over retrieval quality vs. speed.
