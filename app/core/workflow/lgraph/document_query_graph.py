@@ -1,13 +1,12 @@
 from app.core.schemas.chunk_schema import ChunkPrevNextVecSimilaritySchema, ChunkPrevNextSchema, ChunkVecSimilarity
+from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional, List, Union, Sequence
 from .prompts.query_expansion_prompt import QUERY_EXPANSION_PROMPT, QueryExpansionResponse
-from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder, WorkflowFastEmbedder
 from .prompts.answer_prompt import BASIC_ANSWER_PROMPT, SMART_ANSWER_PROMPT
 from app.core.lexical_engine.query import LexicalEngineQuery, QueryAnalysis
-from ..schemas.provider_schema import QueryProviderSchema, LLMProviderSchema
-from typing import TypedDict, Annotated, Dict, cast, Tuple, Optional, List
 from ...schemas.project_config_schema import ProjectConfigDetailGetSchema
 from app.core.schemas.graph_schema import N4jCommonEdgeChunksSchema
 from qdrant_client.conversions.common_types import QueryResponse
+from ..provider import WorkflowEmbedder, WorkflowSparseEmbedder
 from app.core.qdrant.retrieval import QDrantRetrieval
 from ..provider import WorkflowReranker, WorkflowLLM
 from app.core.neo4j.common import GN4jMappingClient
@@ -31,7 +30,7 @@ VECTOR_DATABASE_AGENT = "vector_database_agent"
 QUICK_QUERY_AGENT = "quick_query_agent"
 SMART_QUERY_AGENT = "smart_query_agent"
 EXPERT_QUERY_AGENT = "expert_query_agent"
-QUICK_QUERY_RERANKER_AGENT = " quick_query_reranker_agent"
+QUICK_QUERY_RERANKER_AGENT = "quick_query_reranker_agent"
 QUICK_QUERY_ANSWER_AGENT = "quick_query_answer_agent"
 SMART_QUERY_RERANKER_AGENT = "smart_query_reranker_agent"
 SMART_QUERY_ANSWER_AGENT = "smart_query_answer_agent"
@@ -54,6 +53,9 @@ DENSE_LANES = {
     GNeo4jEdges.HAS_CONCEPT,
     GNeo4jEdges.HAS_ENTITY,
 }
+
+# Any chunk shape that carries chunk_id / text / prev_chunk / next_chunk / point_score
+ChunkLike = Union[ChunkPrevNextSchema, ChunkPrevNextVecSimilaritySchema]
 
 
 class DQGState(TypedDict):
@@ -90,6 +92,9 @@ class DocumentQueryGraph():
         self._chunk_n4j = GN4jChunk(org_id=org_id, project_id=project_id)
         self._n4j_mapping_client = GN4jMappingClient(org_id=org_id, project_id=project_id)
 
+    # ------------------------------------------------------------------
+    # Graph construction
+    # ------------------------------------------------------------------
     def build_graph(self):
         try:
             graph = StateGraph(DQGState)
@@ -176,12 +181,245 @@ class DocumentQueryGraph():
         elif query_type is qs.QueryType.EXPERT:
             return "expert"
         else:
-            raise Exception(f"Unknown query type: {query_type}")    
+            raise Exception(f"Unknown query type: {query_type}")
 
+    # ------------------------------------------------------------------
+    # Shared model-provisioning helpers (dedupe of repeated boilerplate)
+    # ------------------------------------------------------------------
+    def _get_llm(self, project_config: ProjectConfigDetailGetSchema, structured_output=None):
+        llm_model = project_config.llm_model
+        llm_model_credential = project_config.llm_model_credential
+        if llm_model is None or llm_model_credential is None:
+            logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            raise ValueError("LLM Model is not configured")
+
+        llm = WorkflowLLM.llm(
+            provider=llm_model.provider,
+            api_key=llm_model_credential.api_key,
+            model=llm_model.model_id,
+        )
+        if structured_output is not None:
+            llm = llm.with_structured_output(structured_output)
+        return llm
+
+    def _get_embedder(self, project_config: ProjectConfigDetailGetSchema):
+        embedding_model = project_config.embedding_model
+        embedding_model_credential = project_config.embedding_model_credential
+        if embedding_model is None or embedding_model_credential is None:
+            logger.error({"message": "Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            raise ValueError("Embedding Model or Embedding Model Credential is not configured")
+
+        return WorkflowEmbedder.embedder(
+            provider=embedding_model.provider,
+            api_key=embedding_model_credential.api_key,
+            model=embedding_model.model_id,
+            dimension=embedding_model.dimension,
+        )
+
+    def _get_sparse_embedder(self, project_config: ProjectConfigDetailGetSchema, required: bool = True):
+        sparse_embedding_model = project_config.sparse_text_model
+        sparse_embedding_model_credential = project_config.sparse_text_model_credential
+
+        if sparse_embedding_model is None:
+            logger.error({"message": "Sparse Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            if required:
+                raise ValueError("Sparse Embedding Model is not configured")
+            return None
+
+        if sparse_embedding_model.provider_type == "cloud" and sparse_embedding_model_credential is None:
+            logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            raise ValueError("Sparse Embedding Model Credential is not configured")
+
+        api_key = sparse_embedding_model_credential and sparse_embedding_model_credential.api_key
+
+        return WorkflowSparseEmbedder.sparse_embedder(
+            model=sparse_embedding_model.model_id,
+            provider=sparse_embedding_model.provider,
+            provider_type=sparse_embedding_model.provider_type,
+            api_key=api_key,
+        )
+
+    def _get_reranker(self, project_config: ProjectConfigDetailGetSchema):
+        """Returns None if reranking is disabled for this project."""
+        if not project_config.reranker_enable:
+            logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
+            return None
+
+        reranker_model = project_config.reranker_model
+        reranker_model_credential = project_config.reranker_model_credential
+
+        if reranker_model is None:
+            logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            raise ValueError("Reranker Model is not configured")
+
+        if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
+            logger.error({"message": "Reranker Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            raise ValueError("Reranker Model Credential is not configured")
+
+        api_key = reranker_model_credential and reranker_model_credential.api_key
+
+        return WorkflowReranker().reranker(
+            model=reranker_model.model_id,
+            provider=reranker_model.provider,
+            provider_type=reranker_model.provider_type,
+            api_key=api_key,
+        )
+
+    # ------------------------------------------------------------------
+    # Shared chunk-scoring / dedupe helpers
+    # ------------------------------------------------------------------
+    def _extract_qdrant_chunk_scores(self, points: list[ScoredPoint], keep_max_per_id: bool = False) -> dict[str, float]:
+        """
+        Pulls (chunk_id -> score) out of Qdrant points, applying the score threshold.
+        If keep_max_per_id is True, keeps the highest score seen per chunk_id
+        (points list may contain the same chunk multiple times).
+        """
+        scores: dict[str, float] = {}
+        for point in points:
+            score = point.score
+            if score < Env.GTE_QDRANT_POINT_SCORE_THRESHOLD:
+                continue
+            payload = point.payload
+            if payload is None:
+                continue
+            text = payload.get("text")
+            chunk_id = payload.get("chunk_id")
+            if text is None or chunk_id is None:
+                continue
+            if keep_max_per_id:
+                prev = scores.get(chunk_id)
+                if prev is None or score > prev:
+                    scores[chunk_id] = score
+            else:
+                scores[chunk_id] = score
+        return scores
+
+    def _normalize_scores(self, scores: dict[str, float]) -> dict[str, float]:
+        """Min-max normalize a score map to [0, 1] so scores from different sources
+        (e.g. bounded Qdrant cosine scores vs. unbounded sparse dot products) are
+        comparable when combined."""
+        if not scores:
+            return {}
+        lo = min(scores.values())
+        hi = max(scores.values())
+        if hi == lo:
+            return {k: 1.0 for k in scores}
+        return {k: (v - lo) / (hi - lo) for k, v in scores.items()}
+
+    def _dedupe_and_sort(self, chunks: Sequence[ChunkLike]) -> list[ChunkLike]:
+        """Drop any chunk that already appeared as a prev/next of an earlier chunk,
+        then sort by point_score descending. Shared by all three reranker nodes."""
+        seen_ids: set[str] = set()
+        deduped: list[ChunkLike] = []
+
+        for chunk in chunks:
+            if chunk.chunk_id in seen_ids:
+                continue
+            deduped.append(chunk)
+            seen_ids.add(chunk.chunk_id)
+            if chunk.prev_chunk:
+                seen_ids.add(chunk.prev_chunk.chunk_id)
+            if chunk.next_chunk:
+                seen_ids.add(chunk.next_chunk.chunk_id)
+
+        return sorted(deduped, key=lambda x: x.point_score, reverse=True)
+
+    async def _rerank_chunks(
+        self,
+        query: str,
+        chunks: Sequence[ChunkLike],
+        top_k: int,
+        project_config: ProjectConfigDetailGetSchema,
+        log_tag: str,
+    ) -> list[ChunkLike]:
+        """Generic reranker used by quick/smart/expert. Works for both chunk
+        schemas since they share chunk_id/text/prev_chunk/next_chunk/point_score."""
+        if not chunks:
+            raise Exception("No chunks found")
+
+        reranker = self._get_reranker(project_config)
+        if reranker is None:
+            return []
+
+        chunk_map: dict[str, ChunkLike] = {chunk.chunk_id: chunk for chunk in chunks}
+        docs = [Document(page_content=c.text, metadata={"chunk_id": c.chunk_id}) for c in chunks]
+
+        rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
+        reranked = [chunk_map[doc.metadata["chunk_id"]] for doc in rerank_docs]
+
+        deduped = self._dedupe_and_sort(reranked)
+        logger.info({"message": f"[{log_tag}] Final reranked chunks", "count": len(deduped)})
+        return deduped
+
+    async def _get_vec_similar_prev_next(
+        self,
+        reranked_chunks: Sequence[ChunkPrevNextVecSimilaritySchema],
+        document_id: uuid.UUID | None,
+        query_depth: qs.QueryDepth,
+    ) -> list[ChunkPrevNextSchema]:
+        """For ADVANCED depth, resolves prev/next context for every vector-similar
+        chunk attached to the reranked results. Shared by smart + expert rerankers."""
+        vec_similar_with_prev_next: list[ChunkPrevNextSchema] = []
+
+        if query_depth is not qs.QueryDepth.ADVANCED:
+            return vec_similar_with_prev_next
+
+        try:
+            chunk_id_scores: list[tuple[str, float]] = []
+            for chunk in reranked_chunks:
+                if chunk.vector_similar_chunks:
+                    for vc in chunk.vector_similar_chunks:
+                        chunk_id_scores.append((vc.chunk_id, vc.weight))
+
+            if chunk_id_scores:
+                vec_similar_with_prev_next = await self._chunk_n4j.get_prev_next_chunks(
+                    chunk_id_scores=chunk_id_scores,
+                    document_id=document_id,
+                )
+        except Exception as e:
+            logger.error({"message": "Failed to get prev/next for vector similar chunks", "error": str(e)})
+
+        return vec_similar_with_prev_next
+
+    async def _attach_vector_similar_chunks(
+        self,
+        prev_next_chunks: list[ChunkPrevNextSchema],
+        document_id: uuid.UUID | None,
+        chunk_id_scores: list[Tuple[str, float]],
+    ) -> list[ChunkPrevNextVecSimilaritySchema]:
+        """Fetches vector-similar chunks for a batch of chunks and merges them
+        into ChunkPrevNextVecSimilaritySchema. Shared by smart + expert query nodes."""
+        vec_similar_chunks: Dict[str, ChunkVecSimilarity] = await self._chunk_n4j.get_vector_similar_chunks(
+            chunk_id_scores=chunk_id_scores,
+            document_id=document_id,
+            gte__vector_score=Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD,
+        )
+
+        chunks: list[ChunkPrevNextVecSimilaritySchema] = []
+        for chunk in prev_next_chunks:
+            c = ChunkPrevNextVecSimilaritySchema(
+                chunk_id=chunk.chunk_id,
+                text=chunk.text,
+                chunk_number=chunk.chunk_number,
+                weight=chunk.weight,
+                point_score=chunk.point_score,
+                prev_chunk=chunk.prev_chunk,
+                next_chunk=chunk.next_chunk,
+            )
+            vector_similar = vec_similar_chunks.get(chunk.chunk_id)
+            if vector_similar is not None:
+                c.vector_similar_chunks = vector_similar.vector_similar_chunks
+            chunks.append(c)
+
+        return chunks
+
+    # ------------------------------------------------------------------
+    # Nodes: supervisor / expansion / embeddings / retrieval
+    # ------------------------------------------------------------------
     async def _supervisor(self, state: DQGState):
         try:
             query = state["query"]
-            if query is None or query == "" or query.strip() == "":
+            if query is None or query.strip() == "":
                 raise Exception("Query is None")
 
             new_query = query.strip()
@@ -203,19 +441,9 @@ class DocumentQueryGraph():
         try:
             if not original_query:
                 return {"queries": [original_query]}
+
             project_config = state["project_config"]
-
-            llm_model = project_config.llm_model
-            llm_model_credential = project_config.llm_model_credential
-            if llm_model is None or llm_model_credential is None:
-                logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                return
-
-            llm_provider = llm_model.provider
-            model = llm_model.model_id
-            api_key = llm_model_credential.api_key
-
-            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model).with_structured_output(QueryExpansionResponse)
+            llm = self._get_llm(project_config, structured_output=QueryExpansionResponse)
 
             prompt = QUERY_EXPANSION_PROMPT.format(query=original_query)
             response = await llm.ainvoke(prompt=prompt)
@@ -246,26 +474,12 @@ class DocumentQueryGraph():
             # TODO: make this multi query
             queries = state["queries"]
             query = state["query"]
-            first_query = queries[0] if queries is not None and len(queries) > 0 else query.strip()
+            first_query = queries[0] if queries else query.strip()
 
-            project_config = state["project_config"]
-            embedding_model = project_config.embedding_model
-            embedding_model_credential = project_config.embedding_model_credential
-
-            if embedding_model is None or embedding_model_credential is None:
-                logger.error({"message": "Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Embedding Model or Embedding Model Credential is not configured")
-
-            embedder_provider = embedding_model.provider
-            model = embedding_model.model_id
-            dimension = embedding_model.dimension
-            api_key = embedding_model_credential.api_key
-
-            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
+            embedder = self._get_embedder(state["project_config"])
             embedding = await embedder.aembed(first_query)
 
             return {"query_dense_embedding": embedding}
-
         except Exception as e:
             logger.error({"message": "Failed to embedding", "error": str(e)})
             raise e
@@ -275,29 +489,16 @@ class DocumentQueryGraph():
             # TODO: make this multi query
             queries = state["queries"]
             query = state["query"]
-            first_query = queries[0] if queries is not None and len(queries) > 0 else query.strip()
+            first_query = queries[0] if queries else query.strip()
             project_config = state["project_config"]
 
             if not project_config.sparse_embedding_enable:
                 logger.warning({"message": "Sparse Embedding is not enabled", "org_id": self.org_id, "project_id": self.project_id})
                 return {"query_sparse_embedding": None}
 
-            sparse_embedding_model = project_config.sparse_text_model
-            sparse_embedding_model_credential = project_config.sparse_text_model_credential
-
-            if sparse_embedding_model is None:
-                logger.error({"message": "Sparse Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Sparse Embedding Model is not configured")
-
-            if sparse_embedding_model.provider_type == "cloud" and sparse_embedding_model_credential is None:
-                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Sparse Embedding Model Credential is not configured")
-
-            sparse_provider = sparse_embedding_model.provider
-            sparse_model = sparse_embedding_model.model_id
-            api_key: str | None = sparse_embedding_model_credential and sparse_embedding_model_credential.api_key
-
-            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider, provider_type=sparse_embedding_model.provider_type, api_key=api_key)
+            sparse_embedder = self._get_sparse_embedder(project_config, required=True)
+            if sparse_embedder is None:
+                return {"query_sparse_embedding": None}
             em_vector: SparseEmbedding = await sparse_embedder.embed(first_query)
             return {"query_sparse_embedding": em_vector}
         except Exception as e:
@@ -319,107 +520,69 @@ class DocumentQueryGraph():
             if query_dense_embedding is None:
                 raise Exception("Query dense embedding is None")
 
-            result: QueryResponse = await self.q_retrieval.retrieve(model_key=ep_model_key, query_sparse_embedding=query_sparse_embedding, query_dense_embedding=query_dense_embedding, top_k=top_k, document_id=document_id)
+            result: QueryResponse = await self.q_retrieval.retrieve(
+                model_key=ep_model_key,
+                query_sparse_embedding=query_sparse_embedding,
+                query_dense_embedding=query_dense_embedding,
+                top_k=top_k,
+                document_id=document_id,
+            )
 
-            print("Total points:", len(result.points))
-            print("Points:", result.points)
+            logger.info({"message": "Vector DB retrieval complete", "total_points": len(result.points)})
 
             return {"points": result.points}
-
         except Exception as e:
             logger.error({"message": "Failed to vector database", "error": str(e)})
             raise e
 
+    # ------------------------------------------------------------------
+    # Nodes: quick / smart / expert query
+    # ------------------------------------------------------------------
     async def _quick_query(self, state: DQGState):
         try:
             logger.info({"message": "Quick query"})
             points = state["points"]
-
-            if points is None or len(points) == 0:
+            if not points:
                 raise Exception("No points found")
 
-            chunk_ids: set[Tuple[str, float]] = set()
-
-            for point in points:
-                score = point.score
-                if score < Env.GTE_QDRANT_POINT_SCORE_THRESHOLD:
-                    continue
-
-                payload = point.payload
-                if payload is None:
-                    continue
-
-                text = payload.get("text")
-                chunk_id = payload.get("chunk_id")
-                if text is None or chunk_id is None:
-                    continue
-
-                chunk_ids.add((chunk_id, score))
-
-            if len(chunk_ids) == 0:
+            chunk_scores = self._extract_qdrant_chunk_scores(points)
+            if not chunk_scores:
                 raise Exception("No chunk ids found")
-            document_id = state["document_id"]
 
-            chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id)
+            document_id = state["document_id"]
+            chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(
+                chunk_id_scores=list(chunk_scores.items()),
+                document_id=document_id,
+            )
 
             return {"chunks": chunks}
         except Exception as e:
             logger.error({"message": "Failed in quick query", "error": str(e)})
+            raise e
 
     async def _smart_query(self, state: DQGState):
         try:
             logger.info({"message": "Smart query"})
             points = state["points"]
-
-            if points is None or len(points) == 0:
+            if not points:
                 raise Exception("No points found")
 
-            chunk_ids: set[Tuple[str, float]] = set()
-
-            for point in points:
-                score = point.score
-                if score < Env.GTE_QDRANT_POINT_SCORE_THRESHOLD:
-                    continue
-
-                payload = point.payload
-                if payload is None:
-                    continue
-
-                text = payload.get("text")
-                chunk_id = payload.get("chunk_id")
-                if text is None or chunk_id is None:
-                    continue
-
-                chunk_ids.add((chunk_id, score))
-
-            if len(chunk_ids) == 0:
+            chunk_scores = self._extract_qdrant_chunk_scores(points)
+            if not chunk_scores:
                 raise Exception("No chunk ids found")
+
             document_id = state["document_id"]
+            chunk_id_scores = list(chunk_scores.items())
 
-            prev_next_chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id)
+            prev_next_chunks: list[ChunkPrevNextSchema] = await self._chunk_n4j.get_prev_next_chunks(
+                chunk_id_scores=chunk_id_scores, document_id=document_id
+            )
 
-            vec_similar_chunks: Dict[str, ChunkVecSimilarity] = await self._chunk_n4j.get_vector_similar_chunks(chunk_id_scores=[(c[0], c[1]) for c in chunk_ids], document_id=document_id, gte__vector_score=Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD)
-
-            print("\n\n [Smart]: Vector Similar Chunks:\n", vec_similar_chunks)
-
-            chunks: list[ChunkPrevNextVecSimilaritySchema] = []
-
-            for chunk in prev_next_chunks:
-                c = ChunkPrevNextVecSimilaritySchema(
-                    chunk_id=chunk.chunk_id,
-                    text=chunk.text,
-                    chunk_number=chunk.chunk_number,
-                    weight=chunk.weight,
-                    point_score=chunk.point_score,
-                    prev_chunk=chunk.prev_chunk,
-                    next_chunk=chunk.next_chunk,
-                )
-
-                vector_similar = vec_similar_chunks[chunk.chunk_id]
-                if vector_similar is not None:
-                    c.vector_similar_chunks = vector_similar.vector_similar_chunks
-
-                chunks.append(c)
+            chunks = await self._attach_vector_similar_chunks(
+                prev_next_chunks=prev_next_chunks,
+                document_id=document_id,
+                chunk_id_scores=chunk_id_scores,
+            )
 
             return {"chunks": chunks}
         except Exception as e:
@@ -433,50 +596,42 @@ class DocumentQueryGraph():
             query_depth: qs.QueryDepth = state["query_depth"]
             analysis: Optional[QueryAnalysis] = None
 
-            # Advanced Depth
+            # Advanced Depth: extra lexical pass using spaCy-prioritized lanes
             analysis_chunk_id_scores: set[Tuple[str, float]] = set()
             if query_depth == qs.QueryDepth.ADVANCED:
                 analysis = self._lexical_engine.analyze_query(query)
                 lane_edges = await self._eq_get_chunk_ids_by_lanes(analysis=analysis)
-
                 analysis_chunk_id_scores = await self._eq_get_chunk_id_scores_by_spare_embedding_compare(
                     state, query, lane_edges
                 )
-                print("\n\n [Expert]: Analysis Chunk Id Scores:\n", analysis_chunk_id_scores)
+                logger.info({"message": "[Expert] Advanced analysis chunk scores", "count": len(analysis_chunk_id_scores)})
 
             points = state["points"]
-            if points is None or len(points) == 0:
+            if not points:
                 raise Exception("No points found")
 
-            # Source 1: Qdrant vector search
-            qdrant_chunk_ids: dict[str, float] = {}
-            for point in points:
-                score = point.score
-                if score < Env.GTE_QDRANT_POINT_SCORE_THRESHOLD:
-                    continue
-                payload = point.payload
-                if payload is None:
-                    continue
-                text = payload.get("text")
-                chunk_id = payload.get("chunk_id")
-                if text is None or chunk_id is None:
-                    continue
-                prev_score = qdrant_chunk_ids.get(chunk_id)
-                if prev_score is None or score > prev_score:
-                    qdrant_chunk_ids[chunk_id] = score
-
-            if len(qdrant_chunk_ids) == 0:
+            # Source 1: Qdrant vector search (dense + sparse hybrid)
+            qdrant_chunk_ids = self._extract_qdrant_chunk_scores(points, keep_max_per_id=True)
+            if not qdrant_chunk_ids:
                 raise Exception("No chunk ids found")
 
-            # Source 2: Standard lane sparse embedding
+            # Source 2: Standard lane sparse/dense embedding comparison
             standard_lane_edges = await self._eq_get_chunk_ids_by_lanes()
             eq_lexical_engine_chunk_ids = await self._eq_get_chunk_id_scores_by_spare_embedding_compare(
                 state, query, standard_lane_edges
             )
 
-            # Cross-source scoring
+            # --- Cross-source scoring ---
+            # Each source uses a different, non-comparable scale (Qdrant scores are
+            # roughly bounded 0-1, lexical-lane scores are unbounded raw dot products).
+            # Normalize every source to [0, 1] independently before combining, so a
+            # strong Qdrant match can't be drowned out by a large unbounded lane score.
+            normalized_qdrant = self._normalize_scores(qdrant_chunk_ids)
+            normalized_lexical = self._normalize_scores(dict(eq_lexical_engine_chunk_ids))
+            normalized_analysis = self._normalize_scores(dict(analysis_chunk_id_scores))
+
             # presence_count: how many sources this chunk_id appeared in
-            # raw_score_sum: sum of scores across sources (for tiebreak)
+            # raw_score_sum: sum of *normalized* scores across sources (for tiebreak)
             presence_count: dict[str, int] = {}
             raw_score_sum: dict[str, float] = {}
 
@@ -484,28 +639,28 @@ class DocumentQueryGraph():
                 presence_count[chunk_id] = presence_count.get(chunk_id, 0) + 1
                 raw_score_sum[chunk_id] = raw_score_sum.get(chunk_id, 0.0) + score
 
-            for chunk_id, score in qdrant_chunk_ids.items():
+            for chunk_id, score in normalized_qdrant.items():
+                _add(chunk_id, score)
+            for chunk_id, score in normalized_lexical.items():
+                _add(chunk_id, score)
+            for chunk_id, score in normalized_analysis.items():  # empty if standard depth
                 _add(chunk_id, score)
 
-            for chunk_id, score in eq_lexical_engine_chunk_ids:
-                _add(chunk_id, score)
-
-            for chunk_id, score in analysis_chunk_id_scores:   # empty set if standard
-                _add(chunk_id, score)
-
-            # Final rank: primary = presence_count, secondary = raw_score_sum
+            # Final rank: primary = presence_count (cross-source agreement),
+            # secondary = normalized score sum (tiebreak)
             ranked = sorted(
                 presence_count.keys(),
                 key=lambda cid: (presence_count[cid], raw_score_sum[cid]),
                 reverse=True,
             )
 
-            # Top Env.EQ_MAX_CHUNKS_COUNT only for expensive ops
             top_chunk_ids = ranked[:Env.EQ_MAX_CHUNKS_COUNT]
             top_chunk_id_scores = [(cid, raw_score_sum[cid]) for cid in top_chunk_ids]
 
-            print("\n\n [Expert]: Top chunk IDs by cross-source presence:\n",
-                [(cid, presence_count[cid], raw_score_sum[cid]) for cid in top_chunk_ids])
+            logger.info({
+                "message": "[Expert] Top chunk IDs by cross-source presence",
+                "top_chunks": [(cid, presence_count[cid], raw_score_sum[cid]) for cid in top_chunk_ids],
+            })
 
             document_id = state["document_id"]
 
@@ -514,120 +669,89 @@ class DocumentQueryGraph():
                 document_id=document_id,
             )
 
-            vec_similar_chunks: Dict[str, ChunkVecSimilarity] = await self._chunk_n4j.get_vector_similar_chunks(
-                chunk_id_scores=top_chunk_id_scores,
+            chunks = await self._attach_vector_similar_chunks(
+                prev_next_chunks=prev_next_chunks,
                 document_id=document_id,
-                gte__vector_score=Env.GTE_EDGE_VECTOR_SIMILAR_THRESHOLD,
+                chunk_id_scores=top_chunk_id_scores,
             )
-
-            chunks: list[ChunkPrevNextVecSimilaritySchema] = []
-            for chunk in prev_next_chunks:
-                c = ChunkPrevNextVecSimilaritySchema(
-                    chunk_id=chunk.chunk_id,
-                    text=chunk.text,
-                    chunk_number=chunk.chunk_number,
-                    weight=chunk.weight,
-                    point_score=chunk.point_score,
-                    prev_chunk=chunk.prev_chunk,
-                    next_chunk=chunk.next_chunk,
-                )
-                vector_similar = vec_similar_chunks.get(chunk.chunk_id)
-                if vector_similar is not None:
-                    c.vector_similar_chunks = vector_similar.vector_similar_chunks
-                chunks.append(c)
 
             return {
                 "chunks": chunks,
                 "eq_lexical_engine_chunk_ids": eq_lexical_engine_chunk_ids,
                 "eq_analysis": analysis,
-                "answer": "dummy",
             }
-
         except Exception as e:
             logger.error({"message": "Failed in expert query", "error": str(e)})
+            raise e
 
+    # ------------------------------------------------------------------
+    # Nodes: rerankers (thin wrappers around shared _rerank_chunks)
+    # ------------------------------------------------------------------
     async def _qq_reranker(self, state: DQGState):
         try:
-            query = state["query"]
-            chunks: list[ChunkPrevNextSchema] = cast(list[ChunkPrevNextSchema], state["chunks"])
-            top_k = state["top_k"]
-
-            if chunks is None or len(chunks) == 0:
-                raise Exception("No chunks found")
-
-            project_config = state["project_config"]
-
-            reranker_model_enabled = project_config.reranker_enable
-            if not reranker_model_enabled:
-                logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
-                return {"reranked_chunks": []}
-
-            reranker_model = project_config.reranker_model
-            reranker_model_credential = project_config.reranker_model_credential
-
-            if reranker_model is None:
-                logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Reranker Model is not configured")
-
-            if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
-                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Sparse Embedding Model Credential is not configured")
-
-            reranker_provider = reranker_model.provider
-            reranker_model_id = reranker_model.model_id
-            api_key: str | None = reranker_model_credential and reranker_model_credential.api_key
-            reranker = WorkflowReranker().reranker(model=reranker_model_id, provider=reranker_provider, provider_type=reranker_model.provider_type, api_key=api_key)
-
-            # index chunks by chunk_id for O(1) lookup
-            chunk_map: dict[str, ChunkPrevNextSchema] = {chunk.chunk_id: chunk for chunk in chunks}
-
-            docs: list[Document] = []
-            for chunk in chunks:
-                docs.append(Document(
-                    page_content=chunk.text,
-                    metadata={"chunk_id": chunk.chunk_id}
-                ))
-
-            rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
-
-            reranked_chunks: list[ChunkPrevNextSchema] = []
-            for doc in rerank_docs:
-                chunk = chunk_map[doc.metadata["chunk_id"]]
-                reranked_chunks.append(chunk)
-
-            seen_ids: set[str] = set()
-            deduped: list[ChunkPrevNextSchema] = []
-
-            # So we can't select the chunk if it has been selected before as a prev/next chunk
-            for chunk in reranked_chunks:
-                if chunk.chunk_id in seen_ids:
-                    continue
-                deduped.append(chunk)
-                seen_ids.add(chunk.chunk_id)
-                if chunk.prev_chunk:
-                    seen_ids.add(chunk.prev_chunk.chunk_id)
-                if chunk.next_chunk:
-                    seen_ids.add(chunk.next_chunk.chunk_id)
-
-            # sort by weight descending
-            deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
-
-            print("\n\n [Quick] Final reranked chunks: ", deduped)
-
+            chunks = cast(list[ChunkPrevNextSchema], state["chunks"])
+            deduped = await self._rerank_chunks(
+                query=state["query"],
+                chunks=chunks,
+                top_k=state["top_k"],
+                project_config=state["project_config"],
+                log_tag="Quick",
+            )
             return {"reranked_chunks": deduped}
         except Exception as e:
             logger.error({"message": "Failed to reranker", "error": str(e)})
             raise e
 
+    async def _sq_reranker(self, state: DQGState):
+        try:
+            chunks = cast(list[ChunkPrevNextVecSimilaritySchema], state["chunks"])
+            deduped = await self._rerank_chunks(
+                query=state["query"],
+                chunks=chunks,
+                top_k=state["top_k"],
+                project_config=state["project_config"],
+                log_tag="Smart",
+            )
+            vec_similar_with_prev_next = await self._get_vec_similar_prev_next(
+                reranked_chunks=deduped,  # type: ignore
+                document_id=state["document_id"],
+                query_depth=state["query_depth"],
+            )
+            return {"reranked_chunks": deduped, "vec_similar_with_prev_next": vec_similar_with_prev_next}
+        except Exception as e:
+            logger.error({"message": "Failed to sq_reranker", "error": str(e)})
+            raise e
+
+    async def _eq_reranker(self, state: DQGState):
+        try:
+            chunks = cast(list[ChunkPrevNextVecSimilaritySchema], state["chunks"])
+            deduped = await self._rerank_chunks(
+                query=state["query"],
+                chunks=chunks,
+                top_k=state["top_k"],
+                project_config=state["project_config"],
+                log_tag="Expert",
+            )
+            vec_similar_with_prev_next = await self._get_vec_similar_prev_next(
+                reranked_chunks=deduped,  # type: ignore
+                document_id=state["document_id"],
+                query_depth=state["query_depth"],
+            )
+            return {"reranked_chunks": deduped, "vec_similar_with_prev_next": vec_similar_with_prev_next}
+        except Exception as e:
+            logger.error({"message": "Failed to eq_reranker", "error": str(e)})
+            raise e
+
+    # ------------------------------------------------------------------
+    # Nodes: answer generation
+    # ------------------------------------------------------------------
     async def _qq_answer(self, state: DQGState):
         try:
-            reranked_chunks: list[ChunkPrevNextSchema] = cast(list[ChunkPrevNextSchema], state["reranked_chunks"])
-            if reranked_chunks is None or len(reranked_chunks) == 0:
+            reranked_chunks = cast(list[ChunkPrevNextSchema], state["reranked_chunks"])
+            if not reranked_chunks:
                 raise Exception("No reranked chunks found")
 
-            query = state["query"]
-
-            answer = await self._qq_llm_call(state, query=query, reranked_chunks=reranked_chunks)
+            answer = await self._qq_llm_call(state, query=state["query"], reranked_chunks=reranked_chunks)
             return {"answer": answer}
         except Exception as e:
             logger.error({"message": "Failed to answer", "error": str(e)})
@@ -636,22 +760,12 @@ class DocumentQueryGraph():
     async def _qq_llm_call(self, state: DQGState, query: str, reranked_chunks: list[ChunkPrevNextSchema]) -> str:
         try:
             project_config = state["project_config"]
-            llm_model = project_config.llm_model
-            llm_model_credential = project_config.llm_model_credential
-            if llm_model is None or llm_model_credential is None:
-                logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("LLM Model is not configured")
-
-            llm_provider = llm_model.provider
-            model = llm_model.model_id
-            api_key = llm_model_credential.api_key
+            llm = self._get_llm(project_config)
 
             chunks_str = self._qq_format_chunks(reranked_chunks)
-
-            print("\n\n [Quick] Final chunks string for LLM :\n", chunks_str)
+            logger.info({"message": "[Quick] Final chunks string for LLM", "length": len(chunks_str)})
 
             prompt = BASIC_ANSWER_PROMPT.format(context=chunks_str, query=query)
-            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
             response = await llm.ainvoke(prompt=prompt)
 
             return response.content
@@ -662,10 +776,10 @@ class DocumentQueryGraph():
     def _qq_format_chunks(self, chunks: list[ChunkPrevNextSchema]) -> str:
         main_chunk_ids = {chunk.chunk_id for chunk in chunks}
         total = len(chunks)
-        blocks = []
-        for i, chunk in enumerate(chunks):
-            block = self._qq_format_single_chunk(chunk, index=i + 1, total=total, skip_ids=main_chunk_ids)
-            blocks.append(block)
+        blocks = [
+            self._qq_format_single_chunk(chunk, index=i + 1, total=total, skip_ids=main_chunk_ids)
+            for i, chunk in enumerate(chunks)
+        ]
         return "\n\n".join(blocks)
 
     def _qq_format_single_chunk(self, chunk: ChunkPrevNextSchema, index: int, total: int, skip_ids: set[str]) -> str:
@@ -689,126 +803,40 @@ class DocumentQueryGraph():
         lines.append("\n" + "─" * 40)
         return "\n".join(lines)
 
-    async def _sq_reranker(self, state: DQGState):
-        try:
-            query = state["query"]
-            chunks: list[ChunkPrevNextVecSimilaritySchema] = cast(list[ChunkPrevNextVecSimilaritySchema], state["chunks"])
-            if chunks is None or len(chunks) == 0:
-                raise Exception("No chunks found")
-
-            top_k = state["top_k"]
-
-            if not chunks:
-                raise Exception("No chunks found")
-
-            project_config = state["project_config"]
-
-            reranker_model_enabled = project_config.reranker_enable
-            if not reranker_model_enabled:
-                logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
-                return {"reranked_chunks": []}
-
-            reranker_model = project_config.reranker_model
-            reranker_model_credential = project_config.reranker_model_credential
-
-            if reranker_model is None:
-                logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Reranker Model is not configured")
-
-            if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
-                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Sparse Embedding Model Credential is not configured")
-
-            reranker_provider = reranker_model.provider
-            reranker_model_id = reranker_model.model_id
-            api_key: str | None = reranker_model_credential and reranker_model_credential.api_key
-            reranker = WorkflowReranker().reranker(model=reranker_model_id, provider=reranker_provider, provider_type=reranker_model.provider_type, api_key=api_key)
-
-            # index chunks by chunk_id for O(1) lookup
-            chunk_map: dict[str, ChunkPrevNextVecSimilaritySchema] = {chunk.chunk_id: chunk for chunk in chunks}
-
-            docs: list[Document] = []
-            for chunk in chunks:
-                docs.append(Document(
-                    page_content=chunk.text,
-                    metadata={"chunk_id": chunk.chunk_id}
-                ))
-
-            rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
-
-            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = []
-            for doc in rerank_docs:
-                chunk = chunk_map[doc.metadata["chunk_id"]]
-                reranked_chunks.append(chunk)
-
-            query_depth: qs.QueryDepth = state["query_depth"]
-            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = []
-
-            if query_depth is qs.QueryDepth.ADVANCED:
-                try:
-                    chunk_id_scores: list[tuple[str, float]] = []
-                    for chunk in reranked_chunks:
-                        if chunk.vector_similar_chunks:
-                            for vc in chunk.vector_similar_chunks:
-                                chunk_id_scores.append((vc.chunk_id, vc.weight))
-
-                    if chunk_id_scores:
-                        res = await self._chunk_n4j.get_prev_next_chunks(
-                            chunk_id_scores=chunk_id_scores,
-                            document_id=state["document_id"]
-                        )
-                        vec_similar_with_prev_next.extend(res)
-                except Exception as e:
-                    logger.error({"message": "Failed to get prev/next for vector similar chunks", "error": str(e)})
-
-            seen_ids: set[str] = set()
-            deduped: list[ChunkPrevNextVecSimilaritySchema] = []
-
-            # So we can't select the chunk if it has been selected before as a prev/next chunk
-            for chunk in reranked_chunks:
-                if chunk.chunk_id in seen_ids:
-                    continue
-                deduped.append(chunk)
-                seen_ids.add(chunk.chunk_id)
-                if chunk.prev_chunk:
-                    seen_ids.add(chunk.prev_chunk.chunk_id)
-                if chunk.next_chunk:
-                    seen_ids.add(chunk.next_chunk.chunk_id)
-
-            # sort by weight descending
-            deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
-
-            print("\n\n [Smart] Final reranked chunks: ", deduped)
-
-            return {"reranked_chunks": deduped, "vec_similar_with_prev_next": vec_similar_with_prev_next}
-
-        except Exception as e:
-            logger.error({"message": "Failed to sq_reranker", "error": str(e)})
-            raise e
-
     async def _sq_answer(self, state: DQGState):
         try:
-            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = cast(
-                list[ChunkPrevNextVecSimilaritySchema], state["reranked_chunks"]
-            )
+            reranked_chunks = cast(list[ChunkPrevNextVecSimilaritySchema], state["reranked_chunks"])
             if not reranked_chunks:
                 raise Exception("No reranked chunks found")
 
-            query = state["query"]
-            query_depth: qs.QueryDepth = state["query_depth"]
-            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = state["vec_similar_with_prev_next"] or []
+            answer = await self._sq_eq_llm_call(
+                state,
+                query=state["query"],
+                reranked_chunks=reranked_chunks,
+                query_depth=state["query_depth"],
+                vec_similar_with_prev_next=state["vec_similar_with_prev_next"] or [],
+            )
+            return {"answer": answer}
+        except Exception as e:
+            logger.error({"message": "Failed to sq_answer", "error": str(e)})
+            raise e
+
+    async def _eq_answer(self, state: DQGState):
+        try:
+            reranked_chunks = cast(list[ChunkPrevNextVecSimilaritySchema], state["reranked_chunks"])
+            if not reranked_chunks:
+                raise Exception("No reranked chunks found")
 
             answer = await self._sq_eq_llm_call(
                 state,
-                query=query,
+                query=state["query"],
                 reranked_chunks=reranked_chunks,
-                query_depth=query_depth,
-                vec_similar_with_prev_next=vec_similar_with_prev_next,
+                query_depth=state["query_depth"],
+                vec_similar_with_prev_next=state["vec_similar_with_prev_next"] or [],
             )
             return {"answer": answer}
-
         except Exception as e:
-            logger.error({"message": "Failed to sq_answer", "error": str(e)})
+            logger.error({"message": "Failed to eq_answer", "error": str(e)})
             raise e
 
     async def _sq_eq_llm_call(
@@ -821,28 +849,18 @@ class DocumentQueryGraph():
     ) -> str:
         try:
             project_config = state["project_config"]
-            llm_model = project_config.llm_model
-            llm_model_credential = project_config.llm_model_credential
-            if llm_model is None or llm_model_credential is None:
-                logger.warning({"message": "LLM Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("LLM Model is not configured")
+            llm = self._get_llm(project_config)
 
-            llm_provider = llm_model.provider
-            model = llm_model.model_id
-            api_key = llm_model_credential.api_key
-            llm = WorkflowLLM.llm(provider=llm_provider, api_key=api_key, model=model)
             chunks_str = self._sq_eq_format_chunks(
                 chunks=reranked_chunks,
                 query_depth=query_depth,
                 vec_similar_with_prev_next=vec_similar_with_prev_next,
             )
+            logger.info({"message": "[Smart/Expert] Final chunks string for LLM", "length": len(chunks_str)})
+
             prompt = SMART_ANSWER_PROMPT.format(context=chunks_str, query=query)
-
-            print("\n\n [Smart/Expert] Final chunks string for LLM :\n", chunks_str)
-
             response = await llm.ainvoke(prompt=prompt)
             return response.content
-
         except Exception as e:
             logger.error({"message": "Failed to sq_llm_call", "error": str(e)})
             raise e
@@ -872,18 +890,19 @@ class DocumentQueryGraph():
             # vector similar chunks
             if chunk.vector_similar_chunks:
                 for vc in chunk.vector_similar_chunks:
-                    if vc.chunk_number not in number_to_entry:
-                        if query_depth == qs.QueryDepth.ADVANCED and vc.chunk_id in adv_map:
-                            # advanced: use the full chunk with its prev/next
-                            full = adv_map[vc.chunk_id]
-                            number_to_entry.setdefault(full.chunk_number, (full.text, "[Vector Similar]"))
-                            if full.prev_chunk:
-                                number_to_entry.setdefault(full.prev_chunk.chunk_number, (full.prev_chunk.text, "[Vector Similar Previous Context]"))
-                            if full.next_chunk:
-                                number_to_entry.setdefault(full.next_chunk.chunk_number, (full.next_chunk.text, "[Vector Similar Next Context]"))
-                        else:
-                            # standard: just the vector similar text
-                            number_to_entry.setdefault(vc.chunk_number, (vc.text, "[Vector Similar]"))
+                    if vc.chunk_number in number_to_entry:
+                        continue
+                    if query_depth == qs.QueryDepth.ADVANCED and vc.chunk_id in adv_map:
+                        # advanced: use the full chunk with its prev/next
+                        full = adv_map[vc.chunk_id]
+                        number_to_entry.setdefault(full.chunk_number, (full.text, "[Vector Similar]"))
+                        if full.prev_chunk:
+                            number_to_entry.setdefault(full.prev_chunk.chunk_number, (full.prev_chunk.text, "[Vector Similar Previous Context]"))
+                        if full.next_chunk:
+                            number_to_entry.setdefault(full.next_chunk.chunk_number, (full.next_chunk.text, "[Vector Similar Next Context]"))
+                    else:
+                        # standard: just the vector similar text
+                        number_to_entry.setdefault(vc.chunk_number, (vc.text, "[Vector Similar]"))
 
         # merge contiguous chunk_numbers into sequences
         sorted_numbers = sorted(number_to_entry.keys())
@@ -901,134 +920,14 @@ class DocumentQueryGraph():
         # render each sequence as one block
         blocks = []
         for seq in sequences:
-            lines = []
-            for num in seq:
-                text, label = number_to_entry[num]
-                lines.append(f"{label}:\n{text}")
+            lines = [f"{number_to_entry[num][1]}:\n{number_to_entry[num][0]}" for num in seq]
             blocks.append("\n\n".join(lines) + "\n" + "─" * 40)
 
         return "\n\n".join(blocks)
 
-    async def _eq_reranker(self, state: DQGState):
-        try:
-            query = state["query"]
-            chunks: list[ChunkPrevNextVecSimilaritySchema] = cast(list[ChunkPrevNextVecSimilaritySchema], state["chunks"])
-            if chunks is None or len(chunks) == 0:
-                raise Exception("No chunks found")
-
-            top_k = state["top_k"]
-
-            if not chunks:
-                raise Exception("No chunks found")
-
-            project_config = state["project_config"]
-
-            reranker_model_enabled = project_config.reranker_enable
-            if not reranker_model_enabled:
-                logger.warning({"message": "Reranker is not enabled", "org_id": self.org_id, "project_id": self.project_id})
-                return {"reranked_chunks": []}
-
-            reranker_model = project_config.reranker_model
-            reranker_model_credential = project_config.reranker_model_credential
-
-            if reranker_model is None:
-                logger.error({"message": "Reranker Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Reranker Model is not configured")
-
-            if reranker_model.provider_type == "cloud" and reranker_model_credential is None:
-                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Sparse Embedding Model Credential is not configured")
-
-            reranker_provider = reranker_model.provider
-            reranker_model_id = reranker_model.model_id
-            api_key: str | None = reranker_model_credential and reranker_model_credential.api_key
-            reranker = WorkflowReranker().reranker(model=reranker_model_id, provider=reranker_provider, provider_type=reranker_model.provider_type, api_key=api_key)
-
-            # index chunks by chunk_id for O(1) lookup
-            chunk_map: dict[str, ChunkPrevNextVecSimilaritySchema] = {chunk.chunk_id: chunk for chunk in chunks}
-
-            docs: list[Document] = []
-            for chunk in chunks:
-                docs.append(Document(
-                    page_content=chunk.text,
-                    metadata={"chunk_id": chunk.chunk_id}
-                ))
-
-            rerank_docs = await reranker.rerank(query=query, docs=docs, top_k=top_k)
-
-            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = []
-            for doc in rerank_docs:
-                chunk = chunk_map[doc.metadata["chunk_id"]]
-                reranked_chunks.append(chunk)
-
-            query_depth: qs.QueryDepth = state["query_depth"]
-            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = []
-
-            if query_depth is qs.QueryDepth.ADVANCED:
-                try:
-                    chunk_id_scores: list[tuple[str, float]] = []
-                    for chunk in reranked_chunks:
-                        if chunk.vector_similar_chunks:
-                            for vc in chunk.vector_similar_chunks:
-                                chunk_id_scores.append((vc.chunk_id, vc.weight))
-
-                    if chunk_id_scores:
-                        res = await self._chunk_n4j.get_prev_next_chunks(
-                            chunk_id_scores=chunk_id_scores,
-                            document_id=state["document_id"]
-                        )
-                        vec_similar_with_prev_next.extend(res)
-                except Exception as e:
-                    logger.error({"message": "Failed to get prev/next for vector similar chunks", "error": str(e)})
-
-            seen_ids: set[str] = set()
-            deduped: list[ChunkPrevNextVecSimilaritySchema] = []
-
-            # So we can't select the chunk if it has been selected before as a prev/next chunk
-            for chunk in reranked_chunks:
-                if chunk.chunk_id in seen_ids:
-                    continue
-                deduped.append(chunk)
-                seen_ids.add(chunk.chunk_id)
-                if chunk.prev_chunk:
-                    seen_ids.add(chunk.prev_chunk.chunk_id)
-                if chunk.next_chunk:
-                    seen_ids.add(chunk.next_chunk.chunk_id)
-
-            # sort by weight descending
-            deduped = sorted(deduped, key=lambda x: x.point_score, reverse=True)
-
-            print("\n\n [Expert] Final reranked chunks: ", deduped)
-
-            return {"reranked_chunks": deduped, "vec_similar_with_prev_next": vec_similar_with_prev_next}
-        except Exception as e:
-            logger.error({"message": "Failed to eq_reranker", "error": str(e)})
-            raise e
-
-    async def _eq_answer(self, state: DQGState):
-        try:
-            reranked_chunks: list[ChunkPrevNextVecSimilaritySchema] = cast(
-                list[ChunkPrevNextVecSimilaritySchema], state["reranked_chunks"]
-            )
-            if not reranked_chunks:
-                raise Exception("No reranked chunks found")
-
-            query = state["query"]
-            query_depth: qs.QueryDepth = state["query_depth"]
-            vec_similar_with_prev_next: list[ChunkPrevNextSchema] = state["vec_similar_with_prev_next"] or []
-
-            answer = await self._sq_eq_llm_call(
-                state,
-                query=query,
-                reranked_chunks=reranked_chunks,
-                query_depth=query_depth,
-                vec_similar_with_prev_next=vec_similar_with_prev_next,
-            )
-            return {"answer": answer}
-        except Exception as e:
-            logger.error({"message": "Failed to eq_answer", "error": str(e)})
-            raise e
-
+    # ------------------------------------------------------------------
+    # Expert-mode lexical lane helpers
+    # ------------------------------------------------------------------
     async def _eq_get_chunk_ids_by_lanes(
         self,
         analysis: QueryAnalysis | None = None,  # None = standard, provided = advanced
@@ -1105,37 +1004,12 @@ class DocumentQueryGraph():
         try:
             project_config = state["project_config"]
 
-            sparse_embedding_model = project_config.sparse_text_model
-            sparse_embedding_model_credential = project_config.sparse_text_model_credential
-
-            if sparse_embedding_model is None:
-                logger.error({"message": "Sparse Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
+            sparse_embedder = self._get_sparse_embedder(project_config, required=False)
+            if sparse_embedder is None:
                 return set()
 
-            if sparse_embedding_model.provider_type == "cloud" and sparse_embedding_model_credential is None:
-                logger.error({"message": "Sparse Embedding Model Credential is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Sparse Embedding Model Credential is not configured")
-
-            sparse_provider = sparse_embedding_model.provider
-            sparse_model = sparse_embedding_model.model_id
-            api_key: str | None = sparse_embedding_model_credential and sparse_embedding_model_credential.api_key
-
-            sparse_embedder = WorkflowSparseEmbedder.sparse_embedder(model=sparse_model, provider=sparse_provider, provider_type=sparse_embedding_model.provider_type, api_key=api_key)
+            embedder = self._get_embedder(project_config)
             max_chunk_count = Env.EQ_MAX_LANE_CHUNKS_COUNT
-
-            embedding_model = project_config.embedding_model
-            embedding_model_credential = project_config.embedding_model_credential
-
-            if embedding_model is None or embedding_model_credential is None:
-                logger.error({"message": "Embedding Model is not configured", "org_id": self.org_id, "project_id": self.project_id})
-                raise ValueError("Embedding Model or Embedding Model Credential is not configured")
-
-            embedder_provider = embedding_model.provider
-            model = embedding_model.model_id
-            dimension = embedding_model.dimension
-            api_key = embedding_model_credential.api_key
-
-            embedder = WorkflowEmbedder.embedder(provider=embedder_provider, api_key=api_key, model=model, dimension=dimension)
 
             chunk_scores: dict[str, float] = {}
 
@@ -1208,6 +1082,10 @@ class DocumentQueryGraph():
         Dot product between two sparse embeddings.
         SparseEmbedding has .indices (List[int]) and .values (List[float]).
         Only overlapping indices contribute — O(min(len(a), len(b))).
+        NOTE: this is a raw, unbounded dot product. It is normalized via
+        `_normalize_scores` before being combined with other sources' scores
+        in `_expert_query`, since raw sparse dot products can be an order of
+        magnitude larger than Qdrant's bounded similarity scores.
         """
         b_map = dict(zip(b.indices, b.values))
         score = sum(
@@ -1218,6 +1096,11 @@ class DocumentQueryGraph():
         return float(score)
 
     def _effective_top_k(self, chunks: list[ChunkPrevNextSchema], desired_results: int) -> int:
+        """Estimates how many primary chunks to request given that each chunk also
+        brings along prev/next context. Currently unused by the graph — kept as a
+        utility for callers that want to size top_k around expected context bloat."""
+        if not chunks:
+            return desired_results
         has_prev = sum(1 for c in chunks if c.prev_chunk)
         has_next = sum(1 for c in chunks if c.next_chunk)
         avg_neighbors = (has_prev + has_next) / len(chunks)
