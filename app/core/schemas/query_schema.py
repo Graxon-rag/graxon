@@ -17,6 +17,7 @@ class QueryDepth(str, Enum):
 
 class GQuery(BaseModel):
     query: str
+    thinking: bool = False
     top_k: int = Field(default=10, ge=1, le=100, description="Number of results")
     document_id: Optional[uuid.UUID] = Field(default=None, description="Optional document id")
     query_type: QueryType = Field(default=QueryType.SMART, description="Query type")

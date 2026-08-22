@@ -1,6 +1,7 @@
 from ..services.query_service import QueryService
 from ..schemas.query_schema import GQuery
 from app.utils.logger import logger
+from typing import AsyncGenerator
 import uuid
 
 
@@ -15,4 +16,11 @@ class QueryHandler:
             return await self.query_service.query(query)
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
+            raise e
+
+    def stream_query(self, query: GQuery) -> AsyncGenerator[str, None]:
+        try:
+            return self.query_service.stream_query(query)
+        except Exception as e:
+            logger.error({"message": "Failed to stream query", "error": str(e)})
             raise e
