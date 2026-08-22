@@ -1,7 +1,8 @@
 from langchain_google_genai import ChatGoogleGenerativeAI
-from app.utils.logger import logger
+from langchain_core.runnables import Runnable
 from pydantic import SecretStr, BaseModel
 from typing import Type, Union, Any
+from app.utils.logger import logger
 from .base import BaseLLM
 
 
@@ -29,3 +30,6 @@ class GeminiLLM(BaseLLM):
         except Exception as e:
             logger.error({"message": "Failed to complete Gemini LLM", "error": str(e)})
             raise e
+
+    def get_langchain_llm(self) -> Runnable:
+        return self._llm
