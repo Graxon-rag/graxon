@@ -145,8 +145,20 @@ class Graph:
 
     async def stream_query_documents(self, query: GQuery) -> AsyncGenerator[str, None]:
         def _sse(event: str, data: Any) -> str:
+            """Helper to format outputs as Server-Sent Events."""
             data_str = json.dumps(data) if not isinstance(data, str) else data
-            return f"event: {event}\ndata: {data_str}\n\n"
+
+            # CRITICAL: per the SSE spec, a single "data:" field cannot contain a
+            # literal newline — a blank line inside the payload is indistinguishable
+            # from the frame terminator ("\n\n") that marks the end of an event.
+            # Any payload with embedded newlines (e.g. multi-paragraph model output)
+            # MUST be split into multiple "data:" lines, one per line of content,
+            # which the client then rejoins with "\n". Skipping this silently
+            # truncates the event at the first embedded blank line.
+            data_lines = data_str.split("\n")
+            data_field = "\n".join(f"data: {line}" for line in data_lines)
+
+            return f"event: {event}\n{data_field}\n\n"
 
         # Buffers text per LLM call (keyed by run_id) until we know, from
         # on_chat_model_end, whether that turn ended in tool_calls (-> reasoning)
