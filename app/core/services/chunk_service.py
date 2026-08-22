@@ -38,7 +38,7 @@ class ChunkService:
                 logger.error({"message": "Failed to add chunk", "error": "No last chunk found"})
                 raise Exception("No last chunk found")
 
-            project_config = await self.project_config_service.get_with_details_by_project()
+            project_config = await self.project_config_service.get_with_details_by_project(is_external_call=False)
             if project_config is None:
                 logger.error({"message": "Failed to add chunk", "error": "No project config found"})
                 raise Exception("No project config found")
@@ -60,7 +60,7 @@ class ChunkService:
 
     async def update(self, u: cs.ChunkUpdateParams) -> bool:
         try:
-            project_config = await self.project_config_service.get_with_details_by_project()
+            project_config = await self.project_config_service.get_with_details_by_project(is_external_call=False)
             if project_config is None:
                 logger.error({"message": "Failed to add chunk", "error": "No project config found"})
                 raise Exception("No project config found")
