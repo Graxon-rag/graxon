@@ -23,6 +23,7 @@ from collections import defaultdict
 from typing import TypedDict, Tuple
 from langgraph.types import Send
 from app.config.env import Env
+import numpy as np
 import traceback
 import operator
 import asyncio
@@ -466,8 +467,17 @@ class DocumentInjectGraph:
                             "project_id": self.project_id
                         })
 
-                        # Rehydrate cached JSON into Pydantic models
-                        batch_embeddings = [ChunkSparseEmbedding(**item) for item in cached_data["data"]]
+                        # Convert lists back into numpy arrays before Pydantic validates
+                        batch_embeddings = []
+                        for item in cached_data["data"]:
+                            if "embedding" in item and isinstance(item["embedding"], dict):
+                                if "values" in item["embedding"]:
+                                    item["embedding"]["values"] = np.array(item["embedding"]["values"])
+                                if "indices" in item["embedding"]:
+                                    item["embedding"]["indices"] = np.array(item["embedding"]["indices"])
+
+                            batch_embeddings.append(ChunkSparseEmbedding(**item))
+
                         chs_sparse_embeddings.extend(batch_embeddings)
 
                         # Skip API invocation for this batch
