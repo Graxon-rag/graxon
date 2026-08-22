@@ -5,6 +5,7 @@ from app.utils.logger import logger
 from pinecone import AsyncPinecone
 from typing import cast
 import numpy as np
+import asyncio
 
 
 class PineconeSparseEmbedder(BaseSparseEmbedder):
@@ -38,21 +39,38 @@ class PineconeSparseEmbedder(BaseSparseEmbedder):
                 "truncate": kwargs.get("truncate", "END"),
                 "return_tokens": kwargs.get("return_tokens", False)
             }
-            response = await self._client.inference.embed(
-                model=self.model,
-                inputs=texts,
-                parameters=parameters
-            )
-            sparse_embeddings = []
-            for item in response.data:
-                item_any = cast(pse, item)
 
-                embedding = SparseEmbedding(
-                    indices=np.array(item_any.sparse_indices),
-                    values=np.array(item_any.sparse_values)
+            # Pinecone's max inputs per request for this model is 96
+            batch_size = 96
+            tasks = []
+
+            # Create concurrent tasks for chunks of 96
+            for i in range(0, len(texts), batch_size):
+                batch_texts = texts[i:i + batch_size]
+                tasks.append(
+                    self._client.inference.embed(
+                        model=self.model,
+                        inputs=batch_texts,
+                        parameters=parameters
+                    )
                 )
 
-                sparse_embeddings.append(embedding)
+            # Wait for all batches to complete concurrently
+            responses = await asyncio.gather(*tasks)
+
+            sparse_embeddings = []
+
+            # Flatten and format the results in the original order
+            for response in responses:
+                for item in response.data:
+                    item_any = cast(pse, item)
+
+                    embedding = SparseEmbedding(
+                        indices=np.array(item_any.sparse_indices),
+                        values=np.array(item_any.sparse_values)
+                    )
+
+                    sparse_embeddings.append(embedding)
 
             return sparse_embeddings
 

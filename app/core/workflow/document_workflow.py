@@ -23,9 +23,7 @@ class DocumentWorkflow:
 
     async def query(self, query: GQuery):
         try:
-            pass
-            # providers = await self._get_query_providers()
-            # return await self.graph.query_documents(providers, query)
+            return await self.graph.query_documents(query)
         except Exception as e:
             logger.error({"message": "Failed to query", "error": str(e)})
             raise e
